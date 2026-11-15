@@ -48,11 +48,11 @@ class GameState {
         window.gameScene = this.scene;
         this.scene.fog = new THREE.FogExp2(0x121014, 0.024);
 
-        // Ambient & Directional Cave Illumination
-        const hemiLight = new THREE.HemisphereLight(0x4a3f35, 0x1e1914, 0.55);
+        // Ambient & Directional Cave Illumination (Guarantees cave is always visible & atmospheric)
+        const hemiLight = new THREE.HemisphereLight(0x756b5c, 0x3a3024, 0.85);
         this.scene.add(hemiLight);
 
-        const ambLight = new THREE.AmbientLight(0x221c16, 0.35);
+        const ambLight = new THREE.AmbientLight(0x453b30, 0.65);
         this.scene.add(ambLight);
 
         // Camera Setup

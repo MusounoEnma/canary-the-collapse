@@ -60,6 +60,7 @@ body, html {
 }
 
 #underwater-overlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -68,17 +69,15 @@ body, html {
     pointer-events: none;
     z-index: 12;
     background: radial-gradient(circle at center, rgba(16, 92, 107, 0.42) 0%, rgba(8, 48, 64, 0.78) 60%, rgba(2, 20, 30, 0.95) 100%);
-    backdrop-filter: blur(1.8px);
-    opacity: 0;
-    transition: opacity 0.75s ease-in-out;
     box-shadow: inset 0 0 100px rgba(0, 255, 230, 0.25);
 }
 
 #underwater-overlay.active {
-    opacity: 1;
+    display: block;
 }
 
 #water-splash-vignette {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -87,11 +86,10 @@ body, html {
     pointer-events: none;
     z-index: 14;
     background: radial-gradient(circle at center, transparent 35%, rgba(120, 220, 255, 0.45) 70%, rgba(0, 100, 160, 0.85) 100%);
-    opacity: 0;
-    transform: scale(0.92);
 }
 
 #water-splash-vignette.active {
+    display: block;
     animation: waterSplashBurst 0.9s cubic-bezier(0.1, 0.8, 0.3, 1.0) forwards;
 }
 
@@ -102,6 +100,7 @@ body, html {
 }
 
 #glitch-overlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -110,10 +109,10 @@ body, html {
     pointer-events: none;
     z-index: 15;
     background: rgba(255, 23, 68, 0.14);
-    opacity: 0;
 }
 
 #glitch-overlay.active {
+    display: block;
     animation: tremorGlitchStrobe 0.18s infinite;
 }
 
@@ -2242,7 +2241,7 @@ class MineWorld {
             map: this.rockTexture,
             roughness: 0.94,
             metalness: 0.08,
-            side: THREE.BackSide
+            side: THREE.DoubleSide
         });
 
         const cavernMesh = new THREE.Mesh(tubeGeo, cavernMat);
@@ -2500,6 +2499,8 @@ class MineWorld {
 
         // Industrial utility lamps & Red Emergency Alarm Klaxons throughout the shaft
         const lampConfigs = [
+            { z: -2, type: 'amber' },       // Starting cavern entrance
+            { z: -6, type: 'amber' },       // Starting drift illumination
             { z: -12, type: 'amber' },
             { z: -25, type: 'red_alarm' },
             { z: -42, type: 'amber' },
@@ -3230,7 +3231,7 @@ class PlayerController {
     }
 
     initFlashlight() {
-        this.flashlight = new THREE.SpotLight(0xfffae0, 3.6, 54, Math.PI / 3.2, 0.45, 1.2);
+        this.flashlight = new THREE.SpotLight(0xfffae0, 4.2, 60, Math.PI / 3.0, 0.45, 1.2);
         this.flashlight.position.copy(this.camera.position);
 
         this.flashlightTarget = new THREE.Object3D();
@@ -3240,14 +3241,32 @@ class PlayerController {
         window.gameScene.add(this.flashlight);
         window.gameScene.add(this.flashlightTarget);
 
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.6, 8.5, 2);
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.75, 10.5, 2);
         window.gameScene.add(this.ambientBulb);
     }
 
     initInputListeners() {
-        this.domElement.addEventListener('click', () => {
-            if (!this.isLocked && !this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
-                this.domElement.requestPointerLock();
+        let isMouseDown = false;
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 0) isMouseDown = true;
+        });
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        // Click anywhere on viewport to lock mouse in PLAYING mode
+        window.addEventListener('click', (e) => {
+            if (!this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
+                if (e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal')) {
+                    return;
+                }
+                if (this.domElement && document.pointerLockElement !== this.domElement) {
+                    try {
+                        this.domElement.requestPointerLock();
+                    } catch (err) {
+                        console.warn("Pointer lock request warning:", err);
+                    }
+                }
             }
         });
 
@@ -3260,7 +3279,9 @@ class PlayerController {
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!this.isLocked || this.isDead || this.isTumbling || this.isClimbingRope) return;
+            if (this.isDead || this.isTumbling || this.isClimbingRope) return;
+            // Fully responsive look: works both with pointer lock AND mouse drag!
+            if (!this.isLocked && !isMouseDown) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
             this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
@@ -4359,11 +4380,11 @@ class GameState {
         window.gameScene = this.scene;
         this.scene.fog = new THREE.FogExp2(0x121014, 0.024);
 
-        // Ambient & Directional Cave Illumination
-        const hemiLight = new THREE.HemisphereLight(0x4a3f35, 0x1e1914, 0.55);
+        // Ambient & Directional Cave Illumination (Guarantees cave is always visible & atmospheric)
+        const hemiLight = new THREE.HemisphereLight(0x756b5c, 0x3a3024, 0.85);
         this.scene.add(hemiLight);
 
-        const ambLight = new THREE.AmbientLight(0x221c16, 0.35);
+        const ambLight = new THREE.AmbientLight(0x453b30, 0.65);
         this.scene.add(ambLight);
 
         // Camera Setup

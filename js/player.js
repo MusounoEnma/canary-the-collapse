@@ -90,7 +90,7 @@ class PlayerController {
     }
 
     initFlashlight() {
-        this.flashlight = new THREE.SpotLight(0xfffae0, 3.6, 54, Math.PI / 3.2, 0.45, 1.2);
+        this.flashlight = new THREE.SpotLight(0xfffae0, 4.2, 60, Math.PI / 3.0, 0.45, 1.2);
         this.flashlight.position.copy(this.camera.position);
 
         this.flashlightTarget = new THREE.Object3D();
@@ -100,14 +100,32 @@ class PlayerController {
         window.gameScene.add(this.flashlight);
         window.gameScene.add(this.flashlightTarget);
 
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.6, 8.5, 2);
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.75, 10.5, 2);
         window.gameScene.add(this.ambientBulb);
     }
 
     initInputListeners() {
-        this.domElement.addEventListener('click', () => {
-            if (!this.isLocked && !this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
-                this.domElement.requestPointerLock();
+        let isMouseDown = false;
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 0) isMouseDown = true;
+        });
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        // Click anywhere on viewport to lock mouse in PLAYING mode
+        window.addEventListener('click', (e) => {
+            if (!this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
+                if (e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal')) {
+                    return;
+                }
+                if (this.domElement && document.pointerLockElement !== this.domElement) {
+                    try {
+                        this.domElement.requestPointerLock();
+                    } catch (err) {
+                        console.warn("Pointer lock request warning:", err);
+                    }
+                }
             }
         });
 
@@ -120,7 +138,9 @@ class PlayerController {
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!this.isLocked || this.isDead || this.isTumbling || this.isClimbingRope) return;
+            if (this.isDead || this.isTumbling || this.isClimbingRope) return;
+            // Fully responsive look: works both with pointer lock AND mouse drag!
+            if (!this.isLocked && !isMouseDown) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
             this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));

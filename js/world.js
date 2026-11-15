@@ -176,7 +176,7 @@ class MineWorld {
             map: this.rockTexture,
             roughness: 0.94,
             metalness: 0.08,
-            side: THREE.BackSide
+            side: THREE.DoubleSide
         });
 
         const cavernMesh = new THREE.Mesh(tubeGeo, cavernMat);
@@ -434,6 +434,8 @@ class MineWorld {
 
         // Industrial utility lamps & Red Emergency Alarm Klaxons throughout the shaft
         const lampConfigs = [
+            { z: -2, type: 'amber' },       // Starting cavern entrance
+            { z: -6, type: 'amber' },       // Starting drift illumination
             { z: -12, type: 'amber' },
             { z: -25, type: 'red_alarm' },
             { z: -42, type: 'amber' },
