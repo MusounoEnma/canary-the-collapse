@@ -61,7 +61,7 @@ class PlayerController {
     }
 
     initFlashlight() {
-        this.flashlight = new THREE.SpotLight(0xfffae0, 3.0, 48, Math.PI / 4.0, 0.45, 1.4);
+        this.flashlight = new THREE.SpotLight(0xfffae0, 3.6, 54, Math.PI / 3.2, 0.45, 1.2);
         this.flashlight.position.copy(this.camera.position);
 
         this.flashlightTarget = new THREE.Object3D();
@@ -71,7 +71,7 @@ class PlayerController {
         window.gameScene.add(this.flashlight);
         window.gameScene.add(this.flashlightTarget);
 
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.3, 5.0, 2);
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.6, 8.5, 2);
         window.gameScene.add(this.ambientBulb);
     }
 

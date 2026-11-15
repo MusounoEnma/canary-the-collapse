@@ -1,9 +1,7 @@
 /**
- * CANARY: The Collapse - 3D Curved & Ascending Mine Shaft Environment
- * Features:
- * - Winding S-curve tunnel path with natural climbing elevation (ascending from depth).
- * - Multi-layered textured earth, jagged rock strata, mud, and uneven mine floor.
- * - Dynamic path math functions used by Player Controller for smooth slope climbing & boundary checks.
+ * CANARY: The Collapse - 3D Continuous Cave Tunnel & Environment
+ * Uses Three.js TubeGeometry & CatmullRomCurve3 for a seamless 360-degree enclosing cavern.
+ * Eliminates segment clipping, wall blocking bugs, and black void gaps.
  */
 
 class MineWorld {
@@ -20,221 +18,212 @@ class MineWorld {
         this.tunnelLength = 280;
 
         this.initTextures();
-        this.buildCurvedTunnel();
+        this.buildSeamlessCavern();
         this.buildAtmosphere();
         this.buildInteractables();
         this.buildHallucination();
     }
 
     // -------------------------------------------------------------
-    // TUNNEL CURVATURE & ELEVATION FORMULAS
+    // CURVE & ELEVATION FORMULAS
     // -------------------------------------------------------------
-    // Horizontal winding curve X(z)
     getPathX(z) {
-        // Smooth undulating S-curves through the mountain bedrock
-        return Math.sin(z * 0.038) * 5.2 + Math.sin(z * 0.015) * 3.2;
+        // Natural gentle S-curves
+        return Math.sin(z * 0.038) * 4.8 + Math.sin(z * 0.015) * 2.8;
     }
 
-    // Vertical climbing elevation Y(z)
     getPathY(z) {
-        // Player ascends from Y=0 at z=0 up to Y=+22.5 meters at the surface hatch
+        // Continuous upward slope from Y=0 at z=0 up to Y=+22.5m at z=-265m
         const progress = Math.max(0, -z / this.tunnelLength);
-        // Gentle stepped incline
-        return progress * 22.5 + Math.sin(z * 0.05) * 0.35;
-    }
-
-    // Tangent slope angle in radians
-    getPathPitch(z) {
-        const delta = 0.5;
-        const dy = this.getPathY(z - delta) - this.getPathY(z + delta);
-        return Math.atan2(dy, delta * 2);
+        return progress * 22.5 + Math.sin(z * 0.05) * 0.3;
     }
 
     initTextures() {
-        // 1. Earth & Stratified Rock Texture for Cave Walls
+        // 1. High-Contrast Rocky Cavern Wall Texture
         const rockCanvas = document.createElement('canvas');
         rockCanvas.width = 512;
         rockCanvas.height = 512;
         const rctx = rockCanvas.getContext('2d');
 
-        // Dark earthy brown-gray base
-        rctx.fillStyle = '#211d18';
+        // Dark earthy brown stone base
+        rctx.fillStyle = '#322c25';
         rctx.fillRect(0, 0, 512, 512);
 
-        // Sedimentary strata bands (soil, coal veins, gravel layers)
+        // Sedimentary strata bands
         for (let y = 0; y < 512; y += 4) {
-            const noise = Math.sin(y * 0.06) * 15 + Math.sin(y * 0.18) * 8;
-            const gray = Math.floor(28 + Math.random() * 24);
-            const r = gray + Math.floor(Math.random() * 12);
-            const g = gray + Math.floor(Math.random() * 8);
-            const b = gray - 4;
-            rctx.fillStyle = `rgb(${r},${g},${b})`;
+            const lum = 40 + Math.floor(Math.sin(y * 0.05) * 15 + Math.random() * 25);
+            rctx.fillStyle = `rgb(${lum + 8},${lum + 2},${lum - 6})`;
             rctx.fillRect(0, y, 512, 3 + Math.random() * 3);
         }
 
-        // Deep mineral veins & coal fractures
-        for (let i = 0; i < 18; i++) {
-            rctx.strokeStyle = i % 2 === 0 ? 'rgba(10, 8, 6, 0.75)' : 'rgba(85, 62, 45, 0.5)';
+        // Deep mineral veins & jagged cracks
+        for (let i = 0; i < 22; i++) {
+            rctx.strokeStyle = i % 2 === 0 ? 'rgba(15, 12, 10, 0.85)' : 'rgba(110, 80, 55, 0.6)';
             rctx.lineWidth = 2 + Math.random() * 4;
             rctx.beginPath();
             let curX = 0;
             let curY = Math.random() * 512;
             rctx.moveTo(curX, curY);
             while (curX < 512) {
-                curX += 20 + Math.random() * 30;
-                curY += (Math.random() - 0.5) * 45;
+                curX += 20 + Math.random() * 35;
+                curY += (Math.random() - 0.5) * 40;
                 rctx.lineTo(curX, curY);
             }
             rctx.stroke();
         }
 
-        // Mud and rock specks
-        for (let k = 0; k < 3000; k++) {
+        // Granular stone noise
+        for (let k = 0; k < 4500; k++) {
             const px = Math.random() * 512;
             const py = Math.random() * 512;
-            const lum = Math.floor(18 + Math.random() * 38);
-            rctx.fillStyle = `rgb(${lum + 10},${lum + 5},${lum})`;
-            rctx.fillRect(px, py, 1 + Math.random() * 4, 1 + Math.random() * 4);
+            const l = Math.floor(25 + Math.random() * 45);
+            rctx.fillStyle = `rgb(${l + 12},${l + 6},${l})`;
+            rctx.fillRect(px, py, 2 + Math.random() * 3, 2 + Math.random() * 3);
         }
 
         this.rockTexture = new THREE.CanvasTexture(rockCanvas);
         this.rockTexture.wrapS = THREE.RepeatWrapping;
         this.rockTexture.wrapT = THREE.RepeatWrapping;
-        this.rockTexture.repeat.set(4, 30);
+        this.rockTexture.repeat.set(6, 40);
 
-        // 2. Weathered Timber Texture for Mine Supports
+        // 2. Weathered Timber Texture
         const woodCanvas = document.createElement('canvas');
         woodCanvas.width = 256;
         woodCanvas.height = 256;
         const wctx = woodCanvas.getContext('2d');
-        wctx.fillStyle = '#3e2717';
+        wctx.fillStyle = '#4a3220';
         wctx.fillRect(0, 0, 256, 256);
         for (let i = 0; i < 1500; i++) {
             const y = Math.random() * 256;
-            wctx.fillStyle = `rgba(20, 10, 4, ${0.15 + Math.random() * 0.35})`;
+            wctx.fillStyle = `rgba(25, 15, 8, ${0.15 + Math.random() * 0.35})`;
             wctx.fillRect(0, y, 256, 1 + Math.random() * 3);
         }
         this.woodTexture = new THREE.CanvasTexture(woodCanvas);
         this.woodTexture.wrapS = THREE.RepeatWrapping;
         this.woodTexture.wrapT = THREE.RepeatWrapping;
 
-        // 3. Rusty Industrial Steel Texture
+        // 3. Rusty Metal Texture
         const metalCanvas = document.createElement('canvas');
         metalCanvas.width = 256;
         metalCanvas.height = 256;
         const mctx = metalCanvas.getContext('2d');
-        mctx.fillStyle = '#3c4043';
+        mctx.fillStyle = '#4a4d50';
         mctx.fillRect(0, 0, 256, 256);
-        for (let i = 0; i < 1000; i++) {
-            mctx.fillStyle = `rgba(165, 82, 35, ${Math.random() * 0.45})`; // Rust
+        for (let i = 0; i < 1200; i++) {
+            mctx.fillStyle = `rgba(180, 90, 40, ${Math.random() * 0.5})`;
             mctx.fillRect(Math.random() * 256, Math.random() * 256, 4 + Math.random() * 8, 4 + Math.random() * 8);
         }
         this.metalTexture = new THREE.CanvasTexture(metalCanvas);
     }
 
-    buildCurvedTunnel() {
-        const segments = 150;
+    buildSeamlessCavern() {
+        // Build CatmullRom spline path along the entire shaft length
+        const points = [];
+        for (let z = 12; z >= -this.tunnelLength - 5; z -= 3) {
+            points.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 1.8, z));
+        }
+
+        const curve = new THREE.CatmullRomCurve3(points);
+        this.cavernCurve = curve;
+
+        // TubeGeometry: Generates a hollow, enclosing 360-degree cavern tube
+        const tubularSegments = 240;
         const radius = 3.6;
-        const zStep = this.tunnelLength / segments;
+        const radialSegments = 16;
+        const tubeGeo = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
 
-        const wallMat = new THREE.MeshStandardMaterial({
+        // Add natural rocky cavern roughness & jagged rock walls
+        const posAttr = tubeGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            const vx = posAttr.getX(i);
+            const vy = posAttr.getY(i);
+            const vz = posAttr.getZ(i);
+
+            // Perlin-style trigonometric stone bump
+            const bump = (Math.sin(vx * 2.2) * Math.cos(vy * 2.5) * Math.sin(vz * 1.8)) * 0.28;
+            posAttr.setX(i, vx + bump);
+            posAttr.setY(i, vy + bump);
+        }
+        tubeGeo.computeVertexNormals();
+
+        // Cavern Material with DoubleSide rendering
+        const cavernMat = new THREE.MeshStandardMaterial({
             map: this.rockTexture,
-            roughness: 0.94,
-            metalness: 0.06,
-            side: THREE.BackSide
+            roughness: 0.90,
+            metalness: 0.08,
+            side: THREE.BackSide // Shows interior cavern walls surrounding the player
         });
 
-        const floorMat = new THREE.MeshStandardMaterial({
-            map: this.rockTexture,
-            roughness: 0.88,
-            metalness: 0.12
-        });
+        const cavernMesh = new THREE.Mesh(tubeGeo, cavernMat);
+        cavernMesh.receiveShadow = true;
+        this.scene.add(cavernMesh);
 
-        const woodMat = new THREE.MeshStandardMaterial({
-            map: this.woodTexture,
-            roughness: 0.86,
-            color: 0x5a3e28
-        });
+        // Minecart Rails & Wooden Ties along Cavern Floor
+        this.buildTracks();
+    }
 
+    buildTracks() {
         const railMat = new THREE.MeshStandardMaterial({
             map: this.metalTexture,
             metalness: 0.8,
             roughness: 0.35,
-            color: 0x777777
+            color: 0x888888
+        });
+        const tieMat = new THREE.MeshStandardMaterial({
+            map: this.woodTexture,
+            roughness: 0.85,
+            color: 0x5a3e28
         });
 
-        // Build continuous curving tunnel segments
-        for (let i = 0; i < segments; i++) {
-            const z0 = -i * zStep + 8;
-            const z1 = -(i + 1) * zStep + 8;
+        const step = 1.4;
+        for (let z = 10; z >= -this.tunnelLength + 10; z -= step) {
+            const x = this.getPathX(z);
+            const y = this.getPathY(z);
 
-            const x0 = this.getPathX(z0);
-            const x1 = this.getPathX(z1);
+            const nextX = this.getPathX(z - step);
+            const nextY = this.getPathY(z - step);
 
-            const y0 = this.getPathY(z0);
-            const y1 = this.getPathY(z1);
+            // Wooden Tie (Sleeper) across track
+            const tie = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.09, 0.25), tieMat);
+            tie.position.set(x, y + 0.05, z);
+            tie.lookAt(nextX, nextY + 0.05, z - step);
+            this.scene.add(tie);
 
-            // Tunnel Arch Segment (Tube mesh along the curve)
-            const segLength = Math.hypot(x1 - x0, y1 - y0, z1 - z0);
-            const archGeo = new THREE.CylinderGeometry(radius, radius, segLength, 14, 1, true);
-            archGeo.rotateZ(Math.PI / 2);
-            archGeo.scale(-1, 1, 1);
+            // Left & Right Rails
+            const segLen = Math.hypot(nextX - x, nextY - y, step);
 
-            const archMesh = new THREE.Mesh(archGeo, wallMat);
-            archMesh.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 1.8, (z0 + z1) / 2);
-            archMesh.lookAt(x1, y1 + 1.8, z1);
-            this.scene.add(archMesh);
+            const lr = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, segLen + 0.05), railMat);
+            lr.position.set((x + nextX) / 2 - 0.75, (y + nextY) / 2 + 0.09, z - step / 2);
+            lr.lookAt(nextX - 0.75, nextY + 0.09, z - step);
+            this.scene.add(lr);
 
-            // Mine Floor Segment with Earth Strata
-            const floorGeo = new THREE.PlaneGeometry(6.4, segLength, 6, 1);
-            floorGeo.rotateX(-Math.PI / 2);
-            const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-            floorMesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-            floorMesh.lookAt(x1, y1, z1);
-            floorMesh.receiveShadow = true;
-            this.scene.add(floorMesh);
+            const rr = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, segLen + 0.05), railMat);
+            rr.position.set((x + nextX) / 2 + 0.75, (y + nextY) / 2 + 0.09, z - step / 2);
+            rr.lookAt(nextX + 0.75, nextY + 0.09, z - step);
+            this.scene.add(rr);
 
-            // Rails following the ascending curves
-            const leftRail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, segLength + 0.05), railMat);
-            leftRail.position.set((x0 + x1) / 2 - 0.75, (y0 + y1) / 2 + 0.07, (z0 + z1) / 2);
-            leftRail.lookAt(x1 - 0.75, y1 + 0.07, z1);
-            this.scene.add(leftRail);
-
-            const rightRail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, segLength + 0.05), railMat);
-            rightRail.position.set((x0 + x1) / 2 + 0.75, (y0 + y1) / 2 + 0.07, (z0 + z1) / 2);
-            rightRail.lookAt(x1 + 0.75, y1 + 0.07, z1);
-            this.scene.add(rightRail);
-
-            // Wooden Mine Sleepers / Ties across tracks
-            if (i % 2 === 0) {
-                const tie = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.24), woodMat);
-                tie.position.set(x0, y0 + 0.04, z0);
-                tie.lookAt(x1, y1 + 0.04, z1);
-                this.scene.add(tie);
-            }
-
-            // Timber Frame Mine Arch Supports every 6-7 meters
-            if (i % 4 === 0) {
-                this.buildTimberArch(x0, y0, z0, x1, y1, z1, woodMat);
+            // Timber Frame Mine Arches every 6.5 meters
+            if (Math.abs(z % 6.5) < step) {
+                this.buildTimberArch(x, y, z, nextX, nextY, z - step, tieMat);
             }
         }
 
-        // Wet Mud Puddles along the winding path
-        const puddleGeo = new THREE.CircleGeometry(1.3, 16);
+        // Wet Mud Puddles
+        const puddleGeo = new THREE.CircleGeometry(1.4, 16);
         puddleGeo.rotateX(-Math.PI / 2);
         const puddleMat = new THREE.MeshStandardMaterial({
-            color: 0x0c0d10,
+            color: 0x121418,
             roughness: 0.08,
-            metalness: 0.75
+            metalness: 0.8
         });
 
         const puddleZ = [-32, -92, -155, -205];
         puddleZ.forEach((pz, idx) => {
-            const px = this.getPathX(pz) + (idx % 2 === 0 ? 0.4 : -0.4);
-            const py = this.getPathY(pz) + 0.02;
+            const px = this.getPathX(pz) + (idx % 2 === 0 ? 0.3 : -0.3);
+            const py = this.getPathY(pz) + 0.03;
             const p = new THREE.Mesh(puddleGeo, puddleMat);
             p.position.set(px, py, pz);
-            p.scale.set(1.1 + Math.random() * 0.4, 1, 1.7 + Math.random() * 0.6);
+            p.scale.set(1.1 + Math.random() * 0.4, 1, 1.8 + Math.random() * 0.5);
             this.scene.add(p);
             this.puddles.push(p);
         });
@@ -242,26 +231,22 @@ class MineWorld {
 
     buildTimberArch(x0, y0, z0, x1, y1, z1, woodMat) {
         const arch = new THREE.Group();
-        const beamW = 5.4;
+        const beamW = 5.2;
         const beamH = 3.3;
         const th = 0.32;
 
-        // Left post
         const lp = new THREE.Mesh(new THREE.BoxGeometry(th, beamH, th), woodMat);
         lp.position.set(-beamW / 2, beamH / 2, 0);
         arch.add(lp);
 
-        // Right post
         const rp = new THREE.Mesh(new THREE.BoxGeometry(th, beamH, th), woodMat);
         rp.position.set(beamW / 2, beamH / 2, 0);
         arch.add(rp);
 
-        // Top crossbeam
         const cap = new THREE.Mesh(new THREE.BoxGeometry(beamW + 0.4, th, th), woodMat);
         cap.position.set(0, beamH, 0);
         arch.add(cap);
 
-        // Braces
         const lb = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.9, 0.2), woodMat);
         lb.position.set(-beamW / 2 + 0.35, beamH - 0.35, 0);
         lb.rotation.z = Math.PI / 4;
@@ -278,7 +263,6 @@ class MineWorld {
     }
 
     buildAtmosphere() {
-        // Floating Coal Dust Particles (Specks in flashlight)
         const dustCount = 850;
         const dustGeo = new THREE.BufferGeometry();
         const positions = new Float32Array(dustCount * 3);
@@ -302,7 +286,7 @@ class MineWorld {
         this.dustParticles = new THREE.Points(dustGeo, dustMat);
         this.scene.add(this.dustParticles);
 
-        // Dim Flickering Emergency Lights along the winding shaft
+        // Emergency Amber Lights along cavern
         const lampPositions = [-25, -75, -125, -178, -232];
         lampPositions.forEach((lz, idx) => {
             const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.6 : -1.6);
@@ -322,7 +306,7 @@ class MineWorld {
             );
             lampGroup.add(bulb);
 
-            const pLight = new THREE.PointLight(idx % 2 === 0 ? 0xff9922 : 0xff2211, 0.7, 9.5, 2);
+            const pLight = new THREE.PointLight(idx % 2 === 0 ? 0xffaa33 : 0xff3322, 0.9, 11, 2);
             pLight.position.set(0, -0.1, 0);
             lampGroup.add(pLight);
 
@@ -332,12 +316,11 @@ class MineWorld {
             this.emergencyLights.push({
                 group: lampGroup,
                 light: pLight,
-                baseIntensity: idx % 2 === 0 ? 0.7 : 0.85,
+                baseIntensity: idx % 2 === 0 ? 0.85 : 0.95,
                 flickerSeed: Math.random() * 100
             });
         });
 
-        // Industrial English Warning Signs along shaft
         this.buildSigns();
     }
 
@@ -368,20 +351,19 @@ class MineWorld {
 
         const s1 = new THREE.Mesh(signGeo, signMat);
         const z1 = -16;
-        s1.position.set(this.getPathX(z1) + 2.2, this.getPathY(z1) + 1.9, z1);
+        s1.position.set(this.getPathX(z1) + 2.1, this.getPathY(z1) + 1.9, z1);
         s1.rotation.y = -Math.PI / 2;
         this.scene.add(s1);
 
         const s2 = new THREE.Mesh(signGeo, signMat);
         const z2 = -112;
-        s2.position.set(this.getPathX(z2) - 2.2, this.getPathY(z2) + 1.9, z2);
+        s2.position.set(this.getPathX(z2) - 2.1, this.getPathY(z2) + 1.9, z2);
         s2.rotation.y = Math.PI / 2;
         this.scene.add(s2);
     }
 
     buildInteractables() {
         // 1. RUBBLE OBSTACLES (Cave-ins requiring Precision Rhythm Pickaxe Breach)
-        // Balanced health: 2-3 hits max for fast, snappy, satisfying progression!
         const rubbleConfigs = [
             { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Shaft 07)" },
             { id: 2, z: -130, health: 2, name: "Collapsed Central Timber Rubble" },
@@ -395,8 +377,8 @@ class MineWorld {
 
             const rockMat = new THREE.MeshStandardMaterial({
                 map: this.rockTexture,
-                roughness: 0.95,
-                color: 0x4a4742
+                roughness: 0.92,
+                color: 0x5a554e
             });
 
             // Pile of jagged boulders
@@ -421,12 +403,12 @@ class MineWorld {
                 group.add(rockMesh);
             }
 
-            // Pulsing warning marker above rubble
+            // Warning marker above rubble
             const glowMat = new THREE.MeshBasicMaterial({
                 color: 0xffb300,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.4
+                opacity: 0.45
             });
             const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.38, 0), glowMat);
             marker.position.set(0, 2.7, 0);
@@ -449,11 +431,11 @@ class MineWorld {
             });
         });
 
-        // 2. FALLEN MINER CORPSES (For looting spare O2 cylinders & flashlight batteries)
+        // 2. FALLEN MINER CORPSES
         const corpseConfigs = [
-            { id: 1, z: -26, xOff: 1.5, name: "Tomas", role: "Shift Supervisor", o2Bonus: 35, note: "Emergency O2 cylinder has 35% capacity left. Badge reads: 'Tomas - Father of two'." },
-            { id: 2, z: -95, xOff: -1.5, name: "Erik", role: "Driller", o2Bonus: 40, note: "Military high-pressure O2 canister (+40%). A photo of his family is tucked in his pocket." },
-            { id: 3, z: -170, xOff: 1.4, name: "Budi", role: "Ventilation Technician", o2Bonus: 35, note: "Technician O2 canister (+35%) & Helmet backup battery." }
+            { id: 1, z: -26, xOff: 1.4, name: "Tomas", role: "Shift Supervisor", o2Bonus: 35, note: "Emergency O2 cylinder has 35% capacity left. Badge reads: 'Tomas - Father of two'." },
+            { id: 2, z: -95, xOff: -1.4, name: "Erik", role: "Driller", o2Bonus: 40, note: "Military high-pressure O2 canister (+40%). A photo of his family is tucked in his pocket." },
+            { id: 3, z: -170, xOff: 1.3, name: "Budi", role: "Ventilation Technician", o2Bonus: 35, note: "Technician O2 canister (+35%) & Helmet backup battery." }
         ];
 
         corpseConfigs.forEach(cfg => {
@@ -461,34 +443,29 @@ class MineWorld {
             const cy = this.getPathY(cfg.z);
             const cGroup = new THREE.Group();
 
-            // Torso
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3d434d, roughness: 0.9 });
             const torso = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.9), bodyMat);
             torso.position.set(0, 0.15, 0);
             cGroup.add(torso);
 
-            // Legs
             const legMat = new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: 0.9 });
             const legs = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 0.95), legMat);
             legs.position.set(0, 0.11, 0.85);
             cGroup.add(legs);
 
-            // Miner Yellow Helmet
             const helmetMat = new THREE.MeshStandardMaterial({ color: 0xfbc02d, roughness: 0.4, metalness: 0.2 });
             const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), helmetMat);
             helmet.position.set(0.42, 0.18, -0.6);
             helmet.scale.set(1, 0.75, 1.1);
             cGroup.add(helmet);
 
-            // Spare Oxygen Cylinder
             const tankMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, metalness: 0.7, roughness: 0.3 });
             const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.55, 10), tankMat);
             tank.rotation.z = Math.PI / 2;
             tank.position.set(-0.45, 0.1, 0.1);
             cGroup.add(tank);
 
-            // Valve indicator beacon light
-            const valveLight = new THREE.PointLight(0x4caf50, 0.45, 3, 2);
+            const valveLight = new THREE.PointLight(0x4caf50, 0.5, 3.5, 2);
             valveLight.position.set(-0.45, 0.22, 0.1);
             cGroup.add(valveLight);
 
@@ -509,7 +486,7 @@ class MineWorld {
             });
         });
 
-        // 3. FINAL ESCAPE HATCH (Surface Access Shaft B-4) at z = -262
+        // 3. FINAL ESCAPE HATCH (Surface Access Shaft B-4)
         this.buildEscapeHatch(-262);
     }
 
@@ -518,17 +495,15 @@ class MineWorld {
         const hy = this.getPathY(z);
         const hGroup = new THREE.Group();
 
-        // Heavy concrete bunker wall sealing the tunnel head
         const wallMat = new THREE.MeshStandardMaterial({
             map: this.rockTexture,
             roughness: 0.8,
-            color: 0x333333
+            color: 0x444444
         });
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 5.5, 1.2), wallMat);
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 6, 1.2), wallMat);
         wall.position.set(0, 2.5, 0);
         hGroup.add(wall);
 
-        // Emergency Steel Hatch Door (Industrial Red)
         const hatchMat = new THREE.MeshStandardMaterial({
             map: this.metalTexture,
             color: 0xd32f2f,
@@ -541,18 +516,15 @@ class MineWorld {
         door.position.set(0, 2.0, 0.65);
         hGroup.add(door);
 
-        // Heavy Rotary Wheel
         const wheelMat = new THREE.MeshStandardMaterial({ color: 0xffeb3b, metalness: 0.6, roughness: 0.4 });
         const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.08, 10, 24), wheelMat);
         wheel.position.set(0, 2.0, 0.85);
         hGroup.add(wheel);
 
-        // Emergency Strobe Beacon Light
-        const strobeLight = new THREE.PointLight(0x00e676, 1.4, 14, 2);
+        const strobeLight = new THREE.PointLight(0x00e676, 1.8, 16, 2);
         strobeLight.position.set(0, 3.8, 1.0);
         hGroup.add(strobeLight);
 
-        // Ladder rungs to surface
         const ladderMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.7 });
         for (let y = 0.5; y < 4.4; y += 0.45) {
             const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8), ladderMat);
@@ -576,7 +548,6 @@ class MineWorld {
     }
 
     buildHallucination() {
-        // Golden Translucent Silhouette of Lily (Appears during Hypoxia < 35%)
         const hGroup = new THREE.Group();
 
         const goldMat = new THREE.MeshBasicMaterial({
@@ -606,7 +577,7 @@ class MineWorld {
         arm.rotation.z = -Math.PI / 3;
         hGroup.add(arm);
 
-        const lilyLight = new THREE.PointLight(0xffea00, 0, 10, 2);
+        const lilyLight = new THREE.PointLight(0xffea00, 0, 12, 2);
         lilyLight.position.set(0, 1.2, 0);
         hGroup.add(lilyLight);
 
@@ -625,7 +596,6 @@ class MineWorld {
     }
 
     update(delta, playerPos, oxygen) {
-        // Animate dust particles hovering around player
         if (this.dustParticles && playerPos) {
             this.dustParticles.position.set(playerPos.x, playerPos.y, playerPos.z);
             const posAttr = this.dustParticles.geometry.attributes.position;
@@ -637,14 +607,12 @@ class MineWorld {
             posAttr.needsUpdate = true;
         }
 
-        // Emergency light flickers
         const time = Date.now() * 0.005;
         this.emergencyLights.forEach(lamp => {
             const flicker = Math.sin(time + lamp.flickerSeed) * Math.cos(time * 2.3 + lamp.flickerSeed);
-            lamp.light.intensity = Math.max(0.08, lamp.baseIntensity + flicker * 0.35);
+            lamp.light.intensity = Math.max(0.1, lamp.baseIntensity + flicker * 0.35);
         });
 
-        // Rotate rubble danger markers
         this.rubbleObjects.forEach(r => {
             if (!r.cleared && r.marker) {
                 r.marker.rotation.y += delta * 2.2;
@@ -652,12 +620,10 @@ class MineWorld {
             }
         });
 
-        // Rotate hatch wheel if escaping
         if (this.escapeHatch && this.escapeHatch.isOpening) {
             this.escapeHatch.wheel.rotation.z += delta * 4.0;
         }
 
-        // Hypoxia Hallucination of Lily
         this.updateHallucination(delta, playerPos, oxygen);
     }
 
@@ -711,14 +677,11 @@ class MineWorld {
         if (window.soundEngine) window.soundEngine.playLilyWhisper();
     }
 
-    // Instantly remove rubble upon breach
     removeRubble(rubbleId) {
         const rubble = this.rubbleObjects.find(r => r.id === rubbleId);
         if (!rubble) return;
-        // Instantly disable collision
         rubble.cleared = true;
 
-        // Visual crumbling explosion downward
         let progress = 0;
         const sinkInterval = setInterval(() => {
             progress += 0.08;

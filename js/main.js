@@ -41,7 +41,15 @@ class GameState {
         // Three.js Scene Setup
         this.scene = new THREE.Scene();
         window.gameScene = this.scene;
-        this.scene.fog = new THREE.FogExp2(0x060608, 0.055);
+        // Atmospheric mine dust fog (gentle density so cave walls are visible)
+        this.scene.fog = new THREE.FogExp2(0x121014, 0.024);
+
+        // Ambient & Directional Cave Illumination
+        const hemiLight = new THREE.HemisphereLight(0x4a3f35, 0x1e1914, 0.55);
+        this.scene.add(hemiLight);
+
+        const ambLight = new THREE.AmbientLight(0x221c16, 0.35);
+        this.scene.add(ambLight);
 
         // Camera Setup
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
