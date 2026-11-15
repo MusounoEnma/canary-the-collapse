@@ -25,6 +25,7 @@ class MineWorld {
 
         this.initTextures();
         this.buildSeamlessCavern();
+        this.buildDetourChuteBranch();
         this.buildAtmosphere();
         this.buildInteractables();
         this.buildRescueRope();
@@ -226,6 +227,150 @@ class MineWorld {
         });
         this.bubbleParticles = new THREE.Points(bubbleGeo, bubbleMat);
         this.scene.add(this.bubbleParticles);
+    }
+
+    // Physical side cavern bypass chute (z = -130 to -162)
+    buildDetourChuteBranch() {
+        // Dedicated side cavern tube for the emergency drainage chute (z = -130 to -162)
+        const chutePoints = [];
+        for (let cz = -130; cz >= -162; cz -= 2) {
+            const t = (-cz - 130) / 32; // 0 to 1
+            const cx = this.getPathX(-130) - 1.2 - Math.sin(t * Math.PI) * 4.2 - (t * 1.6);
+            const cy = this.getPathY(-130) + 1.6 - (t * 6.5);
+            chutePoints.push(new THREE.Vector3(cx, cy, cz));
+        }
+        const chuteCurve = new THREE.CatmullRomCurve3(chutePoints);
+        const chuteGeo = new THREE.TubeGeometry(chuteCurve, 36, 3.2, 14, false);
+        const chuteMat = new THREE.MeshStandardMaterial({
+            map: this.rockTexture,
+            roughness: 0.94,
+            metalness: 0.08,
+            side: THREE.DoubleSide
+        });
+        const chuteMesh = new THREE.Mesh(chuteGeo, chuteMat);
+        chuteMesh.receiveShadow = true;
+        this.scene.add(chuteMesh);
+
+        // 1. Chute Entrance Portal Archway (z = -131 on the left wall)
+        const archGroup = new THREE.Group();
+        const archX = this.getPathX(-131) - 2.1;
+        const archY = this.getPathY(-131);
+        const archZ = -131;
+
+        const woodMat = new THREE.MeshStandardMaterial({
+            map: this.woodTexture,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+
+        // Left & right rugged timber uprights
+        const leftPost = new THREE.Mesh(new THREE.BoxGeometry(0.35, 3.2, 0.35), woodMat);
+        leftPost.position.set(-1.4, 1.6, 0);
+        leftPost.rotation.z = 0.08;
+        archGroup.add(leftPost);
+
+        const rightPost = new THREE.Mesh(new THREE.BoxGeometry(0.35, 3.2, 0.35), woodMat);
+        rightPost.position.set(1.4, 1.6, 0);
+        rightPost.rotation.z = -0.08;
+        archGroup.add(rightPost);
+
+        // Top lintel crossbeam
+        const lintel = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.4, 0.4), woodMat);
+        lintel.position.set(0, 3.1, 0);
+        archGroup.add(lintel);
+
+        // Broken warning barrier slats across lower opening
+        const slatMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
+        const lowerSlat = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 0.08), slatMat);
+        lowerSlat.position.set(-0.2, 0.5, 0.1);
+        lowerSlat.rotation.z = -0.15;
+        archGroup.add(lowerSlat);
+
+        // 2. Large Illuminated Industrial Detour Sign
+        const dCanvas = document.createElement('canvas');
+        dCanvas.width = 512;
+        dCanvas.height = 256;
+        const dctx = dCanvas.getContext('2d');
+        dctx.fillStyle = '#b71c1c';
+        dctx.fillRect(0, 0, 512, 256);
+        dctx.lineWidth = 10;
+        dctx.strokeStyle = '#ffeb3b';
+        dctx.strokeRect(10, 10, 492, 236);
+
+        dctx.fillStyle = '#ffffff';
+        dctx.font = 'bold 36px monospace';
+        dctx.textAlign = 'center';
+        dctx.fillText('◄ EMERGENCY BYPASS', 256, 75);
+
+        dctx.fillStyle = '#ffeb3b';
+        dctx.font = 'bold 30px monospace';
+        dctx.fillText('DRAINAGE CHUTE', 256, 135);
+
+        dctx.fillStyle = '#ffffff';
+        dctx.font = 'bold 22px monospace';
+        dctx.fillText('CAUTION: STEEP INCLINE // WATER SUMP', 256, 195);
+
+        const dTex = new THREE.CanvasTexture(dCanvas);
+        const signMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(2.2, 1.1),
+            new THREE.MeshStandardMaterial({ map: dTex, roughness: 0.4 })
+        );
+        signMesh.position.set(0, 2.3, 0.22);
+        archGroup.add(signMesh);
+
+        // 3. Flashing Amber Hazard Beacon above the sign
+        const beaconLight = new THREE.PointLight(0xffa000, 2.2, 16, 2);
+        beaconLight.position.set(0, 3.5, 0.4);
+        archGroup.add(beaconLight);
+
+        const beaconGlobe = new THREE.Mesh(
+            new THREE.SphereGeometry(0.12, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xffa000, emissive: 0xffa000, emissiveIntensity: 1.5 })
+        );
+        beaconGlobe.position.set(0, 3.5, 0.4);
+        archGroup.add(beaconGlobe);
+
+        archGroup.position.set(archX, archY, archZ);
+        archGroup.rotation.y = Math.PI / 6; // Angled facing the approaching player
+        this.scene.add(archGroup);
+
+        this.emergencyLights.push({
+            group: archGroup,
+            light: beaconLight,
+            type: 'amber',
+            baseIntensity: 2.2,
+            flickerSeed: 42
+        });
+
+        // 4. Directional Chevron Markings on the Floor pointing Left
+        const arrowCanvas = document.createElement('canvas');
+        arrowCanvas.width = 256;
+        arrowCanvas.height = 128;
+        const actx = arrowCanvas.getContext('2d');
+        actx.fillStyle = 'rgba(0,0,0,0)';
+        actx.fillRect(0, 0, 256, 128);
+        actx.fillStyle = '#ffd54f';
+        actx.font = 'bold 50px sans-serif';
+        actx.textAlign = 'center';
+        actx.fillText('◄ ◄ ◄', 128, 80);
+
+        const arrowTex = new THREE.CanvasTexture(arrowCanvas);
+        const arrowMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.6, 0.8),
+            new THREE.MeshBasicMaterial({ map: arrowTex, transparent: true, opacity: 0.85 })
+        );
+        arrowMesh.rotation.x = -Math.PI / 2;
+        arrowMesh.position.set(this.getPathX(-131) - 0.7, this.getPathY(-131) + 0.05, -131);
+        this.scene.add(arrowMesh);
+
+        // 5. Twisted, Mangled Rails at Bedrock Wall (z = -133)
+        const bendRailMat = new THREE.MeshStandardMaterial({ color: 0x37474f, metalness: 0.9, roughness: 0.3 });
+        for (let side of [-0.75, 0.75]) {
+            const bentRail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 1.4), bendRailMat);
+            bentRail.position.set(this.getPathX(-133) + side, this.getPathY(-133) + 0.35, -133);
+            bentRail.rotation.x = -Math.PI / 5; // Bent violently upwards!
+            this.scene.add(bentRail);
+        }
     }
 
     // Vertical Rescue Climbing Rope at Cliff Ledge (z = -180)
@@ -456,29 +601,72 @@ class MineWorld {
             { z: -258, type: 'amber' }
         ];
 
+        const darkMetalMat = new THREE.MeshStandardMaterial({
+            color: 0x1f2226,
+            roughness: 0.5,
+            metalness: 0.8
+        });
+
         lampConfigs.forEach((cfg, idx) => {
             const lz = cfg.z;
-            const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.75 : -1.75);
-            const ly = this.getPathY(lz) + 2.7;
+            const isLeft = (idx % 2 === 0);
+            const sideSign = isLeft ? 1 : -1;
+            const lx = this.getPathX(lz) + (sideSign * 1.95);
+            const ly = this.getPathY(lz) + 2.3;
 
             const lampGroup = new THREE.Group();
             const isRed = (cfg.type === 'red_alarm');
-            const colorHex = isRed ? 0xff1744 : 0xffb300;
+            const colorHex = isRed ? 0xff2222 : 0xffb020;
 
-            const cage = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.14, 0.14, 0.32, 8),
-                new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true })
-            );
-            lampGroup.add(cage);
+            // 1. Heavy Wall Mount Baseplate & Conduit Pipe bolted into rock
+            const basePlate = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, 0.28), darkMetalMat);
+            basePlate.position.set(sideSign * 0.35, 0.2, 0);
+            lampGroup.add(basePlate);
 
-            const bulb = new THREE.Mesh(
-                new THREE.SphereGeometry(0.08, 8, 8),
-                new THREE.MeshBasicMaterial({ color: colorHex })
-            );
-            lampGroup.add(bulb);
+            // Horizontal curved mounting arm / pipe from wall to lamp
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.65, 8), darkMetalMat);
+            arm.rotation.z = sideSign * Math.PI / 2;
+            arm.position.set(sideSign * 0.15, 0.2, 0);
+            lampGroup.add(arm);
 
-            const pLight = new THREE.PointLight(colorHex, isRed ? 1.3 : 0.85, isRed ? 14 : 11, 2);
-            pLight.position.set(0, -0.1, 0);
+            // Vertical socket
+            const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.15, 8), darkMetalMat);
+            socket.position.set(0, 0.15, 0);
+            lampGroup.add(socket);
+
+            // 2. Heavy Industrial Cast-Iron Lamp Cap / Hood
+            const hood = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.09, 12), darkMetalMat);
+            hood.position.set(0, 0.08, 0);
+            lampGroup.add(hood);
+
+            // 3. Glowing Glass Globe (Solid, smooth, emissive - NO WIREFRAME BUG!)
+            const glassMat = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: isRed ? 1.5 : 1.1,
+                roughness: 0.2,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.88
+            });
+            const globe = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.24, 12), glassMat);
+            globe.position.set(0, -0.06, 0);
+            lampGroup.add(globe);
+
+            // 4. Solid Protective Steel Cage Bars (Solid thin metal struts, not wireframe)
+            for (let b = 0; b < 4; b++) {
+                const angle = (b * Math.PI) / 2;
+                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.26, 6), darkMetalMat);
+                bar.position.set(Math.cos(angle) * 0.13, -0.06, Math.sin(angle) * 0.13);
+                lampGroup.add(bar);
+            }
+            const guardRing = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.04, 12), darkMetalMat);
+            guardRing.position.set(0, -0.19, 0);
+            lampGroup.add(guardRing);
+
+            // 5. Point Light
+            const pLight = new THREE.PointLight(colorHex, isRed ? 1.6 : 1.1, isRed ? 15 : 12, 2);
+            pLight.position.set(0, -0.08, 0);
             lampGroup.add(pLight);
 
             lampGroup.position.set(lx, ly, lz);
@@ -488,7 +676,7 @@ class MineWorld {
                 group: lampGroup,
                 light: pLight,
                 type: cfg.type,
-                baseIntensity: isRed ? 1.3 : 0.85,
+                baseIntensity: isRed ? 1.6 : 1.1,
                 flickerSeed: Math.random() * 100
             });
         });
@@ -526,57 +714,6 @@ class MineWorld {
         s1.position.set(this.getPathX(z1) + 2.1, this.getPathY(z1) + 1.9, z1);
         s1.rotation.y = -Math.PI / 2;
         this.scene.add(s1);
-
-        // Warning sign before steep chute
-        const warnCanvas = document.createElement('canvas');
-        warnCanvas.width = 256;
-        warnCanvas.height = 128;
-        const wctx = warnCanvas.getContext('2d');
-        wctx.fillStyle = '#ff8f00';
-        wctx.fillRect(0, 0, 256, 128);
-        wctx.strokeStyle = '#000';
-        wctx.lineWidth = 5;
-        wctx.strokeRect(6, 6, 244, 116);
-        wctx.fillStyle = '#000';
-        wctx.font = 'bold 20px monospace';
-        wctx.textAlign = 'center';
-        wctx.fillText('⚠ STEEP PRECIPICE ⚠', 128, 45);
-        wctx.font = 'bold 16px monospace';
-        wctx.fillText('FLOODED RIFT AHEAD', 128, 78);
-        wctx.fillText('SLIPPERY DEBRIS', 128, 105);
-
-        const warnTex = new THREE.CanvasTexture(warnCanvas);
-        const s2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.75), new THREE.MeshStandardMaterial({ map: warnTex }));
-        const z2 = -137;
-        s2.position.set(this.getPathX(z2) - 1.8, this.getPathY(z2) + 1.9, z2);
-        s2.rotation.y = Math.PI / 3;
-        this.scene.add(s2);
-
-        // Illuminated Bypass Detour Sign at z = -135
-        const detourCanvas = document.createElement('canvas');
-        detourCanvas.width = 256;
-        detourCanvas.height = 128;
-        const dctx = detourCanvas.getContext('2d');
-        dctx.fillStyle = '#d84315';
-        dctx.fillRect(0, 0, 256, 128);
-        dctx.strokeStyle = '#fff';
-        dctx.lineWidth = 5;
-        dctx.strokeRect(6, 6, 244, 116);
-        dctx.fillStyle = '#fff';
-        dctx.font = 'bold 18px monospace';
-        dctx.textAlign = 'center';
-        dctx.fillText('◄ EMERGENCY BYPASS', 128, 40);
-        dctx.fillStyle = '#ffeb3b';
-        dctx.font = 'bold 14px monospace';
-        dctx.fillText('SUMP DRAINAGE CHUTE', 128, 75);
-        dctx.fillText('MAIN DRIFT CHOKED', 128, 102);
-
-        const detourTex = new THREE.CanvasTexture(detourCanvas);
-        const detourSign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshStandardMaterial({ map: detourTex }));
-        const zd = -135;
-        detourSign.position.set(this.getPathX(zd) - 1.9, this.getPathY(zd) + 2.2, zd);
-        detourSign.rotation.y = Math.PI / 4;
-        this.scene.add(detourSign);
     }
 
     buildGearCrate() {
@@ -669,7 +806,7 @@ class MineWorld {
         ];
 
         rubbleConfigs.forEach(cfg => {
-            const rx = this.getPathX(cfg.z);
+            const rx = cfg.isBedrock ? (this.getPathX(cfg.z) + 0.6) : this.getPathX(cfg.z);
             const ry = this.getPathY(cfg.z);
             const group = new THREE.Group();
 
@@ -697,17 +834,6 @@ class MineWorld {
                 group.add(rockMesh);
             }
 
-            // Warning marker above rubble
-            const glowMat = new THREE.MeshBasicMaterial({
-                color: cfg.isBedrock ? 0xff1744 : 0xffb300,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.5
-            });
-            const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.38, 0), glowMat);
-            marker.position.set(0, 2.7, 0);
-            group.add(marker);
-
             group.position.set(rx, ry, cfg.z);
             this.scene.add(group);
 
@@ -722,8 +848,7 @@ class MineWorld {
                 maxHealth: cfg.health,
                 currentHealth: cfg.health,
                 cleared: false,
-                group: group,
-                marker: marker
+                group: group
             });
         });
 

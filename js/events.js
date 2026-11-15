@@ -193,7 +193,9 @@ class EventManager {
                 if (window.soundEngine) window.soundEngine.playPickaxeBreak();
                 if (window.gamePlayer) window.gamePlayer.hasBrokenPickaxe = true;
                 this.triggerScreenShake(1.2, 14);
-                this.showNotification("CLANG! PICKAXE HEAD SHATTERED ON MONOLITHIC BEDROCK! Main drift blocked — take the side drainage chute detour!");
+                this.showNotification("CLANG! PICKAXE SHATTERED ON MONOLITHIC BEDROCK! Main drift blocked — take the EMERGENCY DRAINAGE CHUTE on the left ◄");
+                const objEl = document.querySelector('.hud-top-value[style*="69f0ae"]');
+                if (objEl) objEl.textContent = "CHUTE ◄";
                 if (window.gameState) {
                     window.gameState.triggerMonologue("pickaxeBroken");
                 }

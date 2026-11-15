@@ -307,6 +307,7 @@ class PlayerController {
         this.hasTumbled = true;
         this.isTumbling = true;
         this.tumbleTimer = 0;
+        this.tumbleStartZ = this.position.z;
 
         if (window.soundEngine) {
             window.soundEngine.playEarthquake(3.5);
@@ -542,10 +543,14 @@ class PlayerController {
             return;
         }
 
-        // 5. Trigger Rockslide Tumble Check (in side bypass chute at z <= -136.5)
-        if (!this.hasTumbled && this.position.z <= -136.5 && this.position.z >= -144) {
-            this.triggerRockslideTumble();
-            return;
+        // 5. Trigger Rockslide Tumble Check (in side bypass chute at z <= -131.2)
+        if (!this.hasTumbled && this.position.z <= -131.2 && this.position.z >= -144) {
+            const currentPathX = world.getPathX(this.position.z);
+            // If player steps left towards/into the chute opening (x < currentPathX - 0.6) OR reaches z <= -133.0 OR pickaxe is broken and stepping towards chute:
+            if (this.position.x < currentPathX - 0.6 || this.position.z <= -133.0 || (this.hasBrokenPickaxe && this.position.z <= -132.0)) {
+                this.triggerRockslideTumble();
+                return;
+            }
         }
 
         // Headlamp waterlogged maintenance
@@ -597,16 +602,27 @@ class PlayerController {
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
 
-            nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
+            // Near the drainage chute entrance (z between -128 and -136), allow player to walk left into the chute!
+            const isNearChute = (this.position.z <= -128 && this.position.z >= -136);
+            const minX = isNearChute ? (nextPathX - 4.2) : (nextPathX - 1.85);
+            const maxX = nextPathX + 1.85;
+            nextX = Math.max(minX, Math.min(maxX, nextX));
 
             let blockedByRubble = false;
 
             // Rubble Obstacle Collision
             world.rubbleObjects.forEach(r => {
                 if (!r.cleared) {
-                    const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
-                    if (distToRubble < 2.5) {
-                        blockedByRubble = true;
+                    if (r.isBedrock) {
+                        // Monolithic Bedrock blocks the straight path forward, but leaves the left side open to the chute!
+                        if (nextX > r.x - 0.7 && nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
+                            blockedByRubble = true;
+                        }
+                    } else {
+                        const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
+                        if (distToRubble < 2.5) {
+                            blockedByRubble = true;
+                        }
                     }
                 }
             });
