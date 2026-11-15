@@ -1,9 +1,10 @@
 /**
  * CANARY: The Collapse - FPS Player Controller
- * Fixed:
- * - Hard boundary clamp prevents player from ever clipping through curved tunnel walls.
- * - Solid non-slippery foot friction and tuned mouse sensitivity.
- * - Accurate climbing elevation matching the ascending mine shaft.
+ * Features:
+ * - Traverses undulating climbing hills, dips, and water sumps.
+ * - Allows exploration of the secret Sub-Shaft 07-C dead-end branch.
+ * - Dynamic water splash audio when stepping through flooded puddle dips.
+ * - Solid non-slippery foot friction.
  */
 
 class PlayerController {
@@ -36,7 +37,7 @@ class PlayerController {
         this.isFlashlightOn = true;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
-        this.nextMalfunctionCheck = 25.0;
+        this.nextMalfunctionCheck = 28.0;
 
         // Physical Tripping Hazard
         this.isStumbled = false;
@@ -94,7 +95,6 @@ class PlayerController {
             if (!this.isLocked || this.isDead) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
-            // Limit vertical pitch (-80 to +80 degrees)
             this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
         });
 
@@ -194,7 +194,7 @@ class PlayerController {
 
         if (this.tapsRequired <= 0) {
             this.isFlashlightMalfunctioning = false;
-            if (this.flashlight) this.flashlight.intensity = 3.0;
+            if (this.flashlight) this.flashlight.intensity = 3.6;
             const tapAlert = document.getElementById('helmet-tap-alert');
             if (tapAlert) tapAlert.classList.remove('active');
             if (window.eventManager) window.eventManager.showNotification("Helmet headlamp contacts restored!");
@@ -228,11 +228,11 @@ class PlayerController {
         this.isStumbled = true;
         this.stumbleRecoveryTimer = 1.4;
         if (window.soundEngine) {
-            window.soundEngine.playFootstep(true);
+            window.soundEngine.playWaterSplash(true);
             window.soundEngine.playFootstep(true);
         }
         if (window.eventManager) {
-            window.eventManager.showNotification("Slipped on wet mine rocks! Lost stamina and breath!");
+            window.eventManager.showNotification("Slipped in deep flooded mine puddle! Lost breath!");
         }
         this.oxygen = Math.max(0, this.oxygen - 3.0);
     }
@@ -263,16 +263,16 @@ class PlayerController {
             }
         }
 
-        // 3. Tripping Hazard Check on wet mud / puddles
-        if (this.isSprinting && !this.isStumbled) {
-            world.puddles.forEach(p => {
-                if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.6) {
-                    if (Math.random() < 0.04) {
-                        this.triggerStumble();
-                    }
+        // 3. Flooded Puddle Check & Tripping Hazard
+        let inWater = false;
+        world.puddles.forEach(p => {
+            if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.8) {
+                inWater = true;
+                if (this.isSprinting && !this.isStumbled && Math.random() < 0.04) {
+                    this.triggerStumble();
                 }
-            });
-        }
+            }
+        });
 
         if (this.isStumbled) {
             this.stumbleRecoveryTimer -= delta;
@@ -302,10 +302,18 @@ class PlayerController {
 
             const nextZ = this.position.z + this.velocity.z;
 
-            // Strict Tunnel Boundary Check: Player is ALWAYS clamped within +/- 1.85m of curved path
+            // Check if entering the Sub-Shaft 07-C dead-end branch (around z = -80 to -108, x > 1.0)
+            const isNearBranch = (nextZ < -78 && nextZ > -110 && (this.position.x > 1.2 || this.velocity.x > 0));
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
-            nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
+
+            if (isNearBranch) {
+                // Allow walking into the right side branch up to +16.0 meters
+                nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 16.0, nextX));
+            } else {
+                // Strict Main Tunnel Boundary
+                nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
+            }
 
             let blockedByRubble = false;
 
@@ -331,25 +339,23 @@ class PlayerController {
                 }
             }
 
-            // Footstep sounds
+            // Footstep sounds (Splashes if in water sump, rock crunch otherwise)
             this.stepTimer -= delta * (this.isSprinting ? 1.6 : 1.0);
             if (this.stepTimer <= 0) {
-                if (window.soundEngine) window.soundEngine.playFootstep(this.isSprinting);
+                if (inWater && window.soundEngine) {
+                    window.soundEngine.playWaterSplash(this.isSprinting);
+                } else if (window.soundEngine) {
+                    window.soundEngine.playFootstep(this.isSprinting);
+                }
                 this.stepTimer = 0.45;
             }
 
-            // Head Bobbing
             this.bobCycle += delta * (this.isSprinting ? 12 : 8.0);
         } else {
-            // Immediate firm stop - no icy sliding!
             this.velocity.set(0, 0, 0);
         }
 
-        // Hard enforce current position is strictly inside tunnel path at all times
-        const currentPathX = world.getPathX(this.position.z);
-        this.position.x = Math.max(currentPathX - 1.85, Math.min(currentPathX + 1.85, this.position.x));
-
-        // Natural Climbing Elevation Y along the ascending path
+        // Height follows the undulating terrain
         const currentGroundY = world.getPathY(this.position.z);
         const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
         this.cameraBaseY = currentGroundY + 1.7 + bobOffset;

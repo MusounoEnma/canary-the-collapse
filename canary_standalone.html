@@ -477,10 +477,48 @@ body.earthquake-shake {
     position: absolute;
     top: 0;
     height: 100%;
-    background: rgba(0, 230, 118, 0.45);
-    border-left: 2px solid #00e676;
-    border-right: 2px solid #00e676;
-    box-shadow: 0 0 15px rgba(0, 230, 118, 0.5);
+    background: rgba(0, 230, 118, 0.5);
+    border-left: 3px solid #00e676;
+    border-right: 3px solid #00e676;
+    box-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
+}
+
+.sweet-spot-center-line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: #ffd700;
+    box-shadow: 0 0 8px #ffd700;
+    transform: translateX(-50%);
+}
+
+.btn-strike {
+    background: linear-gradient(180deg, #ff9100 0%, #e65100 100%);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 12px 28px;
+    border: 2px solid #ffb300;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(230, 81, 0, 0.45);
+    transition: transform 0.1s, filter 0.1s;
+    width: 100%;
+    max-width: 440px;
+    margin: 8px auto 0 auto;
+    display: block;
+}
+
+.btn-strike:hover {
+    filter: brightness(1.1);
+}
+
+.btn-strike:active {
+    transform: scale(0.97);
+    filter: brightness(1.25);
 }
 
 #rhythm-needle {
@@ -917,18 +955,22 @@ body.earthquake-shake {
     <div id="rhythm-minigame-overlay">
         <div class="rhythm-card">
             <h2 id="rhythm-rubble-title" class="rhythm-title">Rubble Cave-in (Shaft 07)</h2>
-            <p class="rhythm-subtitle">Strike the structural fracture point when the needle aligns within the green sweet spot!</p>
+            <p class="rhythm-subtitle">Strike anywhere inside the wide green fracture zone to shatter the rock!</p>
             
             <div class="rhythm-meter-container">
-                <div id="rhythm-sweet-spot"></div>
+                <div id="rhythm-sweet-spot">
+                    <div class="sweet-spot-center-line" title="Bullseye Center Line"></div>
+                </div>
                 <div id="rhythm-needle"></div>
             </div>
 
-            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK WHEN INSIDE GREEN SWEET SPOT!</div>
+            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK BUTTON BELOW WHEN INSIDE GREEN ZONE!</div>
             <div id="rhythm-health-text" style="color: #ffb74d; margin-bottom: 16px; font-weight: bold;">Structural Integrity: 2 Strikes Remaining (0% Fractured)</div>
 
-            <div>
-                <span class="rhythm-controls-hint"><strong>[SPACE] / MOUSE CLICK</strong> Strike Pickaxe &nbsp;|&nbsp; <strong>[ESC]</strong> Cancel / Step Back</span>
+            <button id="btn-strike-pickaxe" class="btn-strike">⚡ STRIKE WITH PICKAXE [SPACE / CLICK] ⚡</button>
+
+            <div style="margin-top: 15px;">
+                <span class="rhythm-controls-hint"><strong>[SPACE] / CLICK</strong> Strike &nbsp;|&nbsp; <strong>[ESC]</strong> Step Back</span>
             </div>
         </div>
     </div>
@@ -1047,6 +1089,7 @@ body.earthquake-shake {
 /**
  * CANARY: The Collapse - Procedural Web Audio Engine
  * 100% synthesized audio using Web Audio API without external audio files.
+ * Enhanced with water puddle splashes and mining ambiance.
  */
 
 class SoundEngine {
@@ -1069,11 +1112,9 @@ class SoundEngine {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioCtx();
 
-        // Master Gain
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = 0.85;
 
-        // Dynamics Compressor for heavy underground punch
         const compressor = this.ctx.createDynamicsCompressor();
         compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
         compressor.knee.setValueAtTime(30, this.ctx.currentTime);
@@ -1094,10 +1135,7 @@ class SoundEngine {
         this.tinnitusGain.connect(this.masterGain);
         this.tinnitusOsc.start();
 
-        // Ambient Mine Drone Loop
         this.initAmbience();
-
-        // Start Heartbeat & Breathing loops
         this.startHeartbeatLoop();
         this.startBreathingLoop();
 
@@ -1110,23 +1148,21 @@ class SoundEngine {
         }
     }
 
-    // Low rumble ambient underground drone
     initAmbience() {
         if (!this.ctx) return;
         const droneGain = this.ctx.createGain();
         droneGain.gain.setValueAtTime(0.12, this.ctx.currentTime);
 
-        // Low drone oscillators
         const osc1 = this.ctx.createOscillator();
         const osc2 = this.ctx.createOscillator();
         osc1.type = 'sawtooth';
         osc2.type = 'triangle';
-        osc1.frequency.setValueAtTime(48, this.ctx.currentTime);
-        osc2.frequency.setValueAtTime(51.5, this.ctx.currentTime);
+        osc1.frequency.setValueAtTime(46, this.ctx.currentTime);
+        osc2.frequency.setValueAtTime(49.5, this.ctx.currentTime);
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(140, this.ctx.currentTime);
+        filter.frequency.setValueAtTime(130, this.ctx.currentTime);
         filter.Q.setValueAtTime(3.5, this.ctx.currentTime);
 
         osc1.connect(filter);
@@ -1139,13 +1175,12 @@ class SoundEngine {
         this.ambienceGain = droneGain;
     }
 
-    // Footstep Sound (Stone/Gravel impact)
     playFootstep(isSprinting = false) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         const duration = isSprinting ? 0.08 : 0.12;
 
-        const bufferSize = this.ctx.sampleRate * duration;
+        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
@@ -1171,7 +1206,38 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Respirator Breathing (Inhale & Exhale inside mining mask)
+    // Wet Puddle Water Splash Footstep
+    playWaterSplash(isSprinting = false) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = isSprinting ? 0.22 : 0.28;
+
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.4));
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1400, now);
+        filter.frequency.exponentialRampToValueAtTime(350, now + dur);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(isSprinting ? 0.32 : 0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        noise.start(now);
+    }
+
     startBreathingLoop() {
         const breathe = () => {
             if (!this.ctx) return;
@@ -1191,11 +1257,9 @@ class SoundEngine {
 
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'bandpass';
-
             const gain = this.ctx.createGain();
 
             if (this.isBreathingIn) {
-                // Inhale: higher pitched mechanical valve intake
                 filter.frequency.setValueAtTime(450, now);
                 filter.frequency.linearRampToValueAtTime(800, now + breathDuration * 0.7);
                 filter.Q.setValueAtTime(3.5, now);
@@ -1204,7 +1268,6 @@ class SoundEngine {
                 gain.gain.linearRampToValueAtTime(isHypoxic ? 0.22 : 0.12, now + breathDuration * 0.4);
                 gain.gain.exponentialRampToValueAtTime(0.005, now + breathDuration);
             } else {
-                // Exhale: lower rushing valve exhaust
                 filter.frequency.setValueAtTime(650, now);
                 filter.frequency.linearRampToValueAtTime(300, now + breathDuration * 0.8);
                 filter.Q.setValueAtTime(2.2, now);
@@ -1227,12 +1290,10 @@ class SoundEngine {
         breathe();
     }
 
-    // Heartbeat Sound (lub-dub pulse)
     startHeartbeatLoop() {
         const pulse = () => {
             if (!this.ctx) return;
             const o2 = window.gameState ? window.gameState.oxygen : 100;
-            // When O2 is low, BPM increases from 65 to 145!
             const targetBpm = Math.floor(65 + (100 - o2) * 0.85);
             this.heartbeatBpm = targetBpm;
 
@@ -1250,7 +1311,6 @@ class SoundEngine {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // "Lub" (1st thud)
         const osc1 = this.ctx.createOscillator();
         const gain1 = this.ctx.createGain();
         osc1.type = 'sine';
@@ -1265,7 +1325,6 @@ class SoundEngine {
         osc1.start(now);
         osc1.stop(now + 0.16);
 
-        // "Dub" (2nd thud, 0.12s later)
         const osc2 = this.ctx.createOscillator();
         const gain2 = this.ctx.createGain();
         osc2.type = 'sine';
@@ -1282,20 +1341,18 @@ class SoundEngine {
         osc2.stop(now + 0.3);
     }
 
-    // Precision Pickaxe Strike Hit
     playPickaxeHit(isPerfect = true) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
         if (isPerfect) {
-            // Metallic ring + sharp crystal crunch
             const osc = this.ctx.createOscillator();
             const oscGain = this.ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(1420, now);
+            osc.frequency.setValueAtTime(1450, now);
             osc.frequency.exponentialRampToValueAtTime(950, now + 0.4);
 
-            oscGain.gain.setValueAtTime(0.5, now);
+            oscGain.gain.setValueAtTime(0.55, now);
             oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
 
             osc.connect(oscGain);
@@ -1303,7 +1360,6 @@ class SoundEngine {
             osc.start(now);
             osc.stop(now + 0.46);
 
-            // Rock fracture blast
             const bufSize = Math.floor(this.ctx.sampleRate * 0.25);
             const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
             const d = buf.getChannelData(0);
@@ -1314,7 +1370,7 @@ class SoundEngine {
             f.type = 'bandpass';
             f.frequency.setValueAtTime(1200, now);
             const g = this.ctx.createGain();
-            g.gain.setValueAtTime(0.35, now);
+            g.gain.setValueAtTime(0.4, now);
             g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
             noise.connect(f);
@@ -1322,11 +1378,10 @@ class SoundEngine {
             g.connect(this.masterGain);
             noise.start(now);
         } else {
-            // Dull miss/glance strike
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(210, now);
+            osc.frequency.setValueAtTime(220, now);
             osc.frequency.exponentialRampToValueAtTime(60, now + 0.3);
 
             gain.gain.setValueAtTime(0.4, now);
@@ -1339,7 +1394,6 @@ class SoundEngine {
         }
     }
 
-    // Earthquake Aftershock Sub-Bass Roar
     playEarthquake(duration = 3.5) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -1348,7 +1402,6 @@ class SoundEngine {
         const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
         const d = buf.getChannelData(0);
         let lastOut = 0.0;
-        // Brown noise generation for deep earth roar
         for (let i = 0; i < bufSize; i++) {
             const white = Math.random() * 2 - 1;
             d[i] = (lastOut + (0.02 * white)) / 1.02;
@@ -1377,19 +1430,17 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Helmet Light Malfunction Tap
     playHelmetTap() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // Plastic/metal knock
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(420, now);
         osc.frequency.exponentialRampToValueAtTime(90, now + 0.08);
 
-        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.setValueAtTime(0.45, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
         osc.connect(gain);
@@ -1397,12 +1448,11 @@ class SoundEngine {
         osc.start(now);
         osc.stop(now + 0.09);
 
-        // Electric buzz spark
         const buzz = this.ctx.createOscillator();
         const bGain = this.ctx.createGain();
         buzz.type = 'sawtooth';
         buzz.frequency.setValueAtTime(120, now + 0.04);
-        bGain.gain.setValueAtTime(0.18, now + 0.04);
+        bGain.gain.setValueAtTime(0.2, now + 0.04);
         bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
         buzz.connect(bGain);
@@ -1411,7 +1461,6 @@ class SoundEngine {
         buzz.stop(now + 0.13);
     }
 
-    // Oxygen Tank Refill Hiss
     playOxygenRefill() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -1433,7 +1482,7 @@ class SoundEngine {
 
         const gain = this.ctx.createGain();
         gain.gain.setValueAtTime(0.02, now);
-        gain.gain.linearRampToValueAtTime(0.38, now + 0.2);
+        gain.gain.linearRampToValueAtTime(0.4, now + 0.2);
         gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
         noise.connect(filter);
@@ -1442,11 +1491,9 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Golden Lily Hallucination Shimmering Chime
     playLilyWhisper() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        // Pentatonic dream arpeggio: C5, E5, G5, A5, C6
         const notes = [523.25, 659.25, 783.99, 880.00, 1046.50];
 
         notes.forEach((freq, idx) => {
@@ -1467,33 +1514,29 @@ class SoundEngine {
         });
     }
 
-    // Set Tinnitus Sound Volume (Based on Hypoxia / Trauma)
     setTinnitus(level) {
         if (!this.tinnitusGain || !this.ctx) return;
         const target = Math.max(0.0001, Math.min(0.28, level));
         this.tinnitusGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.2);
     }
 
-    // Surface Daylight / Victory Fanfare & Birdsong
     playVictorySequence() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // Calming warm choir synth
-        const chords = [261.63, 329.63, 392.00, 523.25]; // C Major
+        const chords = [261.63, 329.63, 392.00, 523.25];
         chords.forEach(f => {
             const osc = this.ctx.createOscillator();
             const g = this.ctx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(f, now);
             g.gain.setValueAtTime(0.01, now);
-            g.gain.linearRampToValueAtTime(0.12, now + 1.5);
+            g.gain.linearRampToValueAtTime(0.14, now + 1.5);
             osc.connect(g);
             g.connect(this.masterGain);
             osc.start(now);
         });
 
-        // Synthesize morning bird chirp loop
         for (let b = 0; b < 6; b++) {
             const birdStart = now + 1.8 + b * 0.7 + Math.random() * 0.4;
             const bOsc = this.ctx.createOscillator();
@@ -1516,7 +1559,6 @@ class SoundEngine {
 }
 
 window.soundEngine = new SoundEngine();
-
 
 </script>
 <script>
@@ -1772,9 +1814,12 @@ window.polaroidSystem = new PolaroidSystem();
 <script>
 /* --- 3D MINE WORLD --- */
 /**
- * CANARY: The Collapse - 3D Continuous Cave Tunnel & Environment
- * Uses Three.js TubeGeometry & CatmullRomCurve3 for a seamless 360-degree enclosing cavern.
- * Eliminates segment clipping, wall blocking bugs, and black void gaps.
+ * CANARY: The Collapse - 3D Continuous Cavern & Branching Mine System
+ * Features:
+ * - Dynamic undulating terrain (rolling hills, steep climbs, and flooded dips/sumps).
+ * - Gritty dark atmospheric coal, slate & earth strata textures.
+ * - Secret branching dead-end drift (Sub-shaft 07-C) with special lore & +50% O2 bonus.
+ * - Seamless enclosing 360-degree TubeGeometry.
  */
 
 class MineWorld {
@@ -1792,6 +1837,7 @@ class MineWorld {
 
         this.initTextures();
         this.buildSeamlessCavern();
+        this.buildDeadEndBranch();
         this.buildAtmosphere();
         this.buildInteractables();
         this.buildHallucination();
@@ -1801,74 +1847,79 @@ class MineWorld {
     // CURVE & ELEVATION FORMULAS
     // -------------------------------------------------------------
     getPathX(z) {
-        // Natural gentle S-curves
+        // Natural winding S-curves through the mountain
         return Math.sin(z * 0.038) * 4.8 + Math.sin(z * 0.015) * 2.8;
     }
 
     getPathY(z) {
-        // Continuous upward slope from Y=0 at z=0 up to Y=+22.5m at z=-265m
-        const progress = Math.max(0, -z / this.tunnelLength);
-        return progress * 22.5 + Math.sin(z * 0.05) * 0.3;
+        // Overall climb towards surface + undulating hills, dips, and water sumps
+        const overallAscent = Math.max(0, -z / this.tunnelLength) * 24.5;
+        const rollingHills = Math.sin(z * 0.075) * 1.85 + Math.cos(z * 0.038) * 1.2;
+        return overallAscent + rollingHills;
     }
 
     initTextures() {
-        // 1. High-Contrast Rocky Cavern Wall Texture
+        // 1. Dark Gritty Underground Slate & Coal Rock Texture
         const rockCanvas = document.createElement('canvas');
         rockCanvas.width = 512;
         rockCanvas.height = 512;
         const rctx = rockCanvas.getContext('2d');
 
-        // Dark earthy brown stone base
-        rctx.fillStyle = '#322c25';
+        // Deep gritty dark slate base
+        rctx.fillStyle = '#1c1814';
         rctx.fillRect(0, 0, 512, 512);
 
-        // Sedimentary strata bands
-        for (let y = 0; y < 512; y += 4) {
-            const lum = 40 + Math.floor(Math.sin(y * 0.05) * 15 + Math.random() * 25);
-            rctx.fillStyle = `rgb(${lum + 8},${lum + 2},${lum - 6})`;
-            rctx.fillRect(0, y, 512, 3 + Math.random() * 3);
+        // Sedimentary strata bands (coal seams & damp shale)
+        for (let y = 0; y < 512; y += 3) {
+            const noise = Math.sin(y * 0.06) * 14 + Math.random() * 20;
+            const lum = 24 + Math.floor(noise * 0.7);
+            const r = lum + Math.floor(Math.random() * 8);
+            const g = lum + Math.floor(Math.random() * 5);
+            const b = lum - 3;
+            rctx.fillStyle = `rgb(${r},${g},${b})`;
+            rctx.fillRect(0, y, 512, 2 + Math.random() * 3);
         }
 
-        // Deep mineral veins & jagged cracks
-        for (let i = 0; i < 22; i++) {
-            rctx.strokeStyle = i % 2 === 0 ? 'rgba(15, 12, 10, 0.85)' : 'rgba(110, 80, 55, 0.6)';
+        // Deep black coal fissures & dark mineral cracks
+        for (let i = 0; i < 28; i++) {
+            rctx.strokeStyle = i % 2 === 0 ? 'rgba(8, 6, 5, 0.92)' : 'rgba(75, 55, 38, 0.45)';
             rctx.lineWidth = 2 + Math.random() * 4;
             rctx.beginPath();
             let curX = 0;
             let curY = Math.random() * 512;
             rctx.moveTo(curX, curY);
             while (curX < 512) {
-                curX += 20 + Math.random() * 35;
-                curY += (Math.random() - 0.5) * 40;
+                curX += 18 + Math.random() * 32;
+                curY += (Math.random() - 0.5) * 38;
                 rctx.lineTo(curX, curY);
             }
             rctx.stroke();
         }
 
-        // Granular stone noise
-        for (let k = 0; k < 4500; k++) {
+        // Damp rock speckles & glistening pyrite/coal specks
+        for (let k = 0; k < 4000; k++) {
             const px = Math.random() * 512;
             const py = Math.random() * 512;
-            const l = Math.floor(25 + Math.random() * 45);
-            rctx.fillStyle = `rgb(${l + 12},${l + 6},${l})`;
-            rctx.fillRect(px, py, 2 + Math.random() * 3, 2 + Math.random() * 3);
+            const lum = Math.floor(15 + Math.random() * 32);
+            rctx.fillStyle = `rgb(${lum + 8},${lum + 4},${lum})`;
+            rctx.fillRect(px, py, 2 + Math.random() * 2, 2 + Math.random() * 2);
         }
 
         this.rockTexture = new THREE.CanvasTexture(rockCanvas);
         this.rockTexture.wrapS = THREE.RepeatWrapping;
         this.rockTexture.wrapT = THREE.RepeatWrapping;
-        this.rockTexture.repeat.set(6, 40);
+        this.rockTexture.repeat.set(5, 45);
 
-        // 2. Weathered Timber Texture
+        // 2. Weathered Dark Timber Texture
         const woodCanvas = document.createElement('canvas');
         woodCanvas.width = 256;
         woodCanvas.height = 256;
         const wctx = woodCanvas.getContext('2d');
-        wctx.fillStyle = '#4a3220';
+        wctx.fillStyle = '#302014';
         wctx.fillRect(0, 0, 256, 256);
         for (let i = 0; i < 1500; i++) {
             const y = Math.random() * 256;
-            wctx.fillStyle = `rgba(25, 15, 8, ${0.15 + Math.random() * 0.35})`;
+            wctx.fillStyle = `rgba(15, 8, 4, ${0.15 + Math.random() * 0.35})`;
             wctx.fillRect(0, y, 256, 1 + Math.random() * 3);
         }
         this.woodTexture = new THREE.CanvasTexture(woodCanvas);
@@ -1880,59 +1931,174 @@ class MineWorld {
         metalCanvas.width = 256;
         metalCanvas.height = 256;
         const mctx = metalCanvas.getContext('2d');
-        mctx.fillStyle = '#4a4d50';
+        mctx.fillStyle = '#36383b';
         mctx.fillRect(0, 0, 256, 256);
-        for (let i = 0; i < 1200; i++) {
-            mctx.fillStyle = `rgba(180, 90, 40, ${Math.random() * 0.5})`;
+        for (let i = 0; i < 1000; i++) {
+            mctx.fillStyle = `rgba(150, 75, 30, ${Math.random() * 0.45})`;
             mctx.fillRect(Math.random() * 256, Math.random() * 256, 4 + Math.random() * 8, 4 + Math.random() * 8);
         }
         this.metalTexture = new THREE.CanvasTexture(metalCanvas);
     }
 
     buildSeamlessCavern() {
-        // Build CatmullRom spline path along the entire shaft length
         const points = [];
-        for (let z = 12; z >= -this.tunnelLength - 5; z -= 3) {
+        for (let z = 12; z >= -this.tunnelLength - 5; z -= 2.5) {
             points.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 1.8, z));
         }
 
         const curve = new THREE.CatmullRomCurve3(points);
         this.cavernCurve = curve;
 
-        // TubeGeometry: Generates a hollow, enclosing 360-degree cavern tube
-        const tubularSegments = 240;
-        const radius = 3.6;
+        // TubeGeometry enclosing 360 degrees
+        const tubularSegments = 260;
+        const radius = 3.65;
         const radialSegments = 16;
         const tubeGeo = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
 
-        // Add natural rocky cavern roughness & jagged rock walls
+        // Add jagged rock wall roughness
         const posAttr = tubeGeo.attributes.position;
         for (let i = 0; i < posAttr.count; i++) {
             const vx = posAttr.getX(i);
             const vy = posAttr.getY(i);
             const vz = posAttr.getZ(i);
 
-            // Perlin-style trigonometric stone bump
-            const bump = (Math.sin(vx * 2.2) * Math.cos(vy * 2.5) * Math.sin(vz * 1.8)) * 0.28;
+            const bump = (Math.sin(vx * 2.2) * Math.cos(vy * 2.4) * Math.sin(vz * 1.7)) * 0.28;
             posAttr.setX(i, vx + bump);
             posAttr.setY(i, vy + bump);
         }
         tubeGeo.computeVertexNormals();
 
-        // Cavern Material with DoubleSide rendering
         const cavernMat = new THREE.MeshStandardMaterial({
             map: this.rockTexture,
-            roughness: 0.90,
+            roughness: 0.94,
             metalness: 0.08,
-            side: THREE.BackSide // Shows interior cavern walls surrounding the player
+            side: THREE.BackSide
         });
 
         const cavernMesh = new THREE.Mesh(tubeGeo, cavernMat);
         cavernMesh.receiveShadow = true;
         this.scene.add(cavernMesh);
 
-        // Minecart Rails & Wooden Ties along Cavern Floor
+        // Tracks, Timber Arches & Flooded Sumps
         this.buildTracks();
+    }
+
+    // Branching side tunnel leading to an eerie collapsed dead-end (Sub-Shaft 07-C)
+    buildDeadEndBranch() {
+        // Starts at z = -84, branching rightward into a secluded pocket
+        const branchPoints = [];
+        const startZ = -84;
+        const startX = this.getPathX(startZ);
+        const startY = this.getPathY(startZ);
+
+        branchPoints.push(new THREE.Vector3(startX, startY + 1.8, startZ));
+        branchPoints.push(new THREE.Vector3(startX + 4.5, startY + 1.6, startZ - 6));
+        branchPoints.push(new THREE.Vector3(startX + 9.5, startY + 1.2, startZ - 13));
+        branchPoints.push(new THREE.Vector3(startX + 14.0, startY + 0.9, startZ - 21));
+
+        const branchCurve = new THREE.CatmullRomCurve3(branchPoints);
+        const branchGeo = new THREE.TubeGeometry(branchCurve, 35, 3.2, 14, false);
+
+        const posAttr = branchGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            const vx = posAttr.getX(i);
+            const vy = posAttr.getY(i);
+            const vz = posAttr.getZ(i);
+            const bump = (Math.sin(vx * 2.0) * Math.cos(vy * 2.2) * Math.sin(vz * 1.5)) * 0.25;
+            posAttr.setX(i, vx + bump);
+            posAttr.setY(i, vy + bump);
+        }
+        branchGeo.computeVertexNormals();
+
+        const branchMat = new THREE.MeshStandardMaterial({
+            map: this.rockTexture,
+            roughness: 0.95,
+            metalness: 0.06,
+            side: THREE.BackSide
+        });
+
+        const branchMesh = new THREE.Mesh(branchGeo, branchMat);
+        this.scene.add(branchMesh);
+
+        // Collapsed boulders sealing the dead end
+        const endPos = branchPoints[branchPoints.length - 1];
+        const deadEndWall = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(3.5, 1),
+            branchMat
+        );
+        deadEndWall.position.set(endPos.x + 1.5, endPos.y, endPos.z - 2.5);
+        this.scene.add(deadEndWall);
+
+        // Warning Wooden Sign at branch entrance
+        const signCanvas = document.createElement('canvas');
+        signCanvas.width = 256;
+        signCanvas.height = 128;
+        const sctx = signCanvas.getContext('2d');
+        sctx.fillStyle = '#b71c1c';
+        sctx.fillRect(0, 0, 256, 128);
+        sctx.strokeStyle = '#fff';
+        sctx.lineWidth = 4;
+        sctx.strokeRect(5, 5, 246, 118);
+        sctx.fillStyle = '#fff';
+        sctx.font = 'bold 18px monospace';
+        sctx.textAlign = 'center';
+        sctx.fillText('SUB-SHAFT 07-C', 128, 42);
+        sctx.fillStyle = '#ffeb3b';
+        sctx.font = 'bold 15px monospace';
+        sctx.fillText('⚠ DEAD END / GAS', 128, 75);
+        sctx.fillText('UNSAFE DRIFT', 128, 102);
+
+        const signTex = new THREE.CanvasTexture(signCanvas);
+        const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), new THREE.MeshStandardMaterial({ map: signTex }));
+        signMesh.position.set(startX + 1.8, startY + 1.9, startZ - 1.5);
+        signMesh.rotation.y = -Math.PI / 3;
+        this.scene.add(signMesh);
+
+        // Overturned Minecart Wreckage in dead end
+        const cartMat = new THREE.MeshStandardMaterial({ map: this.metalTexture, color: 0x555555, roughness: 0.5 });
+        const cart = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9, 1.2), cartMat);
+        cart.position.set(endPos.x - 1.2, endPos.y - 0.7, endPos.z);
+        cart.rotation.z = Math.PI / 3;
+        this.scene.add(cart);
+
+        // Secret Fallen Miner in dead end ("Arthur - Senior Blaster") with +50% Heavy Oxygen Canister!
+        const arthurGroup = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2e3440, roughness: 0.9 });
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.9), bodyMat);
+        torso.position.set(0, 0.15, 0);
+        arthurGroup.add(torso);
+
+        const helmetMat = new THREE.MeshStandardMaterial({ color: 0xff9800, roughness: 0.4 });
+        const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), helmetMat);
+        helmet.position.set(0.4, 0.18, -0.5);
+        arthurGroup.add(helmet);
+
+        const heavyTank = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.12, 0.65, 10),
+            new THREE.MeshStandardMaterial({ color: 0x1565c0, metalness: 0.8, roughness: 0.25 })
+        );
+        heavyTank.rotation.z = Math.PI / 2;
+        heavyTank.position.set(-0.45, 0.12, 0.1);
+        arthurGroup.add(heavyTank);
+
+        const blueValve = new THREE.PointLight(0x29b6f6, 0.6, 4, 2);
+        blueValve.position.set(-0.45, 0.25, 0.1);
+        arthurGroup.add(blueValve);
+
+        arthurGroup.position.set(endPos.x, endPos.y - 1.1, endPos.z + 1.2);
+        this.scene.add(arthurGroup);
+
+        this.corpseObjects.push({
+            id: 99,
+            name: "Arthur",
+            role: "Senior Blaster (Dead End)",
+            note: "Found in Sub-Shaft 07-C. Heavy military rebreather (+50% O2). Note: 'Tunnel collapsed behind me. Tell Sarah I fought till the end.'",
+            o2Bonus: 50,
+            looted: false,
+            group: arthurGroup,
+            valveLight: blueValve,
+            pos: new THREE.Vector3(endPos.x, endPos.y - 1.1, endPos.z + 1.2)
+        });
     }
 
     buildTracks() {
@@ -1940,12 +2106,12 @@ class MineWorld {
             map: this.metalTexture,
             metalness: 0.8,
             roughness: 0.35,
-            color: 0x888888
+            color: 0x777777
         });
         const tieMat = new THREE.MeshStandardMaterial({
             map: this.woodTexture,
             roughness: 0.85,
-            color: 0x5a3e28
+            color: 0x4a3220
         });
 
         const step = 1.4;
@@ -1956,13 +2122,12 @@ class MineWorld {
             const nextX = this.getPathX(z - step);
             const nextY = this.getPathY(z - step);
 
-            // Wooden Tie (Sleeper) across track
+            // Wooden Tie across track following undulating ground
             const tie = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.09, 0.25), tieMat);
             tie.position.set(x, y + 0.05, z);
             tie.lookAt(nextX, nextY + 0.05, z - step);
             this.scene.add(tie);
 
-            // Left & Right Rails
             const segLen = Math.hypot(nextX - x, nextY - y, step);
 
             const lr = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, segLen + 0.05), railMat);
@@ -1975,28 +2140,27 @@ class MineWorld {
             rr.lookAt(nextX + 0.75, nextY + 0.09, z - step);
             this.scene.add(rr);
 
-            // Timber Frame Mine Arches every 6.5 meters
             if (Math.abs(z % 6.5) < step) {
                 this.buildTimberArch(x, y, z, nextX, nextY, z - step, tieMat);
             }
         }
 
-        // Wet Mud Puddles
-        const puddleGeo = new THREE.CircleGeometry(1.4, 16);
+        // Flooded Water Sumps in the undulating dips
+        const puddleGeo = new THREE.CircleGeometry(1.6, 20);
         puddleGeo.rotateX(-Math.PI / 2);
         const puddleMat = new THREE.MeshStandardMaterial({
-            color: 0x121418,
-            roughness: 0.08,
-            metalness: 0.8
+            color: 0x0e1014,
+            roughness: 0.04,
+            metalness: 0.85
         });
 
-        const puddleZ = [-32, -92, -155, -205];
+        const puddleZ = [-34, -72, -118, -165, -215];
         puddleZ.forEach((pz, idx) => {
-            const px = this.getPathX(pz) + (idx % 2 === 0 ? 0.3 : -0.3);
+            const px = this.getPathX(pz) + (idx % 2 === 0 ? 0.35 : -0.35);
             const py = this.getPathY(pz) + 0.03;
             const p = new THREE.Mesh(puddleGeo, puddleMat);
             p.position.set(px, py, pz);
-            p.scale.set(1.1 + Math.random() * 0.4, 1, 1.8 + Math.random() * 0.5);
+            p.scale.set(1.2 + Math.random() * 0.4, 1, 2.0 + Math.random() * 0.6);
             this.scene.add(p);
             this.puddles.push(p);
         });
@@ -2059,7 +2223,7 @@ class MineWorld {
         this.dustParticles = new THREE.Points(dustGeo, dustMat);
         this.scene.add(this.dustParticles);
 
-        // Emergency Amber Lights along cavern
+        // Emergency Amber Lights
         const lampPositions = [-25, -75, -125, -178, -232];
         lampPositions.forEach((lz, idx) => {
             const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.6 : -1.6);
@@ -2136,11 +2300,11 @@ class MineWorld {
     }
 
     buildInteractables() {
-        // 1. RUBBLE OBSTACLES (Cave-ins requiring Precision Rhythm Pickaxe Breach)
+        // 1. RUBBLE OBSTACLES
         const rubbleConfigs = [
             { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Shaft 07)" },
             { id: 2, z: -130, health: 2, name: "Collapsed Central Timber Rubble" },
-            { id: 3, z: -208, health: 3, name: "Granite Emergency Gate Boulders" }
+            { id: 3, z: -208, health: 2, name: "Granite Emergency Gate Boulders" }
         ];
 
         rubbleConfigs.forEach(cfg => {
@@ -2154,7 +2318,6 @@ class MineWorld {
                 color: 0x5a554e
             });
 
-            // Pile of jagged boulders
             for (let i = 0; i < 24; i++) {
                 const size = 0.65 + Math.random() * 0.85;
                 const rGeo = new THREE.DodecahedronGeometry(size, 1);
@@ -2176,7 +2339,6 @@ class MineWorld {
                 group.add(rockMesh);
             }
 
-            // Warning marker above rubble
             const glowMat = new THREE.MeshBasicMaterial({
                 color: 0xffb300,
                 wireframe: true,
@@ -2204,7 +2366,7 @@ class MineWorld {
             });
         });
 
-        // 2. FALLEN MINER CORPSES
+        // 2. MAIN PATH FALLEN MINER CORPSES
         const corpseConfigs = [
             { id: 1, z: -26, xOff: 1.4, name: "Tomas", role: "Shift Supervisor", o2Bonus: 35, note: "Emergency O2 cylinder has 35% capacity left. Badge reads: 'Tomas - Father of two'." },
             { id: 2, z: -95, xOff: -1.4, name: "Erik", role: "Driller", o2Bonus: 40, note: "Military high-pressure O2 canister (+40%). A photo of his family is tucked in his pocket." },
@@ -2475,10 +2637,11 @@ window.MineWorld = MineWorld;
 /* --- PLAYER CONTROLLER --- */
 /**
  * CANARY: The Collapse - FPS Player Controller
- * Fixed:
- * - Hard boundary clamp prevents player from ever clipping through curved tunnel walls.
- * - Solid non-slippery foot friction and tuned mouse sensitivity.
- * - Accurate climbing elevation matching the ascending mine shaft.
+ * Features:
+ * - Traverses undulating climbing hills, dips, and water sumps.
+ * - Allows exploration of the secret Sub-Shaft 07-C dead-end branch.
+ * - Dynamic water splash audio when stepping through flooded puddle dips.
+ * - Solid non-slippery foot friction.
  */
 
 class PlayerController {
@@ -2511,7 +2674,7 @@ class PlayerController {
         this.isFlashlightOn = true;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
-        this.nextMalfunctionCheck = 25.0;
+        this.nextMalfunctionCheck = 28.0;
 
         // Physical Tripping Hazard
         this.isStumbled = false;
@@ -2569,7 +2732,6 @@ class PlayerController {
             if (!this.isLocked || this.isDead) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
-            // Limit vertical pitch (-80 to +80 degrees)
             this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
         });
 
@@ -2669,7 +2831,7 @@ class PlayerController {
 
         if (this.tapsRequired <= 0) {
             this.isFlashlightMalfunctioning = false;
-            if (this.flashlight) this.flashlight.intensity = 3.0;
+            if (this.flashlight) this.flashlight.intensity = 3.6;
             const tapAlert = document.getElementById('helmet-tap-alert');
             if (tapAlert) tapAlert.classList.remove('active');
             if (window.eventManager) window.eventManager.showNotification("Helmet headlamp contacts restored!");
@@ -2703,11 +2865,11 @@ class PlayerController {
         this.isStumbled = true;
         this.stumbleRecoveryTimer = 1.4;
         if (window.soundEngine) {
-            window.soundEngine.playFootstep(true);
+            window.soundEngine.playWaterSplash(true);
             window.soundEngine.playFootstep(true);
         }
         if (window.eventManager) {
-            window.eventManager.showNotification("Slipped on wet mine rocks! Lost stamina and breath!");
+            window.eventManager.showNotification("Slipped in deep flooded mine puddle! Lost breath!");
         }
         this.oxygen = Math.max(0, this.oxygen - 3.0);
     }
@@ -2738,16 +2900,16 @@ class PlayerController {
             }
         }
 
-        // 3. Tripping Hazard Check on wet mud / puddles
-        if (this.isSprinting && !this.isStumbled) {
-            world.puddles.forEach(p => {
-                if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.6) {
-                    if (Math.random() < 0.04) {
-                        this.triggerStumble();
-                    }
+        // 3. Flooded Puddle Check & Tripping Hazard
+        let inWater = false;
+        world.puddles.forEach(p => {
+            if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.8) {
+                inWater = true;
+                if (this.isSprinting && !this.isStumbled && Math.random() < 0.04) {
+                    this.triggerStumble();
                 }
-            });
-        }
+            }
+        });
 
         if (this.isStumbled) {
             this.stumbleRecoveryTimer -= delta;
@@ -2777,10 +2939,18 @@ class PlayerController {
 
             const nextZ = this.position.z + this.velocity.z;
 
-            // Strict Tunnel Boundary Check: Player is ALWAYS clamped within +/- 1.85m of curved path
+            // Check if entering the Sub-Shaft 07-C dead-end branch (around z = -80 to -108, x > 1.0)
+            const isNearBranch = (nextZ < -78 && nextZ > -110 && (this.position.x > 1.2 || this.velocity.x > 0));
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
-            nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
+
+            if (isNearBranch) {
+                // Allow walking into the right side branch up to +16.0 meters
+                nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 16.0, nextX));
+            } else {
+                // Strict Main Tunnel Boundary
+                nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
+            }
 
             let blockedByRubble = false;
 
@@ -2806,25 +2976,23 @@ class PlayerController {
                 }
             }
 
-            // Footstep sounds
+            // Footstep sounds (Splashes if in water sump, rock crunch otherwise)
             this.stepTimer -= delta * (this.isSprinting ? 1.6 : 1.0);
             if (this.stepTimer <= 0) {
-                if (window.soundEngine) window.soundEngine.playFootstep(this.isSprinting);
+                if (inWater && window.soundEngine) {
+                    window.soundEngine.playWaterSplash(this.isSprinting);
+                } else if (window.soundEngine) {
+                    window.soundEngine.playFootstep(this.isSprinting);
+                }
                 this.stepTimer = 0.45;
             }
 
-            // Head Bobbing
             this.bobCycle += delta * (this.isSprinting ? 12 : 8.0);
         } else {
-            // Immediate firm stop - no icy sliding!
             this.velocity.set(0, 0, 0);
         }
 
-        // Hard enforce current position is strictly inside tunnel path at all times
-        const currentPathX = world.getPathX(this.position.z);
-        this.position.x = Math.max(currentPathX - 1.85, Math.min(currentPathX + 1.85, this.position.x));
-
-        // Natural Climbing Elevation Y along the ascending path
+        // Height follows the undulating terrain
         const currentGroundY = world.getPathY(this.position.z);
         const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
         this.cameraBaseY = currentGroundY + 1.7 + bobOffset;
@@ -2863,8 +3031,10 @@ window.PlayerController = PlayerController;
 /* --- EVENTS & MINIGAME --- */
 /**
  * CANARY: The Collapse - Dynamic Event Manager
- * Precision Rhythm Pickaxe Breach, Corpse Looting, Earthquakes & Escape Hatch.
- * Standardized in full English with fixed responsive hit-box logic & instant clear.
+ * Features:
+ * - Precision Rhythm Pickaxe Breach: Generous 30% green sweet spot, 60 speed, dual strike button & critical hit.
+ * - Fallen miner looting with Sub-Shaft 07-C secret corpse (Arthur).
+ * - Earthquakes and surface escape hatch.
  */
 
 class EventManager {
@@ -2876,26 +3046,25 @@ class EventManager {
         // Rhythm Mini-game state
         this.isRhythmActive = false;
         this.needlePos = 10;
-        this.needleSpeed = 95;
+        this.needleSpeed = 60; // Gentle, predictable, rhythm tempo (no hyper-speed skip)
         this.needleDir = 1;
-        this.sweetSpotMin = 40;
-        this.sweetSpotMax = 60;
+        this.sweetSpotMin = 35;
+        this.sweetSpotMax = 65; // Wide 30% area
+        this.sweetSpotCenter = 50;
         this.hitsDone = 0;
         this.hitsNeeded = 2;
 
         // Earthquake aftershock timer
-        this.nextAftershockTimer = 35.0;
+        this.nextAftershockTimer = 38.0;
         this.isEarthquakeShaking = false;
         this.earthquakeDuration = 0;
 
-        // Story dialog / note modal
         this.isNoteModalOpen = false;
 
         this.initRhythmListeners();
     }
 
     initRhythmListeners() {
-        // Keyboard inputs
         window.addEventListener('keydown', (e) => {
             if (this.isRhythmActive) {
                 if (e.code === 'Space') {
@@ -2911,18 +3080,27 @@ class EventManager {
             }
         });
 
-        // Click on the rhythm card or container also strikes the pickaxe
+        // Click on Strike button or overlay
+        const strikeBtn = document.getElementById('btn-strike-pickaxe');
+        if (strikeBtn) {
+            strikeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.isRhythmActive) {
+                    this.strikePickaxe();
+                }
+            });
+        }
+
         const rhythmOverlay = document.getElementById('rhythm-minigame-overlay');
         if (rhythmOverlay) {
             rhythmOverlay.addEventListener('mousedown', (e) => {
-                if (this.isRhythmActive) {
+                if (this.isRhythmActive && e.target.tagName !== 'BUTTON') {
                     this.strikePickaxe();
                 }
             });
         }
     }
 
-    // Dynamic Interaction check called in game loop
     checkInteractions(player, world) {
         if (!player || !world || this.isRhythmActive || this.isNoteModalOpen) return;
 
@@ -2949,7 +3127,7 @@ class EventManager {
             this.currentRubble = null;
         }
 
-        // 2. Check Fallen Corpses
+        // 2. Check Fallen Corpses (including secret Arthur in dead-end branch)
         let foundCorpse = null;
         if (!foundRubble) {
             world.corpseObjects.forEach(c => {
@@ -3006,25 +3184,25 @@ class EventManager {
     startRhythmMinigame(rubble) {
         this.isRhythmActive = true;
         this.currentRubble = rubble;
-        this.needlePos = 10;
+        this.needlePos = 8;
         this.needleDir = 1;
-        this.needleSpeed = 100;
+        this.needleSpeed = 62; // Smooth, easy-to-read rhythm oscillation
         this.hitsNeeded = rubble.maxHealth;
         this.hitsDone = rubble.maxHealth - rubble.currentHealth;
 
-        // Generous, fair sweet spot (22% width)
-        this.sweetSpotMin = 35 + Math.random() * 15;
-        this.sweetSpotMax = this.sweetSpotMin + 22;
+        // Wide, generous 30% sweet spot area
+        this.sweetSpotMin = 32 + Math.random() * 12;
+        this.sweetSpotMax = this.sweetSpotMin + 30; // 30% width!
+        this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
 
         const overlay = document.getElementById('rhythm-minigame-overlay');
         const titleEl = document.getElementById('rhythm-rubble-title');
-        const healthEl = document.getElementById('rhythm-health-text');
         const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
         const feedbackEl = document.getElementById('rhythm-feedback');
 
         if (titleEl) titleEl.textContent = rubble.name;
         if (feedbackEl) {
-            feedbackEl.textContent = "PRESS [SPACE] OR CLICK WHEN NEEDLE IS INSIDE GREEN ZONE!";
+            feedbackEl.textContent = "PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!";
             feedbackEl.className = "";
         }
         this.updateRhythmHealthDisplay();
@@ -3045,7 +3223,7 @@ class EventManager {
     updateRhythmHealthDisplay() {
         const healthEl = document.getElementById('rhythm-health-text');
         if (!healthEl || !this.currentRubble) return;
-        const remaining = this.currentRubble.currentHealth;
+        const remaining = Math.max(0, this.currentRubble.currentHealth);
         const pct = Math.round((this.hitsDone / this.hitsNeeded) * 100);
         healthEl.textContent = `Structural Integrity: ${remaining} Strikes Remaining (${pct}% Fractured)`;
     }
@@ -3073,15 +3251,19 @@ class EventManager {
 
         const feedbackEl = document.getElementById('rhythm-feedback');
 
-        // Hit Detection with generous fair tolerance (+/- 3.5%)
-        const tolerance = 3.5;
-        const isHit = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
+        // Generous Hit Detection: ANYWHERE inside the entire green zone (+4% edge padding) counts as a successful hit!
+        const tolerance = 4.0;
+        const isInsideGreenZone = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
 
-        if (isHit) {
-            // PERFECT STRIKE!
+        if (isInsideGreenZone) {
+            // Check if bullseye critical hit (near the center line)
+            const isCritical = Math.abs(this.needlePos - this.sweetSpotCenter) < 5.5;
+
             if (window.soundEngine) window.soundEngine.playPickaxeHit(true);
-            this.currentRubble.currentHealth--;
-            this.hitsDone++;
+
+            const damage = isCritical ? 2 : 1;
+            this.currentRubble.currentHealth -= damage;
+            this.hitsDone = Math.min(this.hitsNeeded, this.hitsDone + damage);
 
             this.triggerScreenShake(0.35, 9);
             this.updateRhythmHealthDisplay();
@@ -3089,25 +3271,28 @@ class EventManager {
             if (this.currentRubble.currentHealth <= 0) {
                 // Completely breached!
                 if (feedbackEl) {
-                    feedbackEl.textContent = "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
+                    feedbackEl.textContent = isCritical ? "CRITICAL BULLSEYE! BOULDERS SHATTERED TO DUST!" : "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
                     feedbackEl.className = "hit-perfect";
                 }
 
-                // Immediately clear collider so player never gets stuck!
+                // Instantly remove collision & clear obstacle
                 if (window.gameWorld) window.gameWorld.removeRubble(this.currentRubble.id);
 
                 setTimeout(() => {
                     this.showNotification("Cave-in rubble destroyed! Keep moving forward!");
                     this.closeRhythmMinigame();
-                }, 450);
+                }, 400);
             } else {
                 if (feedbackEl) {
-                    feedbackEl.textContent = `PERFECT STRIKE! DEEP FRACTURE FORMED! (${this.currentRubble.currentHealth} MORE TO SHATTER)`;
+                    feedbackEl.textContent = isCritical ? "CRITICAL HIT! DEEP STRUCTURAL FRACTURE! (1 MORE TO SHATTER)" : `SUCCESSFUL STRIKE! FRACTURE EXPANDING! (${this.currentRubble.currentHealth} MORE TO SHATTER)`;
                     feedbackEl.className = "hit-perfect";
                 }
-                // Shift sweet spot dynamically
-                this.sweetSpotMin = 25 + Math.random() * 38;
-                this.sweetSpotMax = this.sweetSpotMin + 22;
+
+                // Move sweet spot slightly for next strike
+                this.sweetSpotMin = 24 + Math.random() * 32;
+                this.sweetSpotMax = this.sweetSpotMin + 30;
+                this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
+
                 const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
                 if (sweetSpotEl) {
                     sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
@@ -3115,20 +3300,20 @@ class EventManager {
                 }
             }
         } else {
-            // MISSED STRIKE!
+            // Missed outside green zone
             if (window.soundEngine) {
                 window.soundEngine.playPickaxeHit(false);
                 window.soundEngine.playEarthquake(1.8);
             }
             if (feedbackEl) {
-                feedbackEl.textContent = "MISSED SWEET SPOT! GLANCING BLOW TRIGGERED TREMORS!";
+                feedbackEl.textContent = "MISSED GREEN ZONE! GLANCING BLOW CAUSED VIBRATION!";
                 feedbackEl.className = "hit-miss";
             }
 
             if (window.gamePlayer) {
-                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 3.8);
+                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 3.5);
             }
-            this.triggerScreenShake(0.65, 12);
+            this.triggerScreenShake(0.6, 11);
         }
     }
 
@@ -3145,9 +3330,6 @@ class EventManager {
         }
     }
 
-    // -------------------------------------------------------------
-    // CORPSE LOOTING & STORY NOTES
-    // -------------------------------------------------------------
     lootCorpse(corpse) {
         corpse.looted = true;
         if (corpse.valveLight) corpse.valveLight.intensity = 0;
@@ -3177,7 +3359,7 @@ class EventManager {
                 <p><strong>Last Recorded Entry:</strong></p>
                 <p class="handwriting-text">"${corpse.note}"</p>
                 <div class="note-loot-info">
-                    <span>✔ Emergency Oxygen Canister Recovered (+${corpse.o2Bonus}%)</span><br>
+                    <span>✔ High-Capacity O2 Canister Recovered (+${corpse.o2Bonus}%)</span><br>
                     <span>✔ Headlamp Backup Battery Restored</span>
                 </div>
             `;
@@ -3200,9 +3382,6 @@ class EventManager {
         }
     }
 
-    // -------------------------------------------------------------
-    // AFTERSHOCKS & EARTHQUAKES
-    // -------------------------------------------------------------
     updateAftershocks(delta) {
         this.nextAftershockTimer -= delta;
         if (this.nextAftershockTimer <= 0) {
@@ -3251,9 +3430,6 @@ class EventManager {
         }, 30);
     }
 
-    // -------------------------------------------------------------
-    // ESCAPE HATCH VICTORY SEQUENCE
-    // -------------------------------------------------------------
     triggerEscapeSequence() {
         if (window.gameState) {
             window.gameState.triggerVictory();

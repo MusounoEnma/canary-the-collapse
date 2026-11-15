@@ -461,10 +461,48 @@ body.earthquake-shake {
     position: absolute;
     top: 0;
     height: 100%;
-    background: rgba(0, 230, 118, 0.45);
-    border-left: 2px solid #00e676;
-    border-right: 2px solid #00e676;
-    box-shadow: 0 0 15px rgba(0, 230, 118, 0.5);
+    background: rgba(0, 230, 118, 0.5);
+    border-left: 3px solid #00e676;
+    border-right: 3px solid #00e676;
+    box-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
+}
+
+.sweet-spot-center-line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: #ffd700;
+    box-shadow: 0 0 8px #ffd700;
+    transform: translateX(-50%);
+}
+
+.btn-strike {
+    background: linear-gradient(180deg, #ff9100 0%, #e65100 100%);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 12px 28px;
+    border: 2px solid #ffb300;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(230, 81, 0, 0.45);
+    transition: transform 0.1s, filter 0.1s;
+    width: 100%;
+    max-width: 440px;
+    margin: 8px auto 0 auto;
+    display: block;
+}
+
+.btn-strike:hover {
+    filter: brightness(1.1);
+}
+
+.btn-strike:active {
+    transform: scale(0.97);
+    filter: brightness(1.25);
 }
 
 #rhythm-needle {

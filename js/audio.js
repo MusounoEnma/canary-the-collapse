@@ -1,6 +1,7 @@
 /**
  * CANARY: The Collapse - Procedural Web Audio Engine
  * 100% synthesized audio using Web Audio API without external audio files.
+ * Enhanced with water puddle splashes and mining ambiance.
  */
 
 class SoundEngine {
@@ -23,11 +24,9 @@ class SoundEngine {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioCtx();
 
-        // Master Gain
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = 0.85;
 
-        // Dynamics Compressor for heavy underground punch
         const compressor = this.ctx.createDynamicsCompressor();
         compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
         compressor.knee.setValueAtTime(30, this.ctx.currentTime);
@@ -48,10 +47,7 @@ class SoundEngine {
         this.tinnitusGain.connect(this.masterGain);
         this.tinnitusOsc.start();
 
-        // Ambient Mine Drone Loop
         this.initAmbience();
-
-        // Start Heartbeat & Breathing loops
         this.startHeartbeatLoop();
         this.startBreathingLoop();
 
@@ -64,23 +60,21 @@ class SoundEngine {
         }
     }
 
-    // Low rumble ambient underground drone
     initAmbience() {
         if (!this.ctx) return;
         const droneGain = this.ctx.createGain();
         droneGain.gain.setValueAtTime(0.12, this.ctx.currentTime);
 
-        // Low drone oscillators
         const osc1 = this.ctx.createOscillator();
         const osc2 = this.ctx.createOscillator();
         osc1.type = 'sawtooth';
         osc2.type = 'triangle';
-        osc1.frequency.setValueAtTime(48, this.ctx.currentTime);
-        osc2.frequency.setValueAtTime(51.5, this.ctx.currentTime);
+        osc1.frequency.setValueAtTime(46, this.ctx.currentTime);
+        osc2.frequency.setValueAtTime(49.5, this.ctx.currentTime);
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(140, this.ctx.currentTime);
+        filter.frequency.setValueAtTime(130, this.ctx.currentTime);
         filter.Q.setValueAtTime(3.5, this.ctx.currentTime);
 
         osc1.connect(filter);
@@ -93,13 +87,12 @@ class SoundEngine {
         this.ambienceGain = droneGain;
     }
 
-    // Footstep Sound (Stone/Gravel impact)
     playFootstep(isSprinting = false) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
         const duration = isSprinting ? 0.08 : 0.12;
 
-        const bufferSize = this.ctx.sampleRate * duration;
+        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
@@ -125,7 +118,38 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Respirator Breathing (Inhale & Exhale inside mining mask)
+    // Wet Puddle Water Splash Footstep
+    playWaterSplash(isSprinting = false) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = isSprinting ? 0.22 : 0.28;
+
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.4));
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1400, now);
+        filter.frequency.exponentialRampToValueAtTime(350, now + dur);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(isSprinting ? 0.32 : 0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        noise.start(now);
+    }
+
     startBreathingLoop() {
         const breathe = () => {
             if (!this.ctx) return;
@@ -145,11 +169,9 @@ class SoundEngine {
 
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'bandpass';
-
             const gain = this.ctx.createGain();
 
             if (this.isBreathingIn) {
-                // Inhale: higher pitched mechanical valve intake
                 filter.frequency.setValueAtTime(450, now);
                 filter.frequency.linearRampToValueAtTime(800, now + breathDuration * 0.7);
                 filter.Q.setValueAtTime(3.5, now);
@@ -158,7 +180,6 @@ class SoundEngine {
                 gain.gain.linearRampToValueAtTime(isHypoxic ? 0.22 : 0.12, now + breathDuration * 0.4);
                 gain.gain.exponentialRampToValueAtTime(0.005, now + breathDuration);
             } else {
-                // Exhale: lower rushing valve exhaust
                 filter.frequency.setValueAtTime(650, now);
                 filter.frequency.linearRampToValueAtTime(300, now + breathDuration * 0.8);
                 filter.Q.setValueAtTime(2.2, now);
@@ -181,12 +202,10 @@ class SoundEngine {
         breathe();
     }
 
-    // Heartbeat Sound (lub-dub pulse)
     startHeartbeatLoop() {
         const pulse = () => {
             if (!this.ctx) return;
             const o2 = window.gameState ? window.gameState.oxygen : 100;
-            // When O2 is low, BPM increases from 65 to 145!
             const targetBpm = Math.floor(65 + (100 - o2) * 0.85);
             this.heartbeatBpm = targetBpm;
 
@@ -204,7 +223,6 @@ class SoundEngine {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // "Lub" (1st thud)
         const osc1 = this.ctx.createOscillator();
         const gain1 = this.ctx.createGain();
         osc1.type = 'sine';
@@ -219,7 +237,6 @@ class SoundEngine {
         osc1.start(now);
         osc1.stop(now + 0.16);
 
-        // "Dub" (2nd thud, 0.12s later)
         const osc2 = this.ctx.createOscillator();
         const gain2 = this.ctx.createGain();
         osc2.type = 'sine';
@@ -236,20 +253,18 @@ class SoundEngine {
         osc2.stop(now + 0.3);
     }
 
-    // Precision Pickaxe Strike Hit
     playPickaxeHit(isPerfect = true) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
         if (isPerfect) {
-            // Metallic ring + sharp crystal crunch
             const osc = this.ctx.createOscillator();
             const oscGain = this.ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(1420, now);
+            osc.frequency.setValueAtTime(1450, now);
             osc.frequency.exponentialRampToValueAtTime(950, now + 0.4);
 
-            oscGain.gain.setValueAtTime(0.5, now);
+            oscGain.gain.setValueAtTime(0.55, now);
             oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
 
             osc.connect(oscGain);
@@ -257,7 +272,6 @@ class SoundEngine {
             osc.start(now);
             osc.stop(now + 0.46);
 
-            // Rock fracture blast
             const bufSize = Math.floor(this.ctx.sampleRate * 0.25);
             const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
             const d = buf.getChannelData(0);
@@ -268,7 +282,7 @@ class SoundEngine {
             f.type = 'bandpass';
             f.frequency.setValueAtTime(1200, now);
             const g = this.ctx.createGain();
-            g.gain.setValueAtTime(0.35, now);
+            g.gain.setValueAtTime(0.4, now);
             g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
             noise.connect(f);
@@ -276,11 +290,10 @@ class SoundEngine {
             g.connect(this.masterGain);
             noise.start(now);
         } else {
-            // Dull miss/glance strike
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(210, now);
+            osc.frequency.setValueAtTime(220, now);
             osc.frequency.exponentialRampToValueAtTime(60, now + 0.3);
 
             gain.gain.setValueAtTime(0.4, now);
@@ -293,7 +306,6 @@ class SoundEngine {
         }
     }
 
-    // Earthquake Aftershock Sub-Bass Roar
     playEarthquake(duration = 3.5) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -302,7 +314,6 @@ class SoundEngine {
         const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
         const d = buf.getChannelData(0);
         let lastOut = 0.0;
-        // Brown noise generation for deep earth roar
         for (let i = 0; i < bufSize; i++) {
             const white = Math.random() * 2 - 1;
             d[i] = (lastOut + (0.02 * white)) / 1.02;
@@ -331,19 +342,17 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Helmet Light Malfunction Tap
     playHelmetTap() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // Plastic/metal knock
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(420, now);
         osc.frequency.exponentialRampToValueAtTime(90, now + 0.08);
 
-        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.setValueAtTime(0.45, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
         osc.connect(gain);
@@ -351,12 +360,11 @@ class SoundEngine {
         osc.start(now);
         osc.stop(now + 0.09);
 
-        // Electric buzz spark
         const buzz = this.ctx.createOscillator();
         const bGain = this.ctx.createGain();
         buzz.type = 'sawtooth';
         buzz.frequency.setValueAtTime(120, now + 0.04);
-        bGain.gain.setValueAtTime(0.18, now + 0.04);
+        bGain.gain.setValueAtTime(0.2, now + 0.04);
         bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
         buzz.connect(bGain);
@@ -365,7 +373,6 @@ class SoundEngine {
         buzz.stop(now + 0.13);
     }
 
-    // Oxygen Tank Refill Hiss
     playOxygenRefill() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -387,7 +394,7 @@ class SoundEngine {
 
         const gain = this.ctx.createGain();
         gain.gain.setValueAtTime(0.02, now);
-        gain.gain.linearRampToValueAtTime(0.38, now + 0.2);
+        gain.gain.linearRampToValueAtTime(0.4, now + 0.2);
         gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
         noise.connect(filter);
@@ -396,11 +403,9 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Golden Lily Hallucination Shimmering Chime
     playLilyWhisper() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        // Pentatonic dream arpeggio: C5, E5, G5, A5, C6
         const notes = [523.25, 659.25, 783.99, 880.00, 1046.50];
 
         notes.forEach((freq, idx) => {
@@ -421,33 +426,29 @@ class SoundEngine {
         });
     }
 
-    // Set Tinnitus Sound Volume (Based on Hypoxia / Trauma)
     setTinnitus(level) {
         if (!this.tinnitusGain || !this.ctx) return;
         const target = Math.max(0.0001, Math.min(0.28, level));
         this.tinnitusGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.2);
     }
 
-    // Surface Daylight / Victory Fanfare & Birdsong
     playVictorySequence() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // Calming warm choir synth
-        const chords = [261.63, 329.63, 392.00, 523.25]; // C Major
+        const chords = [261.63, 329.63, 392.00, 523.25];
         chords.forEach(f => {
             const osc = this.ctx.createOscillator();
             const g = this.ctx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(f, now);
             g.gain.setValueAtTime(0.01, now);
-            g.gain.linearRampToValueAtTime(0.12, now + 1.5);
+            g.gain.linearRampToValueAtTime(0.14, now + 1.5);
             osc.connect(g);
             g.connect(this.masterGain);
             osc.start(now);
         });
 
-        // Synthesize morning bird chirp loop
         for (let b = 0; b < 6; b++) {
             const birdStart = now + 1.8 + b * 0.7 + Math.random() * 0.4;
             const bOsc = this.ctx.createOscillator();
@@ -470,4 +471,3 @@ class SoundEngine {
 }
 
 window.soundEngine = new SoundEngine();
-

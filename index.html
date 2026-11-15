@@ -101,18 +101,22 @@
     <div id="rhythm-minigame-overlay">
         <div class="rhythm-card">
             <h2 id="rhythm-rubble-title" class="rhythm-title">Rubble Cave-in (Shaft 07)</h2>
-            <p class="rhythm-subtitle">Strike the structural fracture point when the needle aligns within the green sweet spot!</p>
+            <p class="rhythm-subtitle">Strike anywhere inside the wide green fracture zone to shatter the rock!</p>
             
             <div class="rhythm-meter-container">
-                <div id="rhythm-sweet-spot"></div>
+                <div id="rhythm-sweet-spot">
+                    <div class="sweet-spot-center-line" title="Bullseye Center Line"></div>
+                </div>
                 <div id="rhythm-needle"></div>
             </div>
 
-            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK WHEN INSIDE GREEN SWEET SPOT!</div>
+            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK BUTTON BELOW WHEN INSIDE GREEN ZONE!</div>
             <div id="rhythm-health-text" style="color: #ffb74d; margin-bottom: 16px; font-weight: bold;">Structural Integrity: 2 Strikes Remaining (0% Fractured)</div>
 
-            <div>
-                <span class="rhythm-controls-hint"><strong>[SPACE] / MOUSE CLICK</strong> Strike Pickaxe &nbsp;|&nbsp; <strong>[ESC]</strong> Cancel / Step Back</span>
+            <button id="btn-strike-pickaxe" class="btn-strike">⚡ STRIKE WITH PICKAXE [SPACE / CLICK] ⚡</button>
+
+            <div style="margin-top: 15px;">
+                <span class="rhythm-controls-hint"><strong>[SPACE] / CLICK</strong> Strike &nbsp;|&nbsp; <strong>[ESC]</strong> Step Back</span>
             </div>
         </div>
     </div>

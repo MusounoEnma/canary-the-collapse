@@ -1,7 +1,9 @@
 /**
  * CANARY: The Collapse - Dynamic Event Manager
- * Precision Rhythm Pickaxe Breach, Corpse Looting, Earthquakes & Escape Hatch.
- * Standardized in full English with fixed responsive hit-box logic & instant clear.
+ * Features:
+ * - Precision Rhythm Pickaxe Breach: Generous 30% green sweet spot, 60 speed, dual strike button & critical hit.
+ * - Fallen miner looting with Sub-Shaft 07-C secret corpse (Arthur).
+ * - Earthquakes and surface escape hatch.
  */
 
 class EventManager {
@@ -13,26 +15,25 @@ class EventManager {
         // Rhythm Mini-game state
         this.isRhythmActive = false;
         this.needlePos = 10;
-        this.needleSpeed = 95;
+        this.needleSpeed = 60; // Gentle, predictable, rhythm tempo (no hyper-speed skip)
         this.needleDir = 1;
-        this.sweetSpotMin = 40;
-        this.sweetSpotMax = 60;
+        this.sweetSpotMin = 35;
+        this.sweetSpotMax = 65; // Wide 30% area
+        this.sweetSpotCenter = 50;
         this.hitsDone = 0;
         this.hitsNeeded = 2;
 
         // Earthquake aftershock timer
-        this.nextAftershockTimer = 35.0;
+        this.nextAftershockTimer = 38.0;
         this.isEarthquakeShaking = false;
         this.earthquakeDuration = 0;
 
-        // Story dialog / note modal
         this.isNoteModalOpen = false;
 
         this.initRhythmListeners();
     }
 
     initRhythmListeners() {
-        // Keyboard inputs
         window.addEventListener('keydown', (e) => {
             if (this.isRhythmActive) {
                 if (e.code === 'Space') {
@@ -48,18 +49,27 @@ class EventManager {
             }
         });
 
-        // Click on the rhythm card or container also strikes the pickaxe
+        // Click on Strike button or overlay
+        const strikeBtn = document.getElementById('btn-strike-pickaxe');
+        if (strikeBtn) {
+            strikeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.isRhythmActive) {
+                    this.strikePickaxe();
+                }
+            });
+        }
+
         const rhythmOverlay = document.getElementById('rhythm-minigame-overlay');
         if (rhythmOverlay) {
             rhythmOverlay.addEventListener('mousedown', (e) => {
-                if (this.isRhythmActive) {
+                if (this.isRhythmActive && e.target.tagName !== 'BUTTON') {
                     this.strikePickaxe();
                 }
             });
         }
     }
 
-    // Dynamic Interaction check called in game loop
     checkInteractions(player, world) {
         if (!player || !world || this.isRhythmActive || this.isNoteModalOpen) return;
 
@@ -86,7 +96,7 @@ class EventManager {
             this.currentRubble = null;
         }
 
-        // 2. Check Fallen Corpses
+        // 2. Check Fallen Corpses (including secret Arthur in dead-end branch)
         let foundCorpse = null;
         if (!foundRubble) {
             world.corpseObjects.forEach(c => {
@@ -143,25 +153,25 @@ class EventManager {
     startRhythmMinigame(rubble) {
         this.isRhythmActive = true;
         this.currentRubble = rubble;
-        this.needlePos = 10;
+        this.needlePos = 8;
         this.needleDir = 1;
-        this.needleSpeed = 100;
+        this.needleSpeed = 62; // Smooth, easy-to-read rhythm oscillation
         this.hitsNeeded = rubble.maxHealth;
         this.hitsDone = rubble.maxHealth - rubble.currentHealth;
 
-        // Generous, fair sweet spot (22% width)
-        this.sweetSpotMin = 35 + Math.random() * 15;
-        this.sweetSpotMax = this.sweetSpotMin + 22;
+        // Wide, generous 30% sweet spot area
+        this.sweetSpotMin = 32 + Math.random() * 12;
+        this.sweetSpotMax = this.sweetSpotMin + 30; // 30% width!
+        this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
 
         const overlay = document.getElementById('rhythm-minigame-overlay');
         const titleEl = document.getElementById('rhythm-rubble-title');
-        const healthEl = document.getElementById('rhythm-health-text');
         const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
         const feedbackEl = document.getElementById('rhythm-feedback');
 
         if (titleEl) titleEl.textContent = rubble.name;
         if (feedbackEl) {
-            feedbackEl.textContent = "PRESS [SPACE] OR CLICK WHEN NEEDLE IS INSIDE GREEN ZONE!";
+            feedbackEl.textContent = "PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!";
             feedbackEl.className = "";
         }
         this.updateRhythmHealthDisplay();
@@ -182,7 +192,7 @@ class EventManager {
     updateRhythmHealthDisplay() {
         const healthEl = document.getElementById('rhythm-health-text');
         if (!healthEl || !this.currentRubble) return;
-        const remaining = this.currentRubble.currentHealth;
+        const remaining = Math.max(0, this.currentRubble.currentHealth);
         const pct = Math.round((this.hitsDone / this.hitsNeeded) * 100);
         healthEl.textContent = `Structural Integrity: ${remaining} Strikes Remaining (${pct}% Fractured)`;
     }
@@ -210,15 +220,19 @@ class EventManager {
 
         const feedbackEl = document.getElementById('rhythm-feedback');
 
-        // Hit Detection with generous fair tolerance (+/- 3.5%)
-        const tolerance = 3.5;
-        const isHit = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
+        // Generous Hit Detection: ANYWHERE inside the entire green zone (+4% edge padding) counts as a successful hit!
+        const tolerance = 4.0;
+        const isInsideGreenZone = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
 
-        if (isHit) {
-            // PERFECT STRIKE!
+        if (isInsideGreenZone) {
+            // Check if bullseye critical hit (near the center line)
+            const isCritical = Math.abs(this.needlePos - this.sweetSpotCenter) < 5.5;
+
             if (window.soundEngine) window.soundEngine.playPickaxeHit(true);
-            this.currentRubble.currentHealth--;
-            this.hitsDone++;
+
+            const damage = isCritical ? 2 : 1;
+            this.currentRubble.currentHealth -= damage;
+            this.hitsDone = Math.min(this.hitsNeeded, this.hitsDone + damage);
 
             this.triggerScreenShake(0.35, 9);
             this.updateRhythmHealthDisplay();
@@ -226,25 +240,28 @@ class EventManager {
             if (this.currentRubble.currentHealth <= 0) {
                 // Completely breached!
                 if (feedbackEl) {
-                    feedbackEl.textContent = "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
+                    feedbackEl.textContent = isCritical ? "CRITICAL BULLSEYE! BOULDERS SHATTERED TO DUST!" : "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
                     feedbackEl.className = "hit-perfect";
                 }
 
-                // Immediately clear collider so player never gets stuck!
+                // Instantly remove collision & clear obstacle
                 if (window.gameWorld) window.gameWorld.removeRubble(this.currentRubble.id);
 
                 setTimeout(() => {
                     this.showNotification("Cave-in rubble destroyed! Keep moving forward!");
                     this.closeRhythmMinigame();
-                }, 450);
+                }, 400);
             } else {
                 if (feedbackEl) {
-                    feedbackEl.textContent = `PERFECT STRIKE! DEEP FRACTURE FORMED! (${this.currentRubble.currentHealth} MORE TO SHATTER)`;
+                    feedbackEl.textContent = isCritical ? "CRITICAL HIT! DEEP STRUCTURAL FRACTURE! (1 MORE TO SHATTER)" : `SUCCESSFUL STRIKE! FRACTURE EXPANDING! (${this.currentRubble.currentHealth} MORE TO SHATTER)`;
                     feedbackEl.className = "hit-perfect";
                 }
-                // Shift sweet spot dynamically
-                this.sweetSpotMin = 25 + Math.random() * 38;
-                this.sweetSpotMax = this.sweetSpotMin + 22;
+
+                // Move sweet spot slightly for next strike
+                this.sweetSpotMin = 24 + Math.random() * 32;
+                this.sweetSpotMax = this.sweetSpotMin + 30;
+                this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
+
                 const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
                 if (sweetSpotEl) {
                     sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
@@ -252,20 +269,20 @@ class EventManager {
                 }
             }
         } else {
-            // MISSED STRIKE!
+            // Missed outside green zone
             if (window.soundEngine) {
                 window.soundEngine.playPickaxeHit(false);
                 window.soundEngine.playEarthquake(1.8);
             }
             if (feedbackEl) {
-                feedbackEl.textContent = "MISSED SWEET SPOT! GLANCING BLOW TRIGGERED TREMORS!";
+                feedbackEl.textContent = "MISSED GREEN ZONE! GLANCING BLOW CAUSED VIBRATION!";
                 feedbackEl.className = "hit-miss";
             }
 
             if (window.gamePlayer) {
-                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 3.8);
+                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 3.5);
             }
-            this.triggerScreenShake(0.65, 12);
+            this.triggerScreenShake(0.6, 11);
         }
     }
 
@@ -282,9 +299,6 @@ class EventManager {
         }
     }
 
-    // -------------------------------------------------------------
-    // CORPSE LOOTING & STORY NOTES
-    // -------------------------------------------------------------
     lootCorpse(corpse) {
         corpse.looted = true;
         if (corpse.valveLight) corpse.valveLight.intensity = 0;
@@ -314,7 +328,7 @@ class EventManager {
                 <p><strong>Last Recorded Entry:</strong></p>
                 <p class="handwriting-text">"${corpse.note}"</p>
                 <div class="note-loot-info">
-                    <span>✔ Emergency Oxygen Canister Recovered (+${corpse.o2Bonus}%)</span><br>
+                    <span>✔ High-Capacity O2 Canister Recovered (+${corpse.o2Bonus}%)</span><br>
                     <span>✔ Headlamp Backup Battery Restored</span>
                 </div>
             `;
@@ -337,9 +351,6 @@ class EventManager {
         }
     }
 
-    // -------------------------------------------------------------
-    // AFTERSHOCKS & EARTHQUAKES
-    // -------------------------------------------------------------
     updateAftershocks(delta) {
         this.nextAftershockTimer -= delta;
         if (this.nextAftershockTimer <= 0) {
@@ -388,9 +399,6 @@ class EventManager {
         }, 30);
     }
 
-    // -------------------------------------------------------------
-    // ESCAPE HATCH VICTORY SEQUENCE
-    // -------------------------------------------------------------
     triggerEscapeSequence() {
         if (window.gameState) {
             window.gameState.triggerVictory();
