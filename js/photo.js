@@ -1,6 +1,7 @@
 /**
  * CANARY: The Collapse - Polaroid Photo & Emotional Anchor System
  * Procedurally draws Lily's polaroid with real-time hypoxia fading and inspection modal.
+ * Standardized in full English.
  */
 
 class PolaroidSystem {
@@ -143,13 +144,12 @@ class PolaroidSystem {
         c.quadraticCurveTo(lx + 15, ly - 4, lx + 30, ly - 20);
         c.fill();
 
-        // Eyes (big sparkling brown eyes)
+        // Eyes
         c.fillStyle = '#3e2723';
         c.beginPath();
         c.arc(lx - 12, ly - 10, 5.5, 0, Math.PI * 2);
         c.arc(lx + 12, ly - 10, 5.5, 0, Math.PI * 2);
         c.fill();
-        // Eye reflections
         c.fillStyle = '#ffffff';
         c.beginPath();
         c.arc(lx - 14, ly - 12, 2, 0, Math.PI * 2);
@@ -170,7 +170,7 @@ class PolaroidSystem {
         c.arc(lx, ly - 3, 11, 0.2, Math.PI - 0.2, false);
         c.stroke();
 
-        // Coal dust thumb smudges on bottom white margin
+        // Coal dust thumb smudges
         c.fillStyle = 'rgba(30, 25, 20, 0.35)';
         c.beginPath();
         c.ellipse(px + 45, h - 45, 24, 18, 0.4, 0, Math.PI * 2);
@@ -179,10 +179,10 @@ class PolaroidSystem {
         c.ellipse(w - 55, h - 40, 28, 20, -0.3, 0, Math.PI * 2);
         c.fill();
 
-        // Handwritten caption in ink on white border
+        // Handwritten caption in ink on white border (English)
         c.font = 'italic 16px "Brush Script MT", cursive, sans-serif';
         c.fillStyle = '#222';
-        c.fillText('Lily (6 thn) — Musim Semi 1984', px + 40, h - 40);
+        c.fillText('Lily (Age 6) — Spring 1984', px + 40, h - 40);
     }
 
     // Dynamic HUD rendering based on Oxygen level
@@ -191,25 +191,20 @@ class PolaroidSystem {
         const hudContainer = document.getElementById('polaroid-container');
         if (!hudImg || !hudContainer) return;
 
-        // Calculate degradation factors
         const o2 = Math.max(0, Math.min(100, oxygen));
-        const fadeRatio = (100 - o2) / 100;
 
-        // Apply dynamic CSS filters to HUD image
         if (o2 < 35) {
-            // Critical Hypoxia: high grayscale, heavy blur, shaking
+            // Critical Hypoxia: high grayscale, blur, vibration
             const blurPx = ((35 - o2) / 35 * 4.5).toFixed(1);
             const grayPct = (50 + (35 - o2) / 35 * 50).toFixed(0);
             const sepiaPct = ((35 - o2) / 35 * 60).toFixed(0);
             hudImg.style.filter = `grayscale(${grayPct}%) blur(${blurPx}px) sepia(${sepiaPct}%) contrast(1.4)`;
             hudContainer.classList.add('critical-fade');
         } else if (o2 < 65) {
-            // Moderate Oxygen: desaturated
             const grayPct = ((65 - o2) / 30 * 45).toFixed(0);
             hudImg.style.filter = `grayscale(${grayPct}%) contrast(1.1)`;
             hudContainer.classList.remove('critical-fade');
         } else {
-            // Healthy
             hudImg.style.filter = 'none';
             hudContainer.classList.remove('critical-fade');
         }
@@ -240,7 +235,6 @@ class PolaroidSystem {
             if (window.soundEngine) {
                 window.soundEngine.playLilyWhisper();
             }
-            // Small willpower boost when looking at daughter
             if (window.gameState) {
                 window.gameState.triggerPhotoComfort();
             }
@@ -260,4 +254,3 @@ class PolaroidSystem {
 }
 
 window.polaroidSystem = new PolaroidSystem();
-

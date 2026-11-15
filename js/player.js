@@ -1,5 +1,7 @@
 /**
- * CANARY: The Collapse - FPS Player Controller, Oxygen & Helmet Mechanics
+ * CANARY: The Collapse - FPS Player Controller
+ * Handles movement along winding ascending tunnel, oxygen drain, headlamp malfunction & physical tripping.
+ * Standardized in full English.
  */
 
 class PlayerController {
@@ -25,20 +27,20 @@ class PlayerController {
         this.oxygen = 100.0;
         this.isDead = false;
 
-        // Flashlight (Headlamp)
+        // Flashlight (Helmet Headlamp)
         this.flashlight = null;
         this.flashlightTarget = null;
         this.isFlashlightOn = true;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
-        this.nextMalfunctionCheck = 18.0; // Seconds until next check
+        this.nextMalfunctionCheck = 18.0;
 
         // Physical Tripping Hazard
         this.isStumbled = false;
         this.stumblePitchOffset = 0;
         this.stumbleRecoveryTimer = 0;
 
-        // Head Bobbing
+        // Head Bobbing & Elevation
         this.bobCycle = 0;
         this.cameraBaseY = 1.7;
 
@@ -56,8 +58,7 @@ class PlayerController {
     }
 
     initFlashlight() {
-        // Spotlight attached to player's helmet
-        this.flashlight = new THREE.SpotLight(0xfffae0, 2.8, 42, Math.PI / 4.2, 0.45, 1.4);
+        this.flashlight = new THREE.SpotLight(0xfffae0, 2.9, 44, Math.PI / 4.2, 0.45, 1.4);
         this.flashlight.position.copy(this.camera.position);
 
         this.flashlightTarget = new THREE.Object3D();
@@ -67,13 +68,11 @@ class PlayerController {
         window.gameScene.add(this.flashlight);
         window.gameScene.add(this.flashlightTarget);
 
-        // Subtle ambient player glow (eyes adjust in dark)
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.25, 4, 2);
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.25, 4.5, 2);
         window.gameScene.add(this.ambientBulb);
     }
 
     initInputListeners() {
-        // Pointer Lock for mouse look
         this.domElement.addEventListener('click', () => {
             if (!this.isLocked && !this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
                 this.domElement.requestPointerLock();
@@ -93,11 +92,9 @@ class PlayerController {
             const sensitivity = 0.0022;
             this.yaw -= e.movementX * sensitivity;
             this.pitch -= e.movementY * sensitivity;
-            // Limit vertical pitch (-85 to +85 degrees)
             this.pitch = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, this.pitch));
         });
 
-        // Keyboard Controls
         window.addEventListener('keydown', (e) => {
             if (this.isDead) return;
             switch (e.code) {
@@ -178,7 +175,6 @@ class PlayerController {
 
     handleHelmetTap() {
         if (!this.isFlashlightMalfunctioning) {
-            // Player taps helmet anyway
             if (window.soundEngine) window.soundEngine.playHelmetTap();
             return;
         }
@@ -186,7 +182,6 @@ class PlayerController {
         if (window.soundEngine) window.soundEngine.playHelmetTap();
         this.tapsRequired--;
 
-        // Visual spark flicker
         if (this.flashlight) {
             this.flashlight.intensity = 1.2;
             setTimeout(() => {
@@ -195,21 +190,19 @@ class PlayerController {
         }
 
         if (this.tapsRequired <= 0) {
-            // Repaired!
             this.isFlashlightMalfunctioning = false;
-            if (this.flashlight) this.flashlight.intensity = 2.8;
+            if (this.flashlight) this.flashlight.intensity = 2.9;
             const tapAlert = document.getElementById('helmet-tap-alert');
             if (tapAlert) tapAlert.classList.remove('active');
-            if (window.eventManager) window.eventManager.showNotification("Senter helm kembali berfungsi!");
+            if (window.eventManager) window.eventManager.showNotification("Helmet headlamp contacts restored!");
         }
     }
 
     triggerFlashlightMalfunction() {
         if (this.isFlashlightMalfunctioning) return;
         this.isFlashlightMalfunctioning = true;
-        this.tapsRequired = Math.floor(1 + Math.random() * 2); // 1 or 2 taps needed
+        this.tapsRequired = Math.floor(1 + Math.random() * 2);
 
-        // Flicker to black
         let flickers = 0;
         const flickInterval = setInterval(() => {
             flickers++;
@@ -235,9 +228,8 @@ class PlayerController {
             window.soundEngine.playFootstep(true);
         }
         if (window.eventManager) {
-            window.eventManager.showNotification("Tersandung bebatuan licin! Napas terengah-engah!");
+            window.eventManager.showNotification("Slipped on wet mine rocks! Lost stamina and breath!");
         }
-        // Lose small burst of O2
         this.oxygen = Math.max(0, this.oxygen - 3.5);
     }
 
@@ -245,11 +237,11 @@ class PlayerController {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
 
         // 1. Oxygen Depletion
-        let drainRate = 0.55; // 0.55% per second base
+        let drainRate = 0.52;
         this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
 
         if (this.isSprinting) {
-            drainRate *= 3.0; // 3x faster consumption when sprinting!
+            drainRate *= 3.0; // 3x faster consumption when sprinting
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -258,32 +250,28 @@ class PlayerController {
             return;
         }
 
-        // 2. Flashlight Malfunction Random Event Check
+        // 2. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
         if (this.nextMalfunctionCheck <= 0) {
             this.nextMalfunctionCheck = 22.0 + Math.random() * 20.0;
-            // 45% chance to malfunction
             if (Math.random() < 0.45) {
                 this.triggerFlashlightMalfunction();
             }
         }
 
-        // 3. Tripping Hazard Check when sprinting near puddles/rocks
+        // 3. Tripping Hazard Check on wet mud / puddles
         if (this.isSprinting && !this.isStumbled) {
-            // Check proximity to wet puddles
             world.puddles.forEach(p => {
-                if (Math.abs(this.position.z - p.position.z) < 2.0 && Math.abs(this.position.x - p.position.x) < 1.4) {
-                    if (Math.random() < 0.04) {
+                if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.6) {
+                    if (Math.random() < 0.05) {
                         this.triggerStumble();
                     }
                 }
             });
         }
 
-        // Handle Stumble Recovery
         if (this.isStumbled) {
             this.stumbleRecoveryTimer -= delta;
-            // Camera dip shock
             this.stumblePitchOffset = Math.sin(this.stumbleRecoveryTimer * 3.5) * -0.35;
             if (this.stumbleRecoveryTimer <= 0) {
                 this.isStumbled = false;
@@ -309,45 +297,52 @@ class PlayerController {
             const nextX = this.position.x + this.velocity.x;
             const nextZ = this.position.z + this.velocity.z;
 
-            // Tunnel Wall Boundary Collision (-2.2 to +2.2)
-            if (Math.abs(nextX) < 2.2) {
-                this.position.x = nextX;
-            }
+            // Follow curved tunnel centerline X_center(z) with boundary width 2.3m
+            const pathCenter = world.getPathX(nextZ);
+            const distFromCenter = Math.abs(nextX - pathCenter);
+
+            let canMoveX = distFromCenter < 2.3;
+            let blockedByRubble = false;
 
             // Rubble Obstacle Collision
-            let blockedByRubble = false;
             world.rubbleObjects.forEach(r => {
                 if (!r.cleared) {
-                    // Check if player trying to walk through rubble
-                    const distZ = Math.abs(nextZ - r.z);
-                    if (distZ < 2.8 && this.position.z > r.z && nextZ <= r.z + 2.8) {
+                    const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
+                    if (distToRubble < 2.8) {
                         blockedByRubble = true;
                     }
                 }
             });
 
-            // Escape Hatch Wall Collision at end
-            if (nextZ <= -264) {
+            // Surface Hatch bunker collision at z = -262
+            if (nextZ <= -261.5) {
                 blockedByRubble = true;
             }
 
-            if (!blockedByRubble && nextZ < 8) {
+            if (canMoveX && !blockedByRubble) {
+                this.position.x = nextX;
+            }
+
+            if (!blockedByRubble && nextZ < 6.5) {
                 this.position.z = nextZ;
             }
 
-            // Footsteps sound loop
+            // Footstep sounds
             this.stepTimer -= delta * (this.isSprinting ? 1.6 : 1.0);
             if (this.stepTimer <= 0) {
                 if (window.soundEngine) window.soundEngine.playFootstep(this.isSprinting);
                 this.stepTimer = 0.45;
             }
 
-            // Head Bobbing calculation
+            // Head Bobbing
             this.bobCycle += delta * (this.isSprinting ? 13 : 8.5);
-            this.cameraBaseY = 1.7 + Math.sin(this.bobCycle) * (this.isSprinting ? 0.09 : 0.045);
-        } else {
-            this.cameraBaseY = 1.7;
         }
+
+        // Natural Climbing Elevation Y along the ascending path
+        const currentGroundY = world.getPathY(this.position.z);
+        const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.09 : 0.045) : 0;
+        this.cameraBaseY = currentGroundY + 1.7 + bobOffset;
+        this.position.y = currentGroundY;
 
         // Apply Camera Transformations
         this.camera.position.set(this.position.x, this.cameraBaseY, this.position.z);
@@ -370,7 +365,7 @@ class PlayerController {
     dieOfHypoxia() {
         this.isDead = true;
         if (window.gameState) {
-            window.gameState.triggerGameOver("Oksigen habis. Tubuhmu lemas dan pandanganmu menggelap selamanya di kedalaman 780 meter...");
+            window.gameState.triggerGameOver("Oxygen depleted. Your vision fades into eternal darkness at 780 meters below the surface...");
         }
     }
 }

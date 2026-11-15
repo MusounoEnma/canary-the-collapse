@@ -1,12 +1,13 @@
 /**
  * CANARY: The Collapse - Main Game Orchestrator & State Machine
+ * Standardized in full English.
  */
 
 class GameState {
     constructor() {
         this.state = 'MENU'; // 'MENU' | 'PLAYING' | 'MINIGAME' | 'INSPECTING' | 'GAMEOVER' | 'VICTORY'
         this.oxygen = 100.0;
-        this.depth = 780; // Starts at 780 meters underground
+        this.depth = 780;
         this.elapsedTime = 0;
         this.isSprinting = false;
 
@@ -26,7 +27,7 @@ class GameState {
         // Three.js Scene Setup
         this.scene = new THREE.Scene();
         window.gameScene = this.scene;
-        this.scene.fog = new THREE.FogExp2(0x060608, 0.055); // Dense pitch dark underground fog
+        this.scene.fog = new THREE.FogExp2(0x060608, 0.055);
 
         // Camera Setup
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
@@ -130,7 +131,6 @@ class GameState {
     }
 
     startGame() {
-        // Initialize Procedural Audio Engine on user click
         if (window.soundEngine) {
             window.soundEngine.init();
             window.soundEngine.resume();
@@ -148,13 +148,12 @@ class GameState {
         this.player.domElement.requestPointerLock();
 
         if (this.events) {
-            this.events.showNotification("Shaft 07 runtuh! Rangkak naik ke palka darurat sebelum kehabisan oksigen!");
+            this.events.showNotification("Shaft 07 has collapsed! Climb upward through the winding tunnel before oxygen runs out!");
         }
     }
 
     triggerPhotoComfort() {
-        // Looking at Lily's photo boosts willpower and stabilizes panic
-        this.events.showNotification("Melihat senyum Lily membangkitkan tekadmu: 'Aku harus pulang...'");
+        this.events.showNotification("Looking at Lily's smile strengthens your resolve: 'I will make it home...'");
         if (window.soundEngine) {
             window.soundEngine.setTinnitus(0.0001);
         }
@@ -169,19 +168,16 @@ class GameState {
         if (this.state === 'PLAYING' || this.state === 'MINIGAME' || this.state === 'INSPECTING') {
             this.elapsedTime += delta;
 
-            // Update Player
             if (this.player) {
                 this.player.update(delta, this.world);
                 this.oxygen = this.player.oxygen;
                 this.isSprinting = this.player.isSprinting;
             }
 
-            // Update World
             if (this.world && this.player) {
                 this.world.update(delta, this.player.position, this.oxygen);
             }
 
-            // Update Interactions & Events
             if (this.events) {
                 this.events.checkInteractions(this.player, this.world);
                 this.events.updateAftershocks(delta);
@@ -190,24 +186,21 @@ class GameState {
                 }
             }
 
-            // Update Depth Tracker (780m to 0m)
+            // Real-time Climbing Depth Tracking (780m down to 0m at surface)
             if (this.player) {
-                const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 265));
+                const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 262));
                 this.depth = Math.round(780 * (1.0 - progressRatio));
             }
 
-            // Update HUD & Hypoxia Effects
             this.updateHUDAndHypoxia();
         }
 
-        // Render 3D Scene
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
         }
     }
 
     updateHUDAndHypoxia() {
-        // 1. Oxygen Meter Text & Needle/Bar
         const o2ValEl = document.getElementById('hud-o2-value');
         const o2BarEl = document.getElementById('hud-o2-fill');
         const depthValEl = document.getElementById('hud-depth-value');
@@ -233,12 +226,10 @@ class GameState {
             sprintIndicator.style.opacity = this.isSprinting ? '1' : '0.25';
         }
 
-        // 2. Polaroid HUD Dynamic Fading
         if (window.polaroidSystem) {
             window.polaroidSystem.updateHUD(o2);
         }
 
-        // 3. Hypoxia Visual FX on Screen (Tunnel Vision & Chromatic Distortion)
         const hypoxiaOverlay = document.getElementById('hypoxia-overlay');
         if (hypoxiaOverlay) {
             if (o2 < 35) {
@@ -270,7 +261,7 @@ class GameState {
         if (reasonEl) reasonEl.textContent = reason;
         if (statsEl) {
             const distanceClimbed = 780 - this.depth;
-            statsEl.textContent = `Kamu berhasil mendaki ${distanceClimbed} meter dari kedalaman 780m sebelum napasmu terhenti.`;
+            statsEl.textContent = `You ascended ${distanceClimbed} meters out of 780m before running out of air.`;
         }
 
         if (gameOverScreen) gameOverScreen.style.display = 'flex';
@@ -290,7 +281,7 @@ class GameState {
         if (timeEl) {
             const mins = Math.floor(this.elapsedTime / 60);
             const secs = Math.floor(this.elapsedTime % 60);
-            timeEl.textContent = `Waktu Pelarian: ${mins} menit ${secs} detik.`;
+            timeEl.textContent = `Escape Time: ${mins} minute(s) ${secs} second(s).`;
         }
 
         if (victoryScreen) victoryScreen.style.display = 'flex';

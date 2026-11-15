@@ -1,6 +1,7 @@
 /**
  * CANARY: The Collapse - Dynamic Event Manager
- * Precision Rhythm Pickaxe Breach, Corpse Looting, Aftershocks & Escape Hatch.
+ * Precision Rhythm Pickaxe Breach, Corpse Looting, Earthquakes & Escape Hatch.
+ * Standardized in full English with fixed responsive hit-box logic & instant clear.
  */
 
 class EventManager {
@@ -11,12 +12,13 @@ class EventManager {
         
         // Rhythm Mini-game state
         this.isRhythmActive = false;
-        this.needlePos = 0; // 0 to 100
-        this.needleSpeed = 95; // Speed of oscillation
+        this.needlePos = 10;
+        this.needleSpeed = 95;
         this.needleDir = 1;
         this.sweetSpotMin = 40;
         this.sweetSpotMax = 60;
-        this.rhythmCombo = 0;
+        this.hitsDone = 0;
+        this.hitsNeeded = 2;
 
         // Earthquake aftershock timer
         this.nextAftershockTimer = 35.0;
@@ -30,6 +32,7 @@ class EventManager {
     }
 
     initRhythmListeners() {
+        // Keyboard inputs
         window.addEventListener('keydown', (e) => {
             if (this.isRhythmActive) {
                 if (e.code === 'Space') {
@@ -44,6 +47,16 @@ class EventManager {
                 }
             }
         });
+
+        // Click on the rhythm card or container also strikes the pickaxe
+        const rhythmOverlay = document.getElementById('rhythm-minigame-overlay');
+        if (rhythmOverlay) {
+            rhythmOverlay.addEventListener('mousedown', (e) => {
+                if (this.isRhythmActive) {
+                    this.strikePickaxe();
+                }
+            });
+        }
     }
 
     // Dynamic Interaction check called in game loop
@@ -58,8 +71,8 @@ class EventManager {
         let foundRubble = null;
         world.rubbleObjects.forEach(r => {
             if (!r.cleared) {
-                const distZ = Math.abs(pPos.z - r.z);
-                if (distZ < 3.2 && Math.abs(pPos.x) < 2.0) {
+                const dist = Math.hypot(pPos.x - r.x, pPos.z - r.z);
+                if (dist < 3.2) {
                     foundRubble = r;
                 }
             }
@@ -67,18 +80,19 @@ class EventManager {
 
         if (foundRubble) {
             this.currentRubble = foundRubble;
-            promptText = `[E] TEMBUS RERUNTUHAN BATU DENGAN BELIUNG (${foundRubble.currentHealth}/${foundRubble.maxHealth})`;
+            const remaining = foundRubble.currentHealth;
+            promptText = `[E] BREACH BOULDER RUBBLE WITH PICKAXE (${remaining} STRIKE${remaining > 1 ? 'S' : ''} NEEDED)`;
         } else {
             this.currentRubble = null;
         }
 
-        // 2. Check Corpses
+        // 2. Check Fallen Corpses
         let foundCorpse = null;
         if (!foundRubble) {
             world.corpseObjects.forEach(c => {
                 if (!c.looted) {
                     const dist = pPos.distanceTo(c.pos);
-                    if (dist < 2.4) {
+                    if (dist < 2.5) {
                         foundCorpse = c;
                     }
                 }
@@ -86,18 +100,18 @@ class EventManager {
 
             if (foundCorpse) {
                 this.currentCorpse = foundCorpse;
-                promptText = `[E] PERIKSA REKAN KERJA (${foundCorpse.name} - ${foundCorpse.role})`;
+                promptText = `[E] SEARCH FALLEN MINER (${foundCorpse.name} - ${foundCorpse.role})`;
             } else {
                 this.currentCorpse = null;
             }
         }
 
-        // 3. Check Escape Hatch at -265m
+        // 3. Check Escape Hatch at Surface Shaft Head
         if (!foundRubble && !foundCorpse && world.escapeHatch) {
-            const distToHatch = Math.abs(pPos.z - world.escapeHatch.z);
-            if (distToHatch < 3.5) {
+            const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
+            if (distToHatch < 3.6) {
                 this.isNearHatch = true;
-                promptText = `[E] BUKA KATUP DARURAT SHAFT PERMUKAAN (780m ➔ 0m)`;
+                promptText = `[E] TURN EMERGENCY SURFACE VALVE WHEEL (780m ➔ 0m)`;
             } else {
                 this.isNearHatch = false;
             }
@@ -131,22 +145,27 @@ class EventManager {
         this.currentRubble = rubble;
         this.needlePos = 10;
         this.needleDir = 1;
-        this.needleSpeed = 110 + (rubble.maxHealth - rubble.currentHealth) * 20; // Gets faster as rocks crack
-        this.rhythmCombo = 0;
+        this.needleSpeed = 100;
+        this.hitsNeeded = rubble.maxHealth;
+        this.hitsDone = rubble.maxHealth - rubble.currentHealth;
 
-        // Randomize sweet spot zone between 35% and 65%
+        // Generous, fair sweet spot (22% width)
         this.sweetSpotMin = 35 + Math.random() * 15;
-        this.sweetSpotMax = this.sweetSpotMin + 18;
+        this.sweetSpotMax = this.sweetSpotMin + 22;
 
         const overlay = document.getElementById('rhythm-minigame-overlay');
         const titleEl = document.getElementById('rhythm-rubble-title');
         const healthEl = document.getElementById('rhythm-health-text');
         const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
+        const feedbackEl = document.getElementById('rhythm-feedback');
 
         if (titleEl) titleEl.textContent = rubble.name;
-        if (healthEl) healthEl.textContent = `Kerapatan Bebatuan: ${rubble.currentHealth} / ${rubble.maxHealth}`;
+        if (feedbackEl) {
+            feedbackEl.textContent = "PRESS [SPACE] OR CLICK WHEN NEEDLE IS INSIDE GREEN ZONE!";
+            feedbackEl.className = "";
+        }
+        this.updateRhythmHealthDisplay();
 
-        // Position sweet spot on visual bar
         if (sweetSpotEl) {
             sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
             sweetSpotEl.style.width = `${this.sweetSpotMax - this.sweetSpotMin}%`;
@@ -160,10 +179,17 @@ class EventManager {
         }
     }
 
+    updateRhythmHealthDisplay() {
+        const healthEl = document.getElementById('rhythm-health-text');
+        if (!healthEl || !this.currentRubble) return;
+        const remaining = this.currentRubble.currentHealth;
+        const pct = Math.round((this.hitsDone / this.hitsNeeded) * 100);
+        healthEl.textContent = `Structural Integrity: ${remaining} Strikes Remaining (${pct}% Fractured)`;
+    }
+
     updateRhythm(delta) {
         if (!this.isRhythmActive) return;
 
-        // Oscillate needle back and forth
         this.needlePos += this.needleDir * this.needleSpeed * delta;
         if (this.needlePos >= 98) {
             this.needlePos = 98;
@@ -183,41 +209,42 @@ class EventManager {
         if (!this.isRhythmActive || !this.currentRubble) return;
 
         const feedbackEl = document.getElementById('rhythm-feedback');
-        const healthEl = document.getElementById('rhythm-health-text');
 
-        // Check if needle is inside Sweet Spot
-        const isHit = (this.needlePos >= this.sweetSpotMin && this.needlePos <= this.sweetSpotMax);
+        // Hit Detection with generous fair tolerance (+/- 3.5%)
+        const tolerance = 3.5;
+        const isHit = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
 
         if (isHit) {
             // PERFECT STRIKE!
             if (window.soundEngine) window.soundEngine.playPickaxeHit(true);
             this.currentRubble.currentHealth--;
-            this.rhythmCombo++;
+            this.hitsDone++;
 
-            if (feedbackEl) {
-                feedbackEl.textContent = "HANTAMAN SEMPURNA! RETAKAN TERBUKA LEBAR!";
-                feedbackEl.className = "hit-perfect";
-            }
-
-            // Screen shockwave
-            this.triggerScreenShake(0.35, 8);
-
-            if (healthEl) {
-                healthEl.textContent = `Kerapatan Bebatuan: ${this.currentRubble.currentHealth} / ${this.currentRubble.maxHealth}`;
-            }
+            this.triggerScreenShake(0.35, 9);
+            this.updateRhythmHealthDisplay();
 
             if (this.currentRubble.currentHealth <= 0) {
                 // Completely breached!
-                if (feedbackEl) feedbackEl.textContent = "BONGKAHAN BATU HANCUR TOTAL! JALAN TERBUKA!";
+                if (feedbackEl) {
+                    feedbackEl.textContent = "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
+                    feedbackEl.className = "hit-perfect";
+                }
+
+                // Immediately clear collider so player never gets stuck!
+                if (window.gameWorld) window.gameWorld.removeRubble(this.currentRubble.id);
+
                 setTimeout(() => {
-                    if (window.gameWorld) window.gameWorld.removeRubble(this.currentRubble.id);
-                    this.showNotification("Reruntuhan berhasil dihancurkan! Terus bergerak!");
+                    this.showNotification("Cave-in rubble destroyed! Keep moving forward!");
                     this.closeRhythmMinigame();
-                }, 700);
+                }, 450);
             } else {
-                // Shift sweet spot for next strike
-                this.sweetSpotMin = 25 + Math.random() * 40;
-                this.sweetSpotMax = this.sweetSpotMin + 16;
+                if (feedbackEl) {
+                    feedbackEl.textContent = `PERFECT STRIKE! DEEP FRACTURE FORMED! (${this.currentRubble.currentHealth} MORE TO SHATTER)`;
+                    feedbackEl.className = "hit-perfect";
+                }
+                // Shift sweet spot dynamically
+                this.sweetSpotMin = 25 + Math.random() * 38;
+                this.sweetSpotMax = this.sweetSpotMin + 22;
                 const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
                 if (sweetSpotEl) {
                     sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
@@ -231,15 +258,14 @@ class EventManager {
                 window.soundEngine.playEarthquake(1.8);
             }
             if (feedbackEl) {
-                feedbackEl.textContent = "HANTAMAN MELESET! BELIUNG MEMICU GETARAN BATU!";
+                feedbackEl.textContent = "MISSED SWEET SPOT! GLANCING BLOW TRIGGERED TREMORS!";
                 feedbackEl.className = "hit-miss";
             }
 
-            // Lose extra oxygen and trigger vibration
             if (window.gamePlayer) {
-                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 4.5);
+                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 3.8);
             }
-            this.triggerScreenShake(0.7, 14);
+            this.triggerScreenShake(0.65, 12);
         }
     }
 
@@ -263,16 +289,14 @@ class EventManager {
         corpse.looted = true;
         if (corpse.valveLight) corpse.valveLight.intensity = 0;
 
-        // Refill Player Oxygen
         if (window.gamePlayer) {
             const prevO2 = window.gamePlayer.oxygen;
             window.gamePlayer.oxygen = Math.min(100, window.gamePlayer.oxygen + corpse.o2Bonus);
             const gained = Math.round(window.gamePlayer.oxygen - prevO2);
             if (window.soundEngine) window.soundEngine.playOxygenRefill();
-            this.showNotification(`+${gained}% O2 Cadangan dari ransel ${corpse.name}!`);
+            this.showNotification(`+${gained}% O2 retrieved from ${corpse.name}'s survival canister!`);
         }
 
-        // Show Story Note Modal
         this.showCorpseNote(corpse);
     }
 
@@ -284,14 +308,14 @@ class EventManager {
         const titleEl = document.getElementById('note-miner-name');
         const bodyEl = document.getElementById('note-miner-body');
 
-        if (titleEl) titleEl.textContent = `Lencana Tambang: ${corpse.name} (${corpse.role})`;
+        if (titleEl) titleEl.textContent = `Miner ID Badge: ${corpse.name} (${corpse.role})`;
         if (bodyEl) {
             bodyEl.innerHTML = `
-                <p><strong>Catatan Terakhir:</strong></p>
+                <p><strong>Last Recorded Entry:</strong></p>
                 <p class="handwriting-text">"${corpse.note}"</p>
                 <div class="note-loot-info">
-                    <span>✔ Tabung O2 Darurat Diserap (+${corpse.o2Bonus}%)</span><br>
-                    <span>✔ Baterai Senter Helm Diisi Ulang</span>
+                    <span>✔ Emergency Oxygen Canister Recovered (+${corpse.o2Bonus}%)</span><br>
+                    <span>✔ Headlamp Backup Battery Restored</span>
                 </div>
             `;
         }
@@ -343,7 +367,7 @@ class EventManager {
             }, 3500);
         }
         document.body.classList.add('earthquake-shake');
-        this.showNotification("GEMPA SUSULAN MENGGUNCANG SHAFT! BEBATUAN BERJATUHAN!");
+        this.showNotification("WARNING: AFTERSHOCK TREMOR SHAKING SHAFT CEILING! DEBRIS FALLING!");
     }
 
     triggerScreenShake(duration, intensity) {
@@ -386,4 +410,3 @@ class EventManager {
 }
 
 window.EventManager = EventManager;
-
