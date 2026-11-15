@@ -1,0 +1,36 @@
+{
+  "bounty_id": "best-game-01",
+  "bounty_name": "Make the best game",
+  "bounty_url": "https://make.fun/bounty/best-game-01",
+  "project_name": "CANARY: The Collapse",
+  "genre": "3D Psychological Underground Survival",
+  "version": "1.0.0",
+  "created_at": "2026-11-16T01:22:10+07:00",
+  "submission_timestamp": "2026-11-16T01:36:52+07:00",
+  "author": "Antigravity Participant",
+  "entry_point": "index.html",
+  "standalone_entry_point": "canary_standalone.html",
+  "engine": {
+    "graphics": "Three.js r128 (Local Offline / Zero CDN Dependency)",
+    "audio": "Procedural Web Audio API (Zero External MP3/WAV)",
+    "textures": "Procedural Canvas Generation (Zero External Image Files)",
+    "runtime": "100% Offline in Google Chrome / WebGL-compatible browsers"
+  },
+  "compliance": {
+    "offline_compatible": true,
+    "no_external_network_requests": true,
+    "pointer_lock_controls": true,
+    "procedural_soundtrack": true,
+    "complete_game_loop": true
+  },
+  "key_features": [
+    "Dynamic Depth Survival (780m to 0m)",
+    "Respirator Oxygen Depletion (Sprint drains 3x faster)",
+    "Hypoxia Visual Distortion & Hallucinations (Tunnel vision, tinnitus, golden silhouette of Lily)",
+    "Diegetic Fading Polaroid of Lily with 3D Inspection & Handwritten Note [T]",
+    "Precision Rhythm Pickaxe Breach Mini-game [Space in green sweet spot]",
+    "Fallen Miner Corpses Looting (Tomas, Erik, Budi) with emotional lore",
+    "Physical Hazards (Gravel slipping/tripping, aftershock earthquakes, flashlight failure [F] to tap)"
+  ]
+}
+
