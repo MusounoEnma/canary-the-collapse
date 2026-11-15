@@ -59,6 +59,20 @@ body, html {
     transition: background 0.4s ease;
 }
 
+#underwater-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 12;
+    background: radial-gradient(circle at center, rgba(16, 92, 107, 0.4) 0%, rgba(8, 48, 64, 0.75) 60%, rgba(2, 20, 30, 0.94) 100%);
+    backdrop-filter: blur(1.8px);
+    display: none;
+    box-shadow: inset 0 0 100px rgba(0, 255, 230, 0.2);
+}
+
 #hypoxia-overlay.active {
     animation: hypoxiaPulse 2.2s infinite ease-in-out;
 }
@@ -879,6 +893,9 @@ body.earthquake-shake {
     <!-- Hypoxia & Tunnel Vision Screen Post-Processing Overlay -->
     <div id="hypoxia-overlay"></div>
 
+    <!-- Underwater Submersion Screen Post-Processing Overlay -->
+    <div id="underwater-overlay"></div>
+
     <!-- Heads-Up Display (HUD) Layer -->
     <div id="hud-layer">
         <!-- Center Aim Crosshair -->
@@ -1089,7 +1106,7 @@ body.earthquake-shake {
 /**
  * CANARY: The Collapse - Procedural Web Audio Engine
  * 100% synthesized audio using Web Audio API without external audio files.
- * Enhanced with water puddle splashes and mining ambiance.
+ * Enhanced with water puddle splashes, underwater swimming strokes, and rope climbing creaks.
  */
 
 class SoundEngine {
@@ -1104,6 +1121,8 @@ class SoundEngine {
         this.heartbeatBpm = 65;
         this.isHeartbeatRunning = false;
         this.ambienceGain = null;
+        this.isUnderwater = false;
+        this.underwaterFilter = null;
         this.isInitialized = false;
     }
 
@@ -1115,6 +1134,11 @@ class SoundEngine {
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = 0.85;
 
+        // Lowpass master filter for underwater stage
+        this.underwaterFilter = this.ctx.createBiquadFilter();
+        this.underwaterFilter.type = 'lowpass';
+        this.underwaterFilter.frequency.setValueAtTime(22000, this.ctx.currentTime);
+
         const compressor = this.ctx.createDynamicsCompressor();
         compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
         compressor.knee.setValueAtTime(30, this.ctx.currentTime);
@@ -1122,7 +1146,8 @@ class SoundEngine {
         compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
         compressor.release.setValueAtTime(0.25, this.ctx.currentTime);
 
-        this.masterGain.connect(compressor);
+        this.masterGain.connect(this.underwaterFilter);
+        this.underwaterFilter.connect(compressor);
         compressor.connect(this.ctx.destination);
 
         // Continuous Tinnitus Node
@@ -1146,6 +1171,13 @@ class SoundEngine {
         if (this.ctx && this.ctx.state === 'suspended') {
             this.ctx.resume();
         }
+    }
+
+    setUnderwater(active) {
+        if (!this.underwaterFilter || !this.ctx) return;
+        this.isUnderwater = active;
+        const targetFreq = active ? 450 : 22000;
+        this.underwaterFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.3);
     }
 
     initAmbience() {
@@ -1206,7 +1238,6 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Wet Puddle Water Splash Footstep
     playWaterSplash(isSprinting = false) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -1236,6 +1267,86 @@ class SoundEngine {
         gain.connect(this.masterGain);
 
         noise.start(now);
+    }
+
+    // Underwater Swimming Arm Stroke
+    playWaterStroke() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = 0.42;
+
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.sin((i / bufSize) * Math.PI);
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(260, now);
+        filter.frequency.linearRampToValueAtTime(520, now + 0.15);
+        filter.frequency.linearRampToValueAtTime(180, now + dur);
+        filter.Q.setValueAtTime(3.0, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.28, now + 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        noise.start(now);
+    }
+
+    // Heavy Rescue Rope Creak / Grip
+    playRopeCreak() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Friction noise
+        const bufSize = Math.floor(this.ctx.sampleRate * 0.28);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.5));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(850, now);
+        f.frequency.exponentialRampToValueAtTime(420, now + 0.25);
+        f.Q.setValueAtTime(4.0, now);
+
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.25, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+        noise.connect(f);
+        f.connect(g);
+        g.connect(this.masterGain);
+        noise.start(now);
+
+        // Low rope tension creak
+        const osc = this.ctx.createOscillator();
+        const og = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(95, now + 0.24);
+        og.gain.setValueAtTime(0.18, now);
+        og.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        osc.connect(og);
+        og.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.26);
     }
 
     startBreathingLoop() {
@@ -1294,10 +1405,10 @@ class SoundEngine {
         const pulse = () => {
             if (!this.ctx) return;
             const o2 = window.gameState ? window.gameState.oxygen : 100;
-            const targetBpm = Math.floor(65 + (100 - o2) * 0.85);
+            const targetBpm = Math.floor(65 + (100 - o2) * 0.95);
             this.heartbeatBpm = targetBpm;
 
-            const intensity = o2 < 35 ? 0.45 : (o2 < 60 ? 0.25 : 0.12);
+            const intensity = o2 < 35 ? 0.48 : (o2 < 60 ? 0.28 : 0.12);
             this.triggerHeartbeat(intensity);
 
             const intervalMs = (60 / this.heartbeatBpm) * 1000;
@@ -1814,12 +1925,12 @@ window.polaroidSystem = new PolaroidSystem();
 <script>
 /* --- 3D MINE WORLD --- */
 /**
- * CANARY: The Collapse - 3D Extreme Undulating Cavern & Dynamic Route Switch
+ * CANARY: The Collapse - 3D Extreme Undulating Cavern, Swimming Stage & Rescue Rope
  * Features:
- * - Extreme winding curves and steep incline drops.
- * - Dynamic steep slide chute leading into the flooded lower drainage drift.
+ * - Clean solid boulder rubble (Zero vertex glitch/spike anomalies).
+ * - Flooded underwater cavern sump stage for swimming.
+ * - Vertical rescue rope stage for climbing up the cliff ledge.
  * - Gritty dark atmospheric coal & slate textures.
- * - Seamless 360-degree TubeGeometry.
  */
 
 class MineWorld {
@@ -1828,9 +1939,11 @@ class MineWorld {
         this.rubbleObjects = [];
         this.corpseObjects = [];
         this.dustParticles = null;
+        this.bubbleParticles = null;
         this.hallucination = null;
         this.emergencyLights = [];
         this.escapeHatch = null;
+        this.rescueRope = null;
         this.puddles = [];
 
         this.tunnelLength = 280;
@@ -1839,6 +1952,7 @@ class MineWorld {
         this.buildSeamlessCavern();
         this.buildAtmosphere();
         this.buildInteractables();
+        this.buildRescueRope();
         this.buildHallucination();
     }
 
@@ -1846,11 +1960,10 @@ class MineWorld {
     // EXTREME CURVE & ELEVATION FORMULAS
     // -------------------------------------------------------------
     getPathX(z) {
-        // Dramatic S-turns through tectonic fault lines
         if (z > -140) {
             return Math.sin(z * 0.045) * 5.8 + Math.sin(z * 0.02) * 3.4;
         } else if (z > -175) {
-            // Sharp switchback hairpin curve in the lower drainage rift
+            // Hairpin curve through the submerged rift
             const t = (z - (-140)) / (-35);
             return (Math.sin(-140 * 0.045) * 5.8) + Math.sin(t * Math.PI) * 7.5;
         } else {
@@ -1860,24 +1973,19 @@ class MineWorld {
     }
 
     getPathY(z) {
-        // Extreme elevation profile:
-        // z=0 to -140: Rolling hills and steep climbs (+8m)
-        // z=-140 to -160: Steep rockslide chute drop (-6m plunged downward!)
-        // z=-160 to -262: Massive arduous climb upward out of the abyss to surface (+28m ascent!)
         if (z > -140) {
             const climb = (-z / 140) * 9.5;
             const dips = Math.sin(z * 0.08) * 2.2 + Math.cos(z * 0.04) * 1.5;
             return climb + dips;
-        } else if (z > -165) {
-            // Steep rockslide plunge into lower drainage sump
-            const t = (-z - 140) / 25; // 0 to 1
-            const drop = (1 - t) * 9.5 + t * 2.8;
-            return drop - Math.sin(t * Math.PI) * 2.5;
+        } else if (z > -180) {
+            // Flooded swimming sump basin (lower depth)
+            const t = (-z - 140) / 40;
+            return 2.5 - Math.sin(t * Math.PI) * 1.8;
         } else {
-            // Ascending final steep tunnel out of depth to surface (+24m)
-            const t = (-z - 165) / 97; // 0 to 1
-            const ascent = 2.8 + t * 23.5;
-            const ruggedness = Math.sin(z * 0.07) * 1.4;
+            // Upper cliff ledge after rope climb: ascends up to +28m at surface hatch
+            const t = (-z - 180) / 82;
+            const ascent = 9.8 + t * 18.0;
+            const ruggedness = Math.sin(z * 0.07) * 1.2;
             return ascent + ruggedness;
         }
     }
@@ -1892,7 +2000,6 @@ class MineWorld {
         rctx.fillStyle = '#171411';
         rctx.fillRect(0, 0, 512, 512);
 
-        // Sedimentary strata bands (coal seams & damp shale)
         for (let y = 0; y < 512; y += 3) {
             const noise = Math.sin(y * 0.06) * 14 + Math.random() * 20;
             const lum = 22 + Math.floor(noise * 0.7);
@@ -1903,7 +2010,6 @@ class MineWorld {
             rctx.fillRect(0, y, 512, 2 + Math.random() * 3);
         }
 
-        // Deep black coal fissures
         for (let i = 0; i < 30; i++) {
             rctx.strokeStyle = i % 2 === 0 ? 'rgba(6, 5, 4, 0.95)' : 'rgba(70, 50, 35, 0.45)';
             rctx.lineWidth = 2 + Math.random() * 4;
@@ -1919,7 +2025,6 @@ class MineWorld {
             rctx.stroke();
         }
 
-        // Damp rock speckles & glistening pyrite specks
         for (let k = 0; k < 4500; k++) {
             const px = Math.random() * 512;
             const py = Math.random() * 512;
@@ -1973,18 +2078,18 @@ class MineWorld {
         this.cavernCurve = curve;
 
         const tubularSegments = 300;
-        const radius = 3.7;
+        const radius = 3.75;
         const radialSegments = 16;
         const tubeGeo = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
 
-        // Add jagged cavern roughness
+        // Smooth natural rock bump (Zero spikes)
         const posAttr = tubeGeo.attributes.position;
         for (let i = 0; i < posAttr.count; i++) {
             const vx = posAttr.getX(i);
             const vy = posAttr.getY(i);
             const vz = posAttr.getZ(i);
 
-            const bump = (Math.sin(vx * 2.2) * Math.cos(vy * 2.4) * Math.sin(vz * 1.7)) * 0.28;
+            const bump = (Math.sin(vx * 1.8) * Math.cos(vy * 2.0) * Math.sin(vz * 1.4)) * 0.22;
             posAttr.setX(i, vx + bump);
             posAttr.setY(i, vy + bump);
         }
@@ -2002,6 +2107,127 @@ class MineWorld {
         this.scene.add(cavernMesh);
 
         this.buildTracks();
+        this.buildSubmergedWaterVolume();
+    }
+
+    // Submerged Flooded Tunnel Stage (Swimming section: z=-160 to -178)
+    buildSubmergedWaterVolume() {
+        // Deep murky water plane covering the swimming basin
+        const waterGeo = new THREE.PlaneGeometry(7.0, 22.0, 10, 20);
+        waterGeo.rotateX(-Math.PI / 2);
+
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x0a2228,
+            roughness: 0.08,
+            metalness: 0.85,
+            transparent: true,
+            opacity: 0.82
+        });
+
+        const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+        // Positioned at swimming basin elevation
+        const midZ = -169;
+        waterMesh.position.set(this.getPathX(midZ), this.getPathY(midZ) + 1.25, midZ);
+        this.scene.add(waterMesh);
+
+        // Underwater bubble particles
+        const bubbleCount = 200;
+        const bubbleGeo = new THREE.BufferGeometry();
+        const bPos = new Float32Array(bubbleCount * 3);
+        for (let i = 0; i < bubbleCount * 3; i += 3) {
+            bPos[i] = this.getPathX(midZ) + (Math.random() - 0.5) * 5;
+            bPos[i + 1] = this.getPathY(midZ) + Math.random() * 2.2;
+            bPos[i + 2] = midZ + (Math.random() - 0.5) * 18;
+        }
+        bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
+
+        const bubbleMat = new THREE.PointsMaterial({
+            color: 0x80deea,
+            size: 0.08,
+            transparent: true,
+            opacity: 0.6
+        });
+        this.bubbleParticles = new THREE.Points(bubbleGeo, bubbleMat);
+        this.scene.add(this.bubbleParticles);
+    }
+
+    // Vertical Rescue Climbing Rope at Cliff Ledge (z = -180)
+    buildRescueRope() {
+        const ropeZ = -180;
+        const ropeX = this.getPathX(ropeZ);
+        const lowerY = this.getPathY(ropeZ);
+        const upperY = lowerY + 7.5; // 7.5 meters climb to upper ledge!
+
+        const ropeGroup = new THREE.Group();
+
+        // Thick braided hemp rescue rope (Cylinder)
+        const ropeMat = new THREE.MeshStandardMaterial({
+            color: 0x8d6e63,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 7.8, 8), ropeMat);
+        rope.position.set(0, 3.9, 0);
+        ropeGroup.add(rope);
+
+        // Rope climbing knots / grip rungs every 0.8m
+        const knotMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+        for (let y = 0.5; y < 7.5; y += 0.75) {
+            const knot = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 6, 12), knotMat);
+            knot.rotation.x = Math.PI / 2;
+            knot.position.set(0, y, 0);
+            ropeGroup.add(knot);
+        }
+
+        // Heavy steel anchor bolt & carabiner in ceiling
+        const anchorMat = new THREE.MeshStandardMaterial({ color: 0xffd54f, metalness: 0.8 });
+        const anchor = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.05, 8, 16), anchorMat);
+        anchor.position.set(0, 7.8, 0);
+        ropeGroup.add(anchor);
+
+        // Emergency beacon pulsing at the top of the rope
+        const ropeBeacon = new THREE.PointLight(0xffb300, 1.2, 10, 2);
+        ropeBeacon.position.set(0, 7.6, 0.5);
+        ropeGroup.add(ropeBeacon);
+
+        // Warning sign at base of rope
+        const ropeSignCanvas = document.createElement('canvas');
+        ropeSignCanvas.width = 256;
+        ropeSignCanvas.height = 128;
+        const rctx = ropeSignCanvas.getContext('2d');
+        rctx.fillStyle = '#00695c';
+        rctx.fillRect(0, 0, 256, 128);
+        rctx.strokeStyle = '#fff';
+        rctx.lineWidth = 4;
+        rctx.strokeRect(5, 5, 246, 118);
+        rctx.fillStyle = '#fff';
+        rctx.font = 'bold 18px monospace';
+        rctx.textAlign = 'center';
+        rctx.fillText('RESCUE ROPE #04', 128, 42);
+        rctx.fillStyle = '#ffeb3b';
+        rctx.font = 'bold 14px monospace';
+        rctx.fillText('CLIMB TO UPPER LEDGE', 128, 75);
+        rctx.fillText('➔ SURFACE ACCESS', 128, 102);
+
+        const signMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.4, 0.7),
+            new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(ropeSignCanvas) })
+        );
+        signMesh.position.set(1.4, 2.0, 0);
+        signMesh.rotation.y = -Math.PI / 4;
+        ropeGroup.add(signMesh);
+
+        ropeGroup.position.set(ropeX, lowerY, ropeZ);
+        this.scene.add(ropeGroup);
+
+        this.rescueRope = {
+            group: ropeGroup,
+            x: ropeX,
+            lowerY: lowerY,
+            upperY: upperY,
+            z: ropeZ,
+            isClimbed: false
+        };
     }
 
     buildTracks() {
@@ -2019,8 +2245,7 @@ class MineWorld {
 
         const step = 1.4;
         for (let z = 10; z >= -this.tunnelLength + 10; z -= step) {
-            // In the steep slide zone (z=-140 to -160), rails are mangled and twisted!
-            const isSlideZone = (z < -138 && z > -160);
+            const isSlideOrSwim = (z < -138 && z > -182);
 
             const x = this.getPathX(z);
             const y = this.getPathY(z);
@@ -2028,7 +2253,7 @@ class MineWorld {
             const nextX = this.getPathX(z - step);
             const nextY = this.getPathY(z - step);
 
-            if (!isSlideZone) {
+            if (!isSlideOrSwim) {
                 const tie = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.09, 0.25), tieMat);
                 tie.position.set(x, y + 0.05, z);
                 tie.lookAt(nextX, nextY + 0.05, z - step);
@@ -2045,22 +2270,14 @@ class MineWorld {
                 rr.position.set((x + nextX) / 2 + 0.75, (y + nextY) / 2 + 0.09, z - step / 2);
                 rr.lookAt(nextX + 0.75, nextY + 0.09, z - step);
                 this.scene.add(rr);
-            } else {
-                // Twisted broken rail segments in the slide chute
-                if (Math.abs(z % 3.0) < step) {
-                    const brokenRail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 2.5), railMat);
-                    brokenRail.position.set(x + (Math.random() - 0.5) * 1.5, y + 0.1, z);
-                    brokenRail.rotation.set(Math.random() * 0.8, Math.random() * 1.5, Math.random() * 0.8);
-                    this.scene.add(brokenRail);
-                }
             }
 
-            if (Math.abs(z % 6.5) < step && !isSlideZone) {
+            if (Math.abs(z % 6.5) < step && !isSlideOrSwim) {
                 this.buildTimberArch(x, y, z, nextX, nextY, z - step, tieMat);
             }
         }
 
-        // Flooded Puddle Pools in the lowest sumps
+        // Flooded Puddles in dips
         const puddleGeo = new THREE.CircleGeometry(1.6, 20);
         puddleGeo.rotateX(-Math.PI / 2);
         const puddleMat = new THREE.MeshStandardMaterial({
@@ -2069,14 +2286,13 @@ class MineWorld {
             metalness: 0.85
         });
 
-        // Puddles located in dips, especially the flooded landing pool after the slide at z = -162!
-        const puddleZ = [-34, -72, -118, -162, -215];
+        const puddleZ = [-34, -72, -118, -215];
         puddleZ.forEach((pz, idx) => {
             const px = this.getPathX(pz) + (idx % 2 === 0 ? 0.35 : -0.35);
             const py = this.getPathY(pz) + 0.03;
             const p = new THREE.Mesh(puddleGeo, puddleMat);
             p.position.set(px, py, pz);
-            p.scale.set(pz === -162 ? 2.2 : 1.3, 1, pz === -162 ? 3.0 : 1.9);
+            p.scale.set(1.3, 1, 1.9);
             this.scene.add(p);
             this.puddles.push(p);
         });
@@ -2139,8 +2355,7 @@ class MineWorld {
         this.dustParticles = new THREE.Points(dustGeo, dustMat);
         this.scene.add(this.dustParticles);
 
-        // Emergency Amber Lights
-        const lampPositions = [-25, -75, -125, -178, -232];
+        const lampPositions = [-25, -75, -125, -195, -235];
         lampPositions.forEach((lz, idx) => {
             const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.6 : -1.6);
             const ly = this.getPathY(lz) + 2.7;
@@ -2208,7 +2423,7 @@ class MineWorld {
         s1.rotation.y = -Math.PI / 2;
         this.scene.add(s1);
 
-        // Warning sign right before the steep rockslide chute at z = -138
+        // Warning sign before steep chute
         const warnCanvas = document.createElement('canvas');
         warnCanvas.width = 256;
         warnCanvas.height = 128;
@@ -2221,10 +2436,10 @@ class MineWorld {
         wctx.fillStyle = '#000';
         wctx.font = 'bold 20px monospace';
         wctx.textAlign = 'center';
-        wctx.fillText('⚠ STEEP CHUTE ⚠', 128, 45);
+        wctx.fillText('⚠ STEEP PRECIPICE ⚠', 128, 45);
         wctx.font = 'bold 16px monospace';
-        wctx.fillText('COLLAPSE HAZARD', 128, 78);
-        wctx.fillText('SLIPPERY PRECIPICE', 128, 105);
+        wctx.fillText('FLOODED RIFT AHEAD', 128, 78);
+        wctx.fillText('SLIPPERY DEBRIS', 128, 105);
 
         const warnTex = new THREE.CanvasTexture(warnCanvas);
         const s2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.75), new THREE.MeshStandardMaterial({ map: warnTex }));
@@ -2235,14 +2450,11 @@ class MineWorld {
     }
 
     buildInteractables() {
-        // 1. RUBBLE OBSTACLES
-        // Rubble 1 at z = -52
-        // Rubble 2 at z = -128 (Right before the rockslide chute)
-        // Rubble 3 at z = -208 (Final barrier in the canyon shaft)
+        // 1. RUBBLE OBSTACLES - CLEAN SOLID LOW-POLY BOULDERS (Zero spiky glitch anomaly!)
         const rubbleConfigs = [
             { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Upper Shaft)" },
             { id: 2, z: -128, health: 2, name: "Fractured Fault Boulder Block" },
-            { id: 3, z: -208, health: 2, name: "Granite Surface Gate Barrier" }
+            { id: 3, z: -215, health: 2, name: "Granite Surface Gate Barrier" }
         ];
 
         rubbleConfigs.forEach(cfg => {
@@ -2252,31 +2464,29 @@ class MineWorld {
 
             const rockMat = new THREE.MeshStandardMaterial({
                 map: this.rockTexture,
-                roughness: 0.92,
-                color: 0x5a554e
+                roughness: 0.90,
+                metalness: 0.1,
+                color: 0x4e4a44
             });
 
-            for (let i = 0; i < 24; i++) {
-                const size = 0.65 + Math.random() * 0.85;
-                const rGeo = new THREE.DodecahedronGeometry(size, 1);
-                const pos = rGeo.attributes.position;
-                for (let k = 0; k < pos.count; k++) {
-                    pos.setX(k, pos.getX(k) * (0.8 + Math.random() * 0.4));
-                    pos.setY(k, pos.getY(k) * (0.8 + Math.random() * 0.4));
-                }
-                rGeo.computeVertexNormals();
-
+            // Realistic solid low-poly boulders (NO vertex random distortion glitches!)
+            for (let i = 0; i < 18; i++) {
+                const s = 0.7 + (i % 5) * 0.22;
+                // Clean Dodecahedron with detail 0 (clean facet geometry)
+                const rGeo = new THREE.DodecahedronGeometry(s, 0);
                 const rockMesh = new THREE.Mesh(rGeo, rockMat);
-                rockMesh.position.set(
-                    (Math.random() - 0.5) * 4.4,
-                    Math.random() * 2.7,
-                    (Math.random() - 0.5) * 2.0
-                );
-                rockMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+                const ox = ((i % 5) - 2) * 0.85 + (Math.sin(i) * 0.4);
+                const oy = Math.floor(i / 5) * 0.9 + 0.3;
+                const oz = ((i % 3) - 1) * 0.7;
+
+                rockMesh.position.set(ox, oy, oz);
+                rockMesh.rotation.set(i * 0.5, i * 0.8, i * 0.3);
                 rockMesh.castShadow = true;
                 group.add(rockMesh);
             }
 
+            // Warning marker above rubble
             const glowMat = new THREE.MeshBasicMaterial({
                 color: 0xffb300,
                 wireframe: true,
@@ -2304,9 +2514,7 @@ class MineWorld {
             });
         });
 
-        // 2. FALLEN MINER CORPSES (Only in the first half of the mine!)
-        // In the final stretch (z < -140), NO MORE CORPSES OR O2 AID EXISTS!
-        // The player must survive strictly on remaining air!
+        // 2. FALLEN MINER CORPSES
         const corpseConfigs = [
             { id: 1, z: -26, xOff: 1.4, name: "Tomas", role: "Shift Supervisor", o2Bonus: 35, note: "Emergency O2 cylinder has 35% capacity left. Badge reads: 'Tomas - Father of two'." },
             { id: 2, z: -95, xOff: -1.4, name: "Erik", role: "Driller", o2Bonus: 40, note: "Military high-pressure O2 canister (+40%). A photo of his family is tucked in his pocket." }
@@ -2481,6 +2689,18 @@ class MineWorld {
             posAttr.needsUpdate = true;
         }
 
+        // Animate underwater bubbles
+        if (this.bubbleParticles) {
+            const bAttr = this.bubbleParticles.geometry.attributes.position;
+            for (let i = 1; i < bAttr.count * 3; i += 3) {
+                bAttr.array[i] += delta * 1.5;
+                if (bAttr.array[i] > 4.2) {
+                    bAttr.array[i] = 0.8;
+                }
+            }
+            bAttr.needsUpdate = true;
+        }
+
         const time = Date.now() * 0.005;
         this.emergencyLights.forEach(lamp => {
             const flicker = Math.sin(time + lamp.flickerSeed) * Math.cos(time * 2.3 + lamp.flickerSeed);
@@ -2577,10 +2797,10 @@ window.MineWorld = MineWorld;
 /**
  * CANARY: The Collapse - FPS Player Controller
  * Features:
- * - Dramatic Rockslide Tumble: Player slips and rolls 720 degrees down the steep chute into the lower flooded rift.
- * - Dynamic route switch after tumbling.
- * - Critical Oxygen Leak Climax: Unassisted high-tension oxygen depletion in the final stretch towards the surface hatch.
- * - Solid non-slippery foot friction & responsive camera controls.
+ * - Underwater Swimming Stage (z=-160 to -178) with murky water FX and muffled audio.
+ * - Vertical Rescue Rope Climbing Stage (z=-180) to ascend the 7.5m cliff ledge.
+ * - Dramatic Rockslide Tumble: Slips and rolls 720 degrees down the steep chute.
+ * - High-Tension Oxygen Depletion Climax.
  */
 
 class PlayerController {
@@ -2600,7 +2820,7 @@ class PlayerController {
         // Camera Look Pitch/Yaw/Roll
         this.yaw = 0;
         this.pitch = 0;
-        this.roll = 0; // Roll angle used for dramatic tumbling
+        this.roll = 0;
         this.isLocked = false;
         this.sensitivity = 0.0016;
 
@@ -2616,6 +2836,18 @@ class PlayerController {
         this.tumbleDuration = 2.2;
         this.tumbleStartZ = -140;
         this.tumbleEndZ = -162;
+
+        // Underwater Swimming Stage
+        this.isSwimming = false;
+        this.swimStrokeTimer = 0;
+
+        // Vertical Rescue Rope Climbing Stage
+        this.isClimbingRope = false;
+        this.ropeClimbProgress = 0; // 0 to 1
+        this.ropeClimbSpeed = 0.35; // ~3 seconds climb
+        this.ropeStartY = 0;
+        this.ropeEndY = 0;
+        this.hasClimbedRope = false;
 
         // Flashlight (Helmet Headlamp)
         this.flashlight = null;
@@ -2677,7 +2909,7 @@ class PlayerController {
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!this.isLocked || this.isDead || this.isTumbling) return;
+            if (!this.isLocked || this.isDead || this.isTumbling || this.isClimbingRope) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
             this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
@@ -2685,6 +2917,16 @@ class PlayerController {
 
         window.addEventListener('keydown', (e) => {
             if (this.isDead || this.isTumbling) return;
+
+            // While climbing rope, space / W climbs faster
+            if (this.isClimbingRope) {
+                if (e.code === 'KeyW' || e.code === 'Space') {
+                    this.ropeClimbProgress += 0.08;
+                    if (window.soundEngine) window.soundEngine.playRopeCreak();
+                }
+                return;
+            }
+
             switch (e.code) {
                 case 'KeyW':
                 case 'ArrowUp':
@@ -2787,7 +3029,7 @@ class PlayerController {
     }
 
     triggerFlashlightMalfunction() {
-        if (this.isFlashlightMalfunctioning || this.isTumbling) return;
+        if (this.isFlashlightMalfunctioning || this.isTumbling || this.isClimbingRope) return;
         this.isFlashlightMalfunctioning = true;
         this.tapsRequired = Math.floor(1 + Math.random() * 2);
 
@@ -2817,7 +3059,6 @@ class PlayerController {
         this.isTumbling = true;
         this.tumbleTimer = 0;
 
-        // Play heavy tumbling earthquake & rock shatter sound
         if (window.soundEngine) {
             window.soundEngine.playEarthquake(3.5);
             window.soundEngine.playWaterSplash(true);
@@ -2832,32 +3073,28 @@ class PlayerController {
             window.eventManager.showNotification("PRECIPICE COLLAPSE! SLIDING AND TUMBLING DOWN THE SHAFT!");
         }
 
-        // Damage respirator seal -> starts high tension unassisted oxygen leak
         this.isRespiratorLeaking = true;
-        this.oxygen = Math.max(12, this.oxygen - 18.0); // Loses burst of air in the fall
+        this.oxygen = Math.max(12, this.oxygen - 18.0);
     }
 
     updateTumble(delta, world) {
         this.tumbleTimer += delta;
         const progress = Math.min(1.0, this.tumbleTimer / this.tumbleDuration);
 
-        // Smooth cubic plunge along the steep chute
         const easeT = progress * progress * (3 - 2 * progress);
         this.position.z = THREE.MathUtils.lerp(this.tumbleStartZ, this.tumbleEndZ, easeT);
         this.position.x = world.getPathX(this.position.z);
         this.position.y = world.getPathY(this.position.z);
 
-        // Violent tumbling camera roll: 720 degrees (2 full barrel rolls)
+        // 720 degree tumble roll
         this.roll = progress * Math.PI * 4;
         this.pitch = Math.sin(progress * Math.PI * 6) * 0.45;
 
-        // Flashlight flickers violently during the tumble
         if (this.flashlight) {
             this.flashlight.intensity = Math.random() > 0.4 ? 2.5 : 0.2;
         }
 
         if (progress >= 1.0) {
-            // Landed into the flooded drainage rift pool!
             this.isTumbling = false;
             this.roll = 0;
             this.pitch = 0;
@@ -2865,7 +3102,6 @@ class PlayerController {
             if (this.flashlight) this.flashlight.intensity = 3.6;
             if (window.soundEngine) window.soundEngine.playWaterSplash(true);
 
-            // Trigger dramatic post-tumble monologue
             if (window.gameState) {
                 window.gameState.triggerMonologue("tumbleLanded");
             }
@@ -2876,8 +3112,62 @@ class PlayerController {
         }
     }
 
+    // -------------------------------------------------------------
+    // VERTICAL RESCUE ROPE CLIMBING STAGE (z = -180)
+    // -------------------------------------------------------------
+    startRopeClimb(rescueRope) {
+        if (this.isClimbingRope || this.hasClimbedRope) return;
+        this.isClimbingRope = true;
+        this.hasClimbedRope = true;
+        this.ropeClimbProgress = 0;
+        this.ropeStartY = rescueRope.lowerY;
+        this.ropeEndY = rescueRope.upperY;
+
+        // Position directly at rope
+        this.position.x = rescueRope.x;
+        this.position.z = rescueRope.z;
+
+        if (window.soundEngine) window.soundEngine.playRopeCreak();
+        if (window.eventManager) window.eventManager.showNotification("CLIMBING RESCUE ROPE! TAP [W] OR [SPACE] TO ASCEND FASTER!");
+    }
+
+    updateRopeClimb(delta) {
+        // Continuous upward climb + player key taps
+        this.ropeClimbProgress += delta * this.ropeClimbSpeed;
+        const p = Math.min(1.0, this.ropeClimbProgress);
+
+        // Vertically ascend camera and position
+        const currentY = THREE.MathUtils.lerp(this.ropeStartY, this.ropeEndY, p);
+        this.position.y = currentY;
+        this.cameraBaseY = currentY + 1.6;
+
+        // Camera looks up at anchor and rocks swaying slightly
+        this.pitch = Math.PI / 4.5 + Math.sin(this.ropeClimbProgress * 15) * 0.08;
+        this.roll = Math.cos(this.ropeClimbProgress * 15) * 0.06;
+
+        // Sound creaks periodically
+        if (Math.sin(this.ropeClimbProgress * 20) > 0.8) {
+            if (window.soundEngine) window.soundEngine.playRopeCreak();
+        }
+
+        if (p >= 1.0) {
+            // Reached upper canyon ledge!
+            this.isClimbingRope = false;
+            this.pitch = 0;
+            this.roll = 0;
+
+            // Step onto the solid rock of upper ledge
+            this.position.z = -183;
+            this.position.y = this.ropeEndY;
+
+            if (window.soundEngine) window.soundEngine.playFootstep(true);
+            if (window.eventManager) window.eventManager.showNotification("SUCCESS! REACHED UPPER CANYON LEDGE!");
+            if (window.gameState) window.gameState.triggerMonologue("ropeClimbed");
+        }
+    }
+
     triggerStumble() {
-        if (this.isStumbled || this.isTumbling) return;
+        if (this.isStumbled || this.isTumbling || this.isClimbingRope || this.isSwimming) return;
         this.isStumbled = true;
         this.stumbleRecoveryTimer = 1.4;
         if (window.soundEngine) {
@@ -2893,17 +3183,14 @@ class PlayerController {
     update(delta, world) {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
 
-        // Handle Active Tumble Event
+        // 1. Handle Active Tumble Event
         if (this.isTumbling) {
             this.updateTumble(delta, world);
-
-            // Update Camera Transformations during tumble
             this.camera.position.set(this.position.x, this.position.y + 1.2, this.position.z);
             this.camera.rotation.set(0, 0, 0);
             this.camera.rotation.y = this.yaw;
             this.camera.rotation.x = this.pitch;
-            this.camera.rotation.z = this.roll; // Tumbling roll!
-
+            this.camera.rotation.z = this.roll;
             if (this.flashlight && this.flashlightTarget) {
                 this.flashlight.position.copy(this.camera.position);
                 const lookDir = new THREE.Vector3();
@@ -2913,7 +3200,40 @@ class PlayerController {
             return;
         }
 
-        // 1. Oxygen Depletion & High-Tension Climax Calculation
+        // 2. Handle Active Rope Climbing Event
+        if (this.isClimbingRope) {
+            this.updateRopeClimb(delta);
+            this.camera.position.set(this.position.x, this.cameraBaseY, this.position.z);
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.rotation.y = this.yaw;
+            this.camera.rotation.x = this.pitch;
+            this.camera.rotation.z = this.roll;
+            if (this.flashlight && this.flashlightTarget) {
+                this.flashlight.position.copy(this.camera.position);
+                const lookDir = new THREE.Vector3();
+                this.camera.getWorldDirection(lookDir);
+                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(6));
+            }
+            return;
+        }
+
+        // 3. Underwater Swimming Stage Detection (z between -162 and -178)
+        const inSwimmingZone = (this.position.z <= -161 && this.position.z >= -178);
+        if (inSwimmingZone !== this.isSwimming) {
+            this.isSwimming = inSwimmingZone;
+            if (window.soundEngine) window.soundEngine.setUnderwater(this.isSwimming);
+
+            const underOverlay = document.getElementById('underwater-overlay');
+            if (underOverlay) {
+                underOverlay.style.display = this.isSwimming ? 'block' : 'none';
+            }
+
+            if (this.isSwimming && window.gameState) {
+                window.gameState.triggerMonologue("swimming");
+            }
+        }
+
+        // 4. Oxygen Depletion & High-Tension Climax Calculation
         let drainRate = 0.48;
         this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
 
@@ -2921,14 +3241,17 @@ class PlayerController {
             drainRate *= 3.0;
         }
 
-        // After the tumble and entering the final canyon (z < -162), respirator leak accelerates tension!
+        if (this.isSwimming) {
+            drainRate += 0.45; // Struggling in deep water
+        }
+
         if (this.isRespiratorLeaking) {
-            drainRate += 0.85; // Faster leak
+            drainRate += 0.85;
         }
 
         // Final desperate stretch (z < -215): tightly calibrated so player arrives with ~5% - 10% O2!
         if (this.position.z < -215) {
-            drainRate += 1.15; // Lungs burning, tank gasping
+            drainRate += 1.15;
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -2937,13 +3260,13 @@ class PlayerController {
             return;
         }
 
-        // 2. Check Trigger for Dramatic Rockslide Tumble (at z = -139)
+        // 5. Trigger Rockslide Tumble Check (at z = -139)
         if (!this.hasTumbled && this.position.z <= -139 && this.position.z >= -144) {
             this.triggerRockslideTumble();
             return;
         }
 
-        // 3. Headlamp Malfunction Random Check
+        // 6. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
         if (this.nextMalfunctionCheck <= 0) {
             this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
@@ -2952,28 +3275,15 @@ class PlayerController {
             }
         }
 
-        // 4. Flooded Puddle Check & Tripping Hazard
-        let inWater = false;
-        world.puddles.forEach(p => {
-            if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.8) {
-                inWater = true;
-                if (this.isSprinting && !this.isStumbled && Math.random() < 0.04) {
-                    this.triggerStumble();
-                }
-            }
-        });
-
-        if (this.isStumbled) {
-            this.stumbleRecoveryTimer -= delta;
-            this.stumblePitchOffset = Math.sin(this.stumbleRecoveryTimer * 3.5) * -0.3;
-            if (this.stumbleRecoveryTimer <= 0) {
-                this.isStumbled = false;
-                this.stumblePitchOffset = 0;
-            }
+        // 7. Movement Calculation
+        let speed = this.moveSpeed;
+        if (this.isSwimming) {
+            speed *= 0.75; // Slower viscous swimming speed
+        } else if (this.isSprinting) {
+            speed *= this.sprintMultiplier;
         }
+        if (this.isStumbled) speed *= 0.35;
 
-        // 5. Movement Calculation with Solid Footing
-        const speed = (this.isSprinting ? this.moveSpeed * this.sprintMultiplier : this.moveSpeed) * (this.isStumbled ? 0.35 : 1.0);
         const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
         const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
 
@@ -2993,7 +3303,6 @@ class PlayerController {
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
 
-            // Clamped strictly within the cavern walls (+/- 1.85m)
             nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
 
             let blockedByRubble = false;
@@ -3008,6 +3317,11 @@ class PlayerController {
                 }
             });
 
+            // Prevent walking past cliff edge at z = -180 if rope has NOT been climbed!
+            if (!this.hasClimbedRope && nextZ <= -180.2) {
+                blockedByRubble = true;
+            }
+
             // Surface Hatch bunker collision at z = -262
             if (nextZ <= -261.5) {
                 blockedByRubble = true;
@@ -3020,26 +3334,29 @@ class PlayerController {
                 }
             }
 
-            // Footstep sounds
+            // Audio: Swimming stroke vs footstep sounds
             this.stepTimer -= delta * (this.isSprinting ? 1.6 : 1.0);
             if (this.stepTimer <= 0) {
-                if (inWater && window.soundEngine) {
-                    window.soundEngine.playWaterSplash(this.isSprinting);
-                } else if (window.soundEngine) {
-                    window.soundEngine.playFootstep(this.isSprinting);
+                if (this.isSwimming) {
+                    if (window.soundEngine) window.soundEngine.playWaterStroke();
+                    this.stepTimer = 0.65;
+                } else {
+                    if (window.soundEngine) window.soundEngine.playFootstep(this.isSprinting);
+                    this.stepTimer = 0.45;
                 }
-                this.stepTimer = 0.45;
             }
 
-            this.bobCycle += delta * (this.isSprinting ? 12 : 8.0);
+            this.bobCycle += delta * (this.isSwimming ? 5.5 : (this.isSprinting ? 12 : 8.0));
         } else {
             this.velocity.set(0, 0, 0);
         }
 
-        // Height follows the undulating terrain
+        // Height Calculation: swimming floats slightly higher
         const currentGroundY = world.getPathY(this.position.z);
-        const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
-        this.cameraBaseY = currentGroundY + 1.7 + bobOffset;
+        const swimBob = this.isSwimming ? Math.sin(this.bobCycle) * 0.15 : 0;
+        const walkBob = !this.isSwimming && this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
+
+        this.cameraBaseY = currentGroundY + (this.isSwimming ? 1.15 + swimBob : 1.7 + walkBob);
         this.position.y = currentGroundY;
 
         // Apply Camera Transformations
@@ -3047,7 +3364,7 @@ class PlayerController {
         this.camera.rotation.set(0, 0, 0);
         this.camera.rotation.y = this.yaw;
         this.camera.rotation.x = this.pitch + this.stumblePitchOffset;
-        this.camera.rotation.z = 0; // Reset roll when not tumbling
+        this.camera.rotation.z = 0;
 
         // Update Flashlight position & direction
         if (this.flashlight && this.flashlightTarget) {
@@ -3086,6 +3403,7 @@ class EventManager {
     constructor() {
         this.currentRubble = null;
         this.currentCorpse = null;
+        this.isNearRope = false;
         this.isNearHatch = false;
         
         // Rhythm Mini-game state
@@ -3192,8 +3510,23 @@ class EventManager {
             }
         }
 
-        // 3. Check Escape Hatch at Surface Shaft Head
-        if (!foundRubble && !foundCorpse && world.escapeHatch) {
+        // 3. Check Rescue Rope at Cliff Ledge (z = -180)
+        let foundRope = null;
+        if (!foundRubble && !foundCorpse && world.rescueRope && !player.hasClimbedRope) {
+            const distToRope = Math.hypot(pPos.x - world.rescueRope.x, pPos.z - world.rescueRope.z);
+            if (distToRope < 3.2) {
+                foundRope = world.rescueRope;
+                this.isNearRope = true;
+                promptText = `[E] CLIMB RESCUE ROPE TO UPPER CANYON (7.5m VERTICAL ASCENT)`;
+            } else {
+                this.isNearRope = false;
+            }
+        } else {
+            this.isNearRope = false;
+        }
+
+        // 4. Check Escape Hatch at Surface Shaft Head
+        if (!foundRubble && !foundCorpse && !this.isNearRope && world.escapeHatch) {
             const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
             if (distToHatch < 3.6) {
                 this.isNearHatch = true;
@@ -3218,6 +3551,8 @@ class EventManager {
             this.startRhythmMinigame(this.currentRubble);
         } else if (this.currentCorpse) {
             this.lootCorpse(this.currentCorpse);
+        } else if (this.isNearRope && window.gamePlayer && window.gameWorld && window.gameWorld.rescueRope) {
+            window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
         } else if (this.isNearHatch) {
             this.triggerEscapeSequence();
         }
@@ -3528,6 +3863,8 @@ class GameState {
             firstCorpse: false,
             firstRubble: false,
             tumbleLanded: false,
+            swimming: false,
+            ropeClimbed: false,
             midway: false,
             hypoxia: false,
             finalDesperation: false,
@@ -3696,6 +4033,14 @@ class GameState {
             case "tumbleLanded":
                 line = "Aaargh! The precipice gave way! I fell down into the lower flooded drainage rift... my mask cracked! The air is leaking out! No more backups down here... I have to climb up fast!";
                 this.monologueFlags.tumbleLanded = true;
+                break;
+            case "swimming":
+                line = "Water is freezing... respirator is submerged! Gotta keep paddling across this flooded sump to reach the rope!";
+                this.monologueFlags.swimming = true;
+                break;
+            case "ropeClimbed":
+                line = "Made it up the rope... arms burning. The surface escape hatch is just ahead in the upper canyon!";
+                this.monologueFlags.ropeClimbed = true;
                 break;
             case "midway":
                 line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";

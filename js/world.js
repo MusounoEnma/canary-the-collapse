@@ -1,10 +1,10 @@
 /**
- * CANARY: The Collapse - 3D Extreme Undulating Cavern & Dynamic Route Switch
+ * CANARY: The Collapse - 3D Extreme Undulating Cavern, Swimming Stage & Rescue Rope
  * Features:
- * - Extreme winding curves and steep incline drops.
- * - Dynamic steep slide chute leading into the flooded lower drainage drift.
+ * - Clean solid boulder rubble (Zero vertex glitch/spike anomalies).
+ * - Flooded underwater cavern sump stage for swimming.
+ * - Vertical rescue rope stage for climbing up the cliff ledge.
  * - Gritty dark atmospheric coal & slate textures.
- * - Seamless 360-degree TubeGeometry.
  */
 
 class MineWorld {
@@ -13,9 +13,11 @@ class MineWorld {
         this.rubbleObjects = [];
         this.corpseObjects = [];
         this.dustParticles = null;
+        this.bubbleParticles = null;
         this.hallucination = null;
         this.emergencyLights = [];
         this.escapeHatch = null;
+        this.rescueRope = null;
         this.puddles = [];
 
         this.tunnelLength = 280;
@@ -24,6 +26,7 @@ class MineWorld {
         this.buildSeamlessCavern();
         this.buildAtmosphere();
         this.buildInteractables();
+        this.buildRescueRope();
         this.buildHallucination();
     }
 
@@ -31,11 +34,10 @@ class MineWorld {
     // EXTREME CURVE & ELEVATION FORMULAS
     // -------------------------------------------------------------
     getPathX(z) {
-        // Dramatic S-turns through tectonic fault lines
         if (z > -140) {
             return Math.sin(z * 0.045) * 5.8 + Math.sin(z * 0.02) * 3.4;
         } else if (z > -175) {
-            // Sharp switchback hairpin curve in the lower drainage rift
+            // Hairpin curve through the submerged rift
             const t = (z - (-140)) / (-35);
             return (Math.sin(-140 * 0.045) * 5.8) + Math.sin(t * Math.PI) * 7.5;
         } else {
@@ -45,24 +47,19 @@ class MineWorld {
     }
 
     getPathY(z) {
-        // Extreme elevation profile:
-        // z=0 to -140: Rolling hills and steep climbs (+8m)
-        // z=-140 to -160: Steep rockslide chute drop (-6m plunged downward!)
-        // z=-160 to -262: Massive arduous climb upward out of the abyss to surface (+28m ascent!)
         if (z > -140) {
             const climb = (-z / 140) * 9.5;
             const dips = Math.sin(z * 0.08) * 2.2 + Math.cos(z * 0.04) * 1.5;
             return climb + dips;
-        } else if (z > -165) {
-            // Steep rockslide plunge into lower drainage sump
-            const t = (-z - 140) / 25; // 0 to 1
-            const drop = (1 - t) * 9.5 + t * 2.8;
-            return drop - Math.sin(t * Math.PI) * 2.5;
+        } else if (z > -180) {
+            // Flooded swimming sump basin (lower depth)
+            const t = (-z - 140) / 40;
+            return 2.5 - Math.sin(t * Math.PI) * 1.8;
         } else {
-            // Ascending final steep tunnel out of depth to surface (+24m)
-            const t = (-z - 165) / 97; // 0 to 1
-            const ascent = 2.8 + t * 23.5;
-            const ruggedness = Math.sin(z * 0.07) * 1.4;
+            // Upper cliff ledge after rope climb: ascends up to +28m at surface hatch
+            const t = (-z - 180) / 82;
+            const ascent = 9.8 + t * 18.0;
+            const ruggedness = Math.sin(z * 0.07) * 1.2;
             return ascent + ruggedness;
         }
     }
@@ -77,7 +74,6 @@ class MineWorld {
         rctx.fillStyle = '#171411';
         rctx.fillRect(0, 0, 512, 512);
 
-        // Sedimentary strata bands (coal seams & damp shale)
         for (let y = 0; y < 512; y += 3) {
             const noise = Math.sin(y * 0.06) * 14 + Math.random() * 20;
             const lum = 22 + Math.floor(noise * 0.7);
@@ -88,7 +84,6 @@ class MineWorld {
             rctx.fillRect(0, y, 512, 2 + Math.random() * 3);
         }
 
-        // Deep black coal fissures
         for (let i = 0; i < 30; i++) {
             rctx.strokeStyle = i % 2 === 0 ? 'rgba(6, 5, 4, 0.95)' : 'rgba(70, 50, 35, 0.45)';
             rctx.lineWidth = 2 + Math.random() * 4;
@@ -104,7 +99,6 @@ class MineWorld {
             rctx.stroke();
         }
 
-        // Damp rock speckles & glistening pyrite specks
         for (let k = 0; k < 4500; k++) {
             const px = Math.random() * 512;
             const py = Math.random() * 512;
@@ -158,18 +152,18 @@ class MineWorld {
         this.cavernCurve = curve;
 
         const tubularSegments = 300;
-        const radius = 3.7;
+        const radius = 3.75;
         const radialSegments = 16;
         const tubeGeo = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
 
-        // Add jagged cavern roughness
+        // Smooth natural rock bump (Zero spikes)
         const posAttr = tubeGeo.attributes.position;
         for (let i = 0; i < posAttr.count; i++) {
             const vx = posAttr.getX(i);
             const vy = posAttr.getY(i);
             const vz = posAttr.getZ(i);
 
-            const bump = (Math.sin(vx * 2.2) * Math.cos(vy * 2.4) * Math.sin(vz * 1.7)) * 0.28;
+            const bump = (Math.sin(vx * 1.8) * Math.cos(vy * 2.0) * Math.sin(vz * 1.4)) * 0.22;
             posAttr.setX(i, vx + bump);
             posAttr.setY(i, vy + bump);
         }
@@ -187,6 +181,127 @@ class MineWorld {
         this.scene.add(cavernMesh);
 
         this.buildTracks();
+        this.buildSubmergedWaterVolume();
+    }
+
+    // Submerged Flooded Tunnel Stage (Swimming section: z=-160 to -178)
+    buildSubmergedWaterVolume() {
+        // Deep murky water plane covering the swimming basin
+        const waterGeo = new THREE.PlaneGeometry(7.0, 22.0, 10, 20);
+        waterGeo.rotateX(-Math.PI / 2);
+
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x0a2228,
+            roughness: 0.08,
+            metalness: 0.85,
+            transparent: true,
+            opacity: 0.82
+        });
+
+        const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+        // Positioned at swimming basin elevation
+        const midZ = -169;
+        waterMesh.position.set(this.getPathX(midZ), this.getPathY(midZ) + 1.25, midZ);
+        this.scene.add(waterMesh);
+
+        // Underwater bubble particles
+        const bubbleCount = 200;
+        const bubbleGeo = new THREE.BufferGeometry();
+        const bPos = new Float32Array(bubbleCount * 3);
+        for (let i = 0; i < bubbleCount * 3; i += 3) {
+            bPos[i] = this.getPathX(midZ) + (Math.random() - 0.5) * 5;
+            bPos[i + 1] = this.getPathY(midZ) + Math.random() * 2.2;
+            bPos[i + 2] = midZ + (Math.random() - 0.5) * 18;
+        }
+        bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
+
+        const bubbleMat = new THREE.PointsMaterial({
+            color: 0x80deea,
+            size: 0.08,
+            transparent: true,
+            opacity: 0.6
+        });
+        this.bubbleParticles = new THREE.Points(bubbleGeo, bubbleMat);
+        this.scene.add(this.bubbleParticles);
+    }
+
+    // Vertical Rescue Climbing Rope at Cliff Ledge (z = -180)
+    buildRescueRope() {
+        const ropeZ = -180;
+        const ropeX = this.getPathX(ropeZ);
+        const lowerY = this.getPathY(ropeZ);
+        const upperY = lowerY + 7.5; // 7.5 meters climb to upper ledge!
+
+        const ropeGroup = new THREE.Group();
+
+        // Thick braided hemp rescue rope (Cylinder)
+        const ropeMat = new THREE.MeshStandardMaterial({
+            color: 0x8d6e63,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 7.8, 8), ropeMat);
+        rope.position.set(0, 3.9, 0);
+        ropeGroup.add(rope);
+
+        // Rope climbing knots / grip rungs every 0.8m
+        const knotMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+        for (let y = 0.5; y < 7.5; y += 0.75) {
+            const knot = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 6, 12), knotMat);
+            knot.rotation.x = Math.PI / 2;
+            knot.position.set(0, y, 0);
+            ropeGroup.add(knot);
+        }
+
+        // Heavy steel anchor bolt & carabiner in ceiling
+        const anchorMat = new THREE.MeshStandardMaterial({ color: 0xffd54f, metalness: 0.8 });
+        const anchor = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.05, 8, 16), anchorMat);
+        anchor.position.set(0, 7.8, 0);
+        ropeGroup.add(anchor);
+
+        // Emergency beacon pulsing at the top of the rope
+        const ropeBeacon = new THREE.PointLight(0xffb300, 1.2, 10, 2);
+        ropeBeacon.position.set(0, 7.6, 0.5);
+        ropeGroup.add(ropeBeacon);
+
+        // Warning sign at base of rope
+        const ropeSignCanvas = document.createElement('canvas');
+        ropeSignCanvas.width = 256;
+        ropeSignCanvas.height = 128;
+        const rctx = ropeSignCanvas.getContext('2d');
+        rctx.fillStyle = '#00695c';
+        rctx.fillRect(0, 0, 256, 128);
+        rctx.strokeStyle = '#fff';
+        rctx.lineWidth = 4;
+        rctx.strokeRect(5, 5, 246, 118);
+        rctx.fillStyle = '#fff';
+        rctx.font = 'bold 18px monospace';
+        rctx.textAlign = 'center';
+        rctx.fillText('RESCUE ROPE #04', 128, 42);
+        rctx.fillStyle = '#ffeb3b';
+        rctx.font = 'bold 14px monospace';
+        rctx.fillText('CLIMB TO UPPER LEDGE', 128, 75);
+        rctx.fillText('➔ SURFACE ACCESS', 128, 102);
+
+        const signMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.4, 0.7),
+            new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(ropeSignCanvas) })
+        );
+        signMesh.position.set(1.4, 2.0, 0);
+        signMesh.rotation.y = -Math.PI / 4;
+        ropeGroup.add(signMesh);
+
+        ropeGroup.position.set(ropeX, lowerY, ropeZ);
+        this.scene.add(ropeGroup);
+
+        this.rescueRope = {
+            group: ropeGroup,
+            x: ropeX,
+            lowerY: lowerY,
+            upperY: upperY,
+            z: ropeZ,
+            isClimbed: false
+        };
     }
 
     buildTracks() {
@@ -204,8 +319,7 @@ class MineWorld {
 
         const step = 1.4;
         for (let z = 10; z >= -this.tunnelLength + 10; z -= step) {
-            // In the steep slide zone (z=-140 to -160), rails are mangled and twisted!
-            const isSlideZone = (z < -138 && z > -160);
+            const isSlideOrSwim = (z < -138 && z > -182);
 
             const x = this.getPathX(z);
             const y = this.getPathY(z);
@@ -213,7 +327,7 @@ class MineWorld {
             const nextX = this.getPathX(z - step);
             const nextY = this.getPathY(z - step);
 
-            if (!isSlideZone) {
+            if (!isSlideOrSwim) {
                 const tie = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.09, 0.25), tieMat);
                 tie.position.set(x, y + 0.05, z);
                 tie.lookAt(nextX, nextY + 0.05, z - step);
@@ -230,22 +344,14 @@ class MineWorld {
                 rr.position.set((x + nextX) / 2 + 0.75, (y + nextY) / 2 + 0.09, z - step / 2);
                 rr.lookAt(nextX + 0.75, nextY + 0.09, z - step);
                 this.scene.add(rr);
-            } else {
-                // Twisted broken rail segments in the slide chute
-                if (Math.abs(z % 3.0) < step) {
-                    const brokenRail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 2.5), railMat);
-                    brokenRail.position.set(x + (Math.random() - 0.5) * 1.5, y + 0.1, z);
-                    brokenRail.rotation.set(Math.random() * 0.8, Math.random() * 1.5, Math.random() * 0.8);
-                    this.scene.add(brokenRail);
-                }
             }
 
-            if (Math.abs(z % 6.5) < step && !isSlideZone) {
+            if (Math.abs(z % 6.5) < step && !isSlideOrSwim) {
                 this.buildTimberArch(x, y, z, nextX, nextY, z - step, tieMat);
             }
         }
 
-        // Flooded Puddle Pools in the lowest sumps
+        // Flooded Puddles in dips
         const puddleGeo = new THREE.CircleGeometry(1.6, 20);
         puddleGeo.rotateX(-Math.PI / 2);
         const puddleMat = new THREE.MeshStandardMaterial({
@@ -254,14 +360,13 @@ class MineWorld {
             metalness: 0.85
         });
 
-        // Puddles located in dips, especially the flooded landing pool after the slide at z = -162!
-        const puddleZ = [-34, -72, -118, -162, -215];
+        const puddleZ = [-34, -72, -118, -215];
         puddleZ.forEach((pz, idx) => {
             const px = this.getPathX(pz) + (idx % 2 === 0 ? 0.35 : -0.35);
             const py = this.getPathY(pz) + 0.03;
             const p = new THREE.Mesh(puddleGeo, puddleMat);
             p.position.set(px, py, pz);
-            p.scale.set(pz === -162 ? 2.2 : 1.3, 1, pz === -162 ? 3.0 : 1.9);
+            p.scale.set(1.3, 1, 1.9);
             this.scene.add(p);
             this.puddles.push(p);
         });
@@ -324,8 +429,7 @@ class MineWorld {
         this.dustParticles = new THREE.Points(dustGeo, dustMat);
         this.scene.add(this.dustParticles);
 
-        // Emergency Amber Lights
-        const lampPositions = [-25, -75, -125, -178, -232];
+        const lampPositions = [-25, -75, -125, -195, -235];
         lampPositions.forEach((lz, idx) => {
             const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.6 : -1.6);
             const ly = this.getPathY(lz) + 2.7;
@@ -393,7 +497,7 @@ class MineWorld {
         s1.rotation.y = -Math.PI / 2;
         this.scene.add(s1);
 
-        // Warning sign right before the steep rockslide chute at z = -138
+        // Warning sign before steep chute
         const warnCanvas = document.createElement('canvas');
         warnCanvas.width = 256;
         warnCanvas.height = 128;
@@ -406,10 +510,10 @@ class MineWorld {
         wctx.fillStyle = '#000';
         wctx.font = 'bold 20px monospace';
         wctx.textAlign = 'center';
-        wctx.fillText('⚠ STEEP CHUTE ⚠', 128, 45);
+        wctx.fillText('⚠ STEEP PRECIPICE ⚠', 128, 45);
         wctx.font = 'bold 16px monospace';
-        wctx.fillText('COLLAPSE HAZARD', 128, 78);
-        wctx.fillText('SLIPPERY PRECIPICE', 128, 105);
+        wctx.fillText('FLOODED RIFT AHEAD', 128, 78);
+        wctx.fillText('SLIPPERY DEBRIS', 128, 105);
 
         const warnTex = new THREE.CanvasTexture(warnCanvas);
         const s2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.75), new THREE.MeshStandardMaterial({ map: warnTex }));
@@ -420,14 +524,11 @@ class MineWorld {
     }
 
     buildInteractables() {
-        // 1. RUBBLE OBSTACLES
-        // Rubble 1 at z = -52
-        // Rubble 2 at z = -128 (Right before the rockslide chute)
-        // Rubble 3 at z = -208 (Final barrier in the canyon shaft)
+        // 1. RUBBLE OBSTACLES - CLEAN SOLID LOW-POLY BOULDERS (Zero spiky glitch anomaly!)
         const rubbleConfigs = [
             { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Upper Shaft)" },
             { id: 2, z: -128, health: 2, name: "Fractured Fault Boulder Block" },
-            { id: 3, z: -208, health: 2, name: "Granite Surface Gate Barrier" }
+            { id: 3, z: -215, health: 2, name: "Granite Surface Gate Barrier" }
         ];
 
         rubbleConfigs.forEach(cfg => {
@@ -437,31 +538,29 @@ class MineWorld {
 
             const rockMat = new THREE.MeshStandardMaterial({
                 map: this.rockTexture,
-                roughness: 0.92,
-                color: 0x5a554e
+                roughness: 0.90,
+                metalness: 0.1,
+                color: 0x4e4a44
             });
 
-            for (let i = 0; i < 24; i++) {
-                const size = 0.65 + Math.random() * 0.85;
-                const rGeo = new THREE.DodecahedronGeometry(size, 1);
-                const pos = rGeo.attributes.position;
-                for (let k = 0; k < pos.count; k++) {
-                    pos.setX(k, pos.getX(k) * (0.8 + Math.random() * 0.4));
-                    pos.setY(k, pos.getY(k) * (0.8 + Math.random() * 0.4));
-                }
-                rGeo.computeVertexNormals();
-
+            // Realistic solid low-poly boulders (NO vertex random distortion glitches!)
+            for (let i = 0; i < 18; i++) {
+                const s = 0.7 + (i % 5) * 0.22;
+                // Clean Dodecahedron with detail 0 (clean facet geometry)
+                const rGeo = new THREE.DodecahedronGeometry(s, 0);
                 const rockMesh = new THREE.Mesh(rGeo, rockMat);
-                rockMesh.position.set(
-                    (Math.random() - 0.5) * 4.4,
-                    Math.random() * 2.7,
-                    (Math.random() - 0.5) * 2.0
-                );
-                rockMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+                const ox = ((i % 5) - 2) * 0.85 + (Math.sin(i) * 0.4);
+                const oy = Math.floor(i / 5) * 0.9 + 0.3;
+                const oz = ((i % 3) - 1) * 0.7;
+
+                rockMesh.position.set(ox, oy, oz);
+                rockMesh.rotation.set(i * 0.5, i * 0.8, i * 0.3);
                 rockMesh.castShadow = true;
                 group.add(rockMesh);
             }
 
+            // Warning marker above rubble
             const glowMat = new THREE.MeshBasicMaterial({
                 color: 0xffb300,
                 wireframe: true,
@@ -489,9 +588,7 @@ class MineWorld {
             });
         });
 
-        // 2. FALLEN MINER CORPSES (Only in the first half of the mine!)
-        // In the final stretch (z < -140), NO MORE CORPSES OR O2 AID EXISTS!
-        // The player must survive strictly on remaining air!
+        // 2. FALLEN MINER CORPSES
         const corpseConfigs = [
             { id: 1, z: -26, xOff: 1.4, name: "Tomas", role: "Shift Supervisor", o2Bonus: 35, note: "Emergency O2 cylinder has 35% capacity left. Badge reads: 'Tomas - Father of two'." },
             { id: 2, z: -95, xOff: -1.4, name: "Erik", role: "Driller", o2Bonus: 40, note: "Military high-pressure O2 canister (+40%). A photo of his family is tucked in his pocket." }
@@ -664,6 +761,18 @@ class MineWorld {
                 if (posAttr.array[i] < 0) posAttr.array[i] = 3.5;
             }
             posAttr.needsUpdate = true;
+        }
+
+        // Animate underwater bubbles
+        if (this.bubbleParticles) {
+            const bAttr = this.bubbleParticles.geometry.attributes.position;
+            for (let i = 1; i < bAttr.count * 3; i += 3) {
+                bAttr.array[i] += delta * 1.5;
+                if (bAttr.array[i] > 4.2) {
+                    bAttr.array[i] = 0.8;
+                }
+            }
+            bAttr.needsUpdate = true;
         }
 
         const time = Date.now() * 0.005;

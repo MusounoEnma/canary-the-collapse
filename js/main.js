@@ -28,6 +28,8 @@ class GameState {
             firstCorpse: false,
             firstRubble: false,
             tumbleLanded: false,
+            swimming: false,
+            ropeClimbed: false,
             midway: false,
             hypoxia: false,
             finalDesperation: false,
@@ -196,6 +198,14 @@ class GameState {
             case "tumbleLanded":
                 line = "Aaargh! The precipice gave way! I fell down into the lower flooded drainage rift... my mask cracked! The air is leaking out! No more backups down here... I have to climb up fast!";
                 this.monologueFlags.tumbleLanded = true;
+                break;
+            case "swimming":
+                line = "Water is freezing... respirator is submerged! Gotta keep paddling across this flooded sump to reach the rope!";
+                this.monologueFlags.swimming = true;
+                break;
+            case "ropeClimbed":
+                line = "Made it up the rope... arms burning. The surface escape hatch is just ahead in the upper canyon!";
+                this.monologueFlags.ropeClimbed = true;
                 break;
             case "midway":
                 line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";

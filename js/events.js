@@ -10,6 +10,7 @@ class EventManager {
     constructor() {
         this.currentRubble = null;
         this.currentCorpse = null;
+        this.isNearRope = false;
         this.isNearHatch = false;
         
         // Rhythm Mini-game state
@@ -116,8 +117,23 @@ class EventManager {
             }
         }
 
-        // 3. Check Escape Hatch at Surface Shaft Head
-        if (!foundRubble && !foundCorpse && world.escapeHatch) {
+        // 3. Check Rescue Rope at Cliff Ledge (z = -180)
+        let foundRope = null;
+        if (!foundRubble && !foundCorpse && world.rescueRope && !player.hasClimbedRope) {
+            const distToRope = Math.hypot(pPos.x - world.rescueRope.x, pPos.z - world.rescueRope.z);
+            if (distToRope < 3.2) {
+                foundRope = world.rescueRope;
+                this.isNearRope = true;
+                promptText = `[E] CLIMB RESCUE ROPE TO UPPER CANYON (7.5m VERTICAL ASCENT)`;
+            } else {
+                this.isNearRope = false;
+            }
+        } else {
+            this.isNearRope = false;
+        }
+
+        // 4. Check Escape Hatch at Surface Shaft Head
+        if (!foundRubble && !foundCorpse && !this.isNearRope && world.escapeHatch) {
             const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
             if (distToHatch < 3.6) {
                 this.isNearHatch = true;
@@ -142,6 +158,8 @@ class EventManager {
             this.startRhythmMinigame(this.currentRubble);
         } else if (this.currentCorpse) {
             this.lootCorpse(this.currentCorpse);
+        } else if (this.isNearRope && window.gamePlayer && window.gameWorld && window.gameWorld.rescueRope) {
+            window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
         } else if (this.isNearHatch) {
             this.triggerEscapeSequence();
         }

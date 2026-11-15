@@ -1,7 +1,7 @@
 /**
  * CANARY: The Collapse - Procedural Web Audio Engine
  * 100% synthesized audio using Web Audio API without external audio files.
- * Enhanced with water puddle splashes and mining ambiance.
+ * Enhanced with water puddle splashes, underwater swimming strokes, and rope climbing creaks.
  */
 
 class SoundEngine {
@@ -16,6 +16,8 @@ class SoundEngine {
         this.heartbeatBpm = 65;
         this.isHeartbeatRunning = false;
         this.ambienceGain = null;
+        this.isUnderwater = false;
+        this.underwaterFilter = null;
         this.isInitialized = false;
     }
 
@@ -27,6 +29,11 @@ class SoundEngine {
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = 0.85;
 
+        // Lowpass master filter for underwater stage
+        this.underwaterFilter = this.ctx.createBiquadFilter();
+        this.underwaterFilter.type = 'lowpass';
+        this.underwaterFilter.frequency.setValueAtTime(22000, this.ctx.currentTime);
+
         const compressor = this.ctx.createDynamicsCompressor();
         compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
         compressor.knee.setValueAtTime(30, this.ctx.currentTime);
@@ -34,7 +41,8 @@ class SoundEngine {
         compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
         compressor.release.setValueAtTime(0.25, this.ctx.currentTime);
 
-        this.masterGain.connect(compressor);
+        this.masterGain.connect(this.underwaterFilter);
+        this.underwaterFilter.connect(compressor);
         compressor.connect(this.ctx.destination);
 
         // Continuous Tinnitus Node
@@ -58,6 +66,13 @@ class SoundEngine {
         if (this.ctx && this.ctx.state === 'suspended') {
             this.ctx.resume();
         }
+    }
+
+    setUnderwater(active) {
+        if (!this.underwaterFilter || !this.ctx) return;
+        this.isUnderwater = active;
+        const targetFreq = active ? 450 : 22000;
+        this.underwaterFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.3);
     }
 
     initAmbience() {
@@ -118,7 +133,6 @@ class SoundEngine {
         noise.start(now);
     }
 
-    // Wet Puddle Water Splash Footstep
     playWaterSplash(isSprinting = false) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -148,6 +162,86 @@ class SoundEngine {
         gain.connect(this.masterGain);
 
         noise.start(now);
+    }
+
+    // Underwater Swimming Arm Stroke
+    playWaterStroke() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = 0.42;
+
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.sin((i / bufSize) * Math.PI);
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(260, now);
+        filter.frequency.linearRampToValueAtTime(520, now + 0.15);
+        filter.frequency.linearRampToValueAtTime(180, now + dur);
+        filter.Q.setValueAtTime(3.0, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.28, now + 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        noise.start(now);
+    }
+
+    // Heavy Rescue Rope Creak / Grip
+    playRopeCreak() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Friction noise
+        const bufSize = Math.floor(this.ctx.sampleRate * 0.28);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.5));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(850, now);
+        f.frequency.exponentialRampToValueAtTime(420, now + 0.25);
+        f.Q.setValueAtTime(4.0, now);
+
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.25, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+        noise.connect(f);
+        f.connect(g);
+        g.connect(this.masterGain);
+        noise.start(now);
+
+        // Low rope tension creak
+        const osc = this.ctx.createOscillator();
+        const og = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(95, now + 0.24);
+        og.gain.setValueAtTime(0.18, now);
+        og.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        osc.connect(og);
+        og.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.26);
     }
 
     startBreathingLoop() {
@@ -206,10 +300,10 @@ class SoundEngine {
         const pulse = () => {
             if (!this.ctx) return;
             const o2 = window.gameState ? window.gameState.oxygen : 100;
-            const targetBpm = Math.floor(65 + (100 - o2) * 0.85);
+            const targetBpm = Math.floor(65 + (100 - o2) * 0.95);
             this.heartbeatBpm = targetBpm;
 
-            const intensity = o2 < 35 ? 0.45 : (o2 < 60 ? 0.25 : 0.12);
+            const intensity = o2 < 35 ? 0.48 : (o2 < 60 ? 0.28 : 0.12);
             this.triggerHeartbeat(intensity);
 
             const intervalMs = (60 / this.heartbeatBpm) * 1000;

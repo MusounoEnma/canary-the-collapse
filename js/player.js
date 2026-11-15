@@ -1,10 +1,10 @@
 /**
  * CANARY: The Collapse - FPS Player Controller
  * Features:
- * - Dramatic Rockslide Tumble: Player slips and rolls 720 degrees down the steep chute into the lower flooded rift.
- * - Dynamic route switch after tumbling.
- * - Critical Oxygen Leak Climax: Unassisted high-tension oxygen depletion in the final stretch towards the surface hatch.
- * - Solid non-slippery foot friction & responsive camera controls.
+ * - Underwater Swimming Stage (z=-160 to -178) with murky water FX and muffled audio.
+ * - Vertical Rescue Rope Climbing Stage (z=-180) to ascend the 7.5m cliff ledge.
+ * - Dramatic Rockslide Tumble: Slips and rolls 720 degrees down the steep chute.
+ * - High-Tension Oxygen Depletion Climax.
  */
 
 class PlayerController {
@@ -24,7 +24,7 @@ class PlayerController {
         // Camera Look Pitch/Yaw/Roll
         this.yaw = 0;
         this.pitch = 0;
-        this.roll = 0; // Roll angle used for dramatic tumbling
+        this.roll = 0;
         this.isLocked = false;
         this.sensitivity = 0.0016;
 
@@ -40,6 +40,18 @@ class PlayerController {
         this.tumbleDuration = 2.2;
         this.tumbleStartZ = -140;
         this.tumbleEndZ = -162;
+
+        // Underwater Swimming Stage
+        this.isSwimming = false;
+        this.swimStrokeTimer = 0;
+
+        // Vertical Rescue Rope Climbing Stage
+        this.isClimbingRope = false;
+        this.ropeClimbProgress = 0; // 0 to 1
+        this.ropeClimbSpeed = 0.35; // ~3 seconds climb
+        this.ropeStartY = 0;
+        this.ropeEndY = 0;
+        this.hasClimbedRope = false;
 
         // Flashlight (Helmet Headlamp)
         this.flashlight = null;
@@ -101,7 +113,7 @@ class PlayerController {
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!this.isLocked || this.isDead || this.isTumbling) return;
+            if (!this.isLocked || this.isDead || this.isTumbling || this.isClimbingRope) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
             this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
@@ -109,6 +121,16 @@ class PlayerController {
 
         window.addEventListener('keydown', (e) => {
             if (this.isDead || this.isTumbling) return;
+
+            // While climbing rope, space / W climbs faster
+            if (this.isClimbingRope) {
+                if (e.code === 'KeyW' || e.code === 'Space') {
+                    this.ropeClimbProgress += 0.08;
+                    if (window.soundEngine) window.soundEngine.playRopeCreak();
+                }
+                return;
+            }
+
             switch (e.code) {
                 case 'KeyW':
                 case 'ArrowUp':
@@ -211,7 +233,7 @@ class PlayerController {
     }
 
     triggerFlashlightMalfunction() {
-        if (this.isFlashlightMalfunctioning || this.isTumbling) return;
+        if (this.isFlashlightMalfunctioning || this.isTumbling || this.isClimbingRope) return;
         this.isFlashlightMalfunctioning = true;
         this.tapsRequired = Math.floor(1 + Math.random() * 2);
 
@@ -241,7 +263,6 @@ class PlayerController {
         this.isTumbling = true;
         this.tumbleTimer = 0;
 
-        // Play heavy tumbling earthquake & rock shatter sound
         if (window.soundEngine) {
             window.soundEngine.playEarthquake(3.5);
             window.soundEngine.playWaterSplash(true);
@@ -256,32 +277,28 @@ class PlayerController {
             window.eventManager.showNotification("PRECIPICE COLLAPSE! SLIDING AND TUMBLING DOWN THE SHAFT!");
         }
 
-        // Damage respirator seal -> starts high tension unassisted oxygen leak
         this.isRespiratorLeaking = true;
-        this.oxygen = Math.max(12, this.oxygen - 18.0); // Loses burst of air in the fall
+        this.oxygen = Math.max(12, this.oxygen - 18.0);
     }
 
     updateTumble(delta, world) {
         this.tumbleTimer += delta;
         const progress = Math.min(1.0, this.tumbleTimer / this.tumbleDuration);
 
-        // Smooth cubic plunge along the steep chute
         const easeT = progress * progress * (3 - 2 * progress);
         this.position.z = THREE.MathUtils.lerp(this.tumbleStartZ, this.tumbleEndZ, easeT);
         this.position.x = world.getPathX(this.position.z);
         this.position.y = world.getPathY(this.position.z);
 
-        // Violent tumbling camera roll: 720 degrees (2 full barrel rolls)
+        // 720 degree tumble roll
         this.roll = progress * Math.PI * 4;
         this.pitch = Math.sin(progress * Math.PI * 6) * 0.45;
 
-        // Flashlight flickers violently during the tumble
         if (this.flashlight) {
             this.flashlight.intensity = Math.random() > 0.4 ? 2.5 : 0.2;
         }
 
         if (progress >= 1.0) {
-            // Landed into the flooded drainage rift pool!
             this.isTumbling = false;
             this.roll = 0;
             this.pitch = 0;
@@ -289,7 +306,6 @@ class PlayerController {
             if (this.flashlight) this.flashlight.intensity = 3.6;
             if (window.soundEngine) window.soundEngine.playWaterSplash(true);
 
-            // Trigger dramatic post-tumble monologue
             if (window.gameState) {
                 window.gameState.triggerMonologue("tumbleLanded");
             }
@@ -300,8 +316,62 @@ class PlayerController {
         }
     }
 
+    // -------------------------------------------------------------
+    // VERTICAL RESCUE ROPE CLIMBING STAGE (z = -180)
+    // -------------------------------------------------------------
+    startRopeClimb(rescueRope) {
+        if (this.isClimbingRope || this.hasClimbedRope) return;
+        this.isClimbingRope = true;
+        this.hasClimbedRope = true;
+        this.ropeClimbProgress = 0;
+        this.ropeStartY = rescueRope.lowerY;
+        this.ropeEndY = rescueRope.upperY;
+
+        // Position directly at rope
+        this.position.x = rescueRope.x;
+        this.position.z = rescueRope.z;
+
+        if (window.soundEngine) window.soundEngine.playRopeCreak();
+        if (window.eventManager) window.eventManager.showNotification("CLIMBING RESCUE ROPE! TAP [W] OR [SPACE] TO ASCEND FASTER!");
+    }
+
+    updateRopeClimb(delta) {
+        // Continuous upward climb + player key taps
+        this.ropeClimbProgress += delta * this.ropeClimbSpeed;
+        const p = Math.min(1.0, this.ropeClimbProgress);
+
+        // Vertically ascend camera and position
+        const currentY = THREE.MathUtils.lerp(this.ropeStartY, this.ropeEndY, p);
+        this.position.y = currentY;
+        this.cameraBaseY = currentY + 1.6;
+
+        // Camera looks up at anchor and rocks swaying slightly
+        this.pitch = Math.PI / 4.5 + Math.sin(this.ropeClimbProgress * 15) * 0.08;
+        this.roll = Math.cos(this.ropeClimbProgress * 15) * 0.06;
+
+        // Sound creaks periodically
+        if (Math.sin(this.ropeClimbProgress * 20) > 0.8) {
+            if (window.soundEngine) window.soundEngine.playRopeCreak();
+        }
+
+        if (p >= 1.0) {
+            // Reached upper canyon ledge!
+            this.isClimbingRope = false;
+            this.pitch = 0;
+            this.roll = 0;
+
+            // Step onto the solid rock of upper ledge
+            this.position.z = -183;
+            this.position.y = this.ropeEndY;
+
+            if (window.soundEngine) window.soundEngine.playFootstep(true);
+            if (window.eventManager) window.eventManager.showNotification("SUCCESS! REACHED UPPER CANYON LEDGE!");
+            if (window.gameState) window.gameState.triggerMonologue("ropeClimbed");
+        }
+    }
+
     triggerStumble() {
-        if (this.isStumbled || this.isTumbling) return;
+        if (this.isStumbled || this.isTumbling || this.isClimbingRope || this.isSwimming) return;
         this.isStumbled = true;
         this.stumbleRecoveryTimer = 1.4;
         if (window.soundEngine) {
@@ -317,17 +387,14 @@ class PlayerController {
     update(delta, world) {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
 
-        // Handle Active Tumble Event
+        // 1. Handle Active Tumble Event
         if (this.isTumbling) {
             this.updateTumble(delta, world);
-
-            // Update Camera Transformations during tumble
             this.camera.position.set(this.position.x, this.position.y + 1.2, this.position.z);
             this.camera.rotation.set(0, 0, 0);
             this.camera.rotation.y = this.yaw;
             this.camera.rotation.x = this.pitch;
-            this.camera.rotation.z = this.roll; // Tumbling roll!
-
+            this.camera.rotation.z = this.roll;
             if (this.flashlight && this.flashlightTarget) {
                 this.flashlight.position.copy(this.camera.position);
                 const lookDir = new THREE.Vector3();
@@ -337,7 +404,40 @@ class PlayerController {
             return;
         }
 
-        // 1. Oxygen Depletion & High-Tension Climax Calculation
+        // 2. Handle Active Rope Climbing Event
+        if (this.isClimbingRope) {
+            this.updateRopeClimb(delta);
+            this.camera.position.set(this.position.x, this.cameraBaseY, this.position.z);
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.rotation.y = this.yaw;
+            this.camera.rotation.x = this.pitch;
+            this.camera.rotation.z = this.roll;
+            if (this.flashlight && this.flashlightTarget) {
+                this.flashlight.position.copy(this.camera.position);
+                const lookDir = new THREE.Vector3();
+                this.camera.getWorldDirection(lookDir);
+                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(6));
+            }
+            return;
+        }
+
+        // 3. Underwater Swimming Stage Detection (z between -162 and -178)
+        const inSwimmingZone = (this.position.z <= -161 && this.position.z >= -178);
+        if (inSwimmingZone !== this.isSwimming) {
+            this.isSwimming = inSwimmingZone;
+            if (window.soundEngine) window.soundEngine.setUnderwater(this.isSwimming);
+
+            const underOverlay = document.getElementById('underwater-overlay');
+            if (underOverlay) {
+                underOverlay.style.display = this.isSwimming ? 'block' : 'none';
+            }
+
+            if (this.isSwimming && window.gameState) {
+                window.gameState.triggerMonologue("swimming");
+            }
+        }
+
+        // 4. Oxygen Depletion & High-Tension Climax Calculation
         let drainRate = 0.48;
         this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
 
@@ -345,14 +445,17 @@ class PlayerController {
             drainRate *= 3.0;
         }
 
-        // After the tumble and entering the final canyon (z < -162), respirator leak accelerates tension!
+        if (this.isSwimming) {
+            drainRate += 0.45; // Struggling in deep water
+        }
+
         if (this.isRespiratorLeaking) {
-            drainRate += 0.85; // Faster leak
+            drainRate += 0.85;
         }
 
         // Final desperate stretch (z < -215): tightly calibrated so player arrives with ~5% - 10% O2!
         if (this.position.z < -215) {
-            drainRate += 1.15; // Lungs burning, tank gasping
+            drainRate += 1.15;
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -361,13 +464,13 @@ class PlayerController {
             return;
         }
 
-        // 2. Check Trigger for Dramatic Rockslide Tumble (at z = -139)
+        // 5. Trigger Rockslide Tumble Check (at z = -139)
         if (!this.hasTumbled && this.position.z <= -139 && this.position.z >= -144) {
             this.triggerRockslideTumble();
             return;
         }
 
-        // 3. Headlamp Malfunction Random Check
+        // 6. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
         if (this.nextMalfunctionCheck <= 0) {
             this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
@@ -376,28 +479,15 @@ class PlayerController {
             }
         }
 
-        // 4. Flooded Puddle Check & Tripping Hazard
-        let inWater = false;
-        world.puddles.forEach(p => {
-            if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.8) {
-                inWater = true;
-                if (this.isSprinting && !this.isStumbled && Math.random() < 0.04) {
-                    this.triggerStumble();
-                }
-            }
-        });
-
-        if (this.isStumbled) {
-            this.stumbleRecoveryTimer -= delta;
-            this.stumblePitchOffset = Math.sin(this.stumbleRecoveryTimer * 3.5) * -0.3;
-            if (this.stumbleRecoveryTimer <= 0) {
-                this.isStumbled = false;
-                this.stumblePitchOffset = 0;
-            }
+        // 7. Movement Calculation
+        let speed = this.moveSpeed;
+        if (this.isSwimming) {
+            speed *= 0.75; // Slower viscous swimming speed
+        } else if (this.isSprinting) {
+            speed *= this.sprintMultiplier;
         }
+        if (this.isStumbled) speed *= 0.35;
 
-        // 5. Movement Calculation with Solid Footing
-        const speed = (this.isSprinting ? this.moveSpeed * this.sprintMultiplier : this.moveSpeed) * (this.isStumbled ? 0.35 : 1.0);
         const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
         const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
 
@@ -417,7 +507,6 @@ class PlayerController {
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
 
-            // Clamped strictly within the cavern walls (+/- 1.85m)
             nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
 
             let blockedByRubble = false;
@@ -432,6 +521,11 @@ class PlayerController {
                 }
             });
 
+            // Prevent walking past cliff edge at z = -180 if rope has NOT been climbed!
+            if (!this.hasClimbedRope && nextZ <= -180.2) {
+                blockedByRubble = true;
+            }
+
             // Surface Hatch bunker collision at z = -262
             if (nextZ <= -261.5) {
                 blockedByRubble = true;
@@ -444,26 +538,29 @@ class PlayerController {
                 }
             }
 
-            // Footstep sounds
+            // Audio: Swimming stroke vs footstep sounds
             this.stepTimer -= delta * (this.isSprinting ? 1.6 : 1.0);
             if (this.stepTimer <= 0) {
-                if (inWater && window.soundEngine) {
-                    window.soundEngine.playWaterSplash(this.isSprinting);
-                } else if (window.soundEngine) {
-                    window.soundEngine.playFootstep(this.isSprinting);
+                if (this.isSwimming) {
+                    if (window.soundEngine) window.soundEngine.playWaterStroke();
+                    this.stepTimer = 0.65;
+                } else {
+                    if (window.soundEngine) window.soundEngine.playFootstep(this.isSprinting);
+                    this.stepTimer = 0.45;
                 }
-                this.stepTimer = 0.45;
             }
 
-            this.bobCycle += delta * (this.isSprinting ? 12 : 8.0);
+            this.bobCycle += delta * (this.isSwimming ? 5.5 : (this.isSprinting ? 12 : 8.0));
         } else {
             this.velocity.set(0, 0, 0);
         }
 
-        // Height follows the undulating terrain
+        // Height Calculation: swimming floats slightly higher
         const currentGroundY = world.getPathY(this.position.z);
-        const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
-        this.cameraBaseY = currentGroundY + 1.7 + bobOffset;
+        const swimBob = this.isSwimming ? Math.sin(this.bobCycle) * 0.15 : 0;
+        const walkBob = !this.isSwimming && this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
+
+        this.cameraBaseY = currentGroundY + (this.isSwimming ? 1.15 + swimBob : 1.7 + walkBob);
         this.position.y = currentGroundY;
 
         // Apply Camera Transformations
@@ -471,7 +568,7 @@ class PlayerController {
         this.camera.rotation.set(0, 0, 0);
         this.camera.rotation.y = this.yaw;
         this.camera.rotation.x = this.pitch + this.stumblePitchOffset;
-        this.camera.rotation.z = 0; // Reset roll when not tumbling
+        this.camera.rotation.z = 0;
 
         // Update Flashlight position & direction
         if (this.flashlight && this.flashlightTarget) {
