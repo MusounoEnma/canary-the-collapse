@@ -789,6 +789,7 @@ body.earthquake-shake {
     flex-direction: column;
     padding: 40px;
     text-align: center;
+    pointer-events: auto !important;
 }
 
 .game-title {

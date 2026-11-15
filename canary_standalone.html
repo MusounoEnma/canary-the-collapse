@@ -805,6 +805,7 @@ body.earthquake-shake {
     flex-direction: column;
     padding: 40px;
     text-align: center;
+    pointer-events: auto !important;
 }
 
 .game-title {
@@ -1115,7 +1116,7 @@ body.earthquake-shake {
             </div>
         </div>
 
-        <button id="btn-start-game" class="btn-primary">BEGIN ASCENT TO SURFACE</button>
+        <button id="btn-start-game" class="btn-primary" onclick="if(window.gameState){window.gameState.startGame();}">BEGIN ASCENT TO SURFACE</button>
     </div>
 
     <!-- Game Over Screen (Hypoxia Death) -->
@@ -1124,7 +1125,7 @@ body.earthquake-shake {
         <p id="gameover-reason" style="font-size: 16px; color: #e57373; margin-bottom: 16px;">Oxygen depleted in the subterranean abyss.</p>
         <p id="gameover-stats" style="color: #9e9e9e; font-size: 14px; margin-bottom: 28px;"></p>
         <p style="font-style: italic; color: #ffca28; margin-bottom: 30px;">"Lily still sits on the front porch waiting for your return... which never comes."</p>
-        <button id="btn-restart-game" class="btn-primary">TRY AGAIN FROM THE BOTTOM</button>
+        <button id="btn-restart-game" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">TRY AGAIN FROM THE BOTTOM</button>
     </div>
 
     <!-- Victory Screen (Surface Reached) -->
@@ -1145,7 +1146,7 @@ body.earthquake-shake {
         </div>
 
         <p id="victory-time" style="font-size: 15px; color: #555; margin-bottom: 25px;"></p>
-        <button id="btn-win-restart" class="btn-primary">PLAY AGAIN</button>
+        <button id="btn-win-restart" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">PLAY AGAIN</button>
     </div>
 
     
@@ -3024,6 +3025,21 @@ class MineWorld {
             h.arm.rotation.z = -Math.PI / 3 + Math.sin(h.time * 6) * 0.35;
         }
 
+        // Dedicated Waterlogged Golden Lily Scene in flooded cavern (Senter Mati Total)
+        if (h.isWaterScene && h.active) {
+            h.materials[0].opacity = 0.95;
+            // Ethereal golden beacon illumination in pitch darkness
+            h.light.intensity = 3.2 + Math.sin(h.time * 3.2) * 0.45;
+            const baseY = this.getPathY(h.group.position.z);
+            h.group.position.y = baseY + 1.1 + Math.sin(h.time * 2.2) * 0.12;
+
+            const dist = playerPos.distanceTo(h.group.position);
+            if (dist < 4.8 || playerPos.z <= -176) {
+                this.dissolveHallucination();
+            }
+            return;
+        }
+
         if (oxygen < 35 && !h.active && !h.dissolving) {
             const spawnZ = playerPos.z - 22;
             const spawnX = this.getPathX(spawnZ);
@@ -3051,11 +3067,34 @@ class MineWorld {
             if (h.materials[0].opacity <= 0) {
                 h.dissolving = false;
                 h.active = false;
+                h.isWaterScene = false;
             }
         } else {
             h.materials[0].opacity = 0;
             h.light.intensity = 0;
         }
+    }
+
+    spawnWaterLilyScene() {
+        if (!this.hallucination) return;
+        const h = this.hallucination;
+        const lz = -172;
+        const lx = this.getPathX(lz);
+        const ly = this.getPathY(lz) + 1.25;
+
+        h.group.position.set(lx, ly, lz);
+        h.active = true;
+        h.isWaterScene = true;
+        h.dissolving = false;
+        h.time = 0;
+        h.materials[0].opacity = 0.95;
+
+        // The ONLY light in the flooded cavern: Lily's warm golden aura
+        h.light.color.setHex(0xffea00);
+        h.light.intensity = 3.6;
+        h.light.distance = 28;
+
+        if (window.soundEngine) window.soundEngine.playLilyWhisper();
     }
 
     dissolveHallucination() {
@@ -3164,6 +3203,7 @@ class PlayerController {
         this.flashlight = null;
         this.flashlightTarget = null;
         this.isFlashlightOn = true;
+        this.isFlashlightWaterlogged = false;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
         this.nextMalfunctionCheck = 28.0;
@@ -3315,12 +3355,30 @@ class PlayerController {
     }
 
     handleHelmetTap() {
-        if (!this.isFlashlightMalfunctioning) {
-            if (window.soundEngine) window.soundEngine.playHelmetTap();
+        if (window.soundEngine) window.soundEngine.playHelmetTap();
+
+        // Waterlogged headlamp from tumbling into flooded water
+        if (this.isFlashlightWaterlogged) {
+            this.tapsRequired = (this.tapsRequired || 2) - 1;
+            if (this.flashlight) {
+                this.flashlight.intensity = Math.random() < 0.5 ? 1.2 : 0.0;
+            }
+            if (this.tapsRequired <= 0) {
+                this.isFlashlightWaterlogged = false;
+                this.isFlashlightOn = true;
+                if (this.flashlight) this.flashlight.intensity = 3.6;
+                if (this.ambientBulb) this.ambientBulb.intensity = 0.6;
+                const tapAlert = document.getElementById('helmet-tap-alert');
+                if (tapAlert) tapAlert.classList.remove('active');
+                if (window.eventManager) window.eventManager.showNotification("WATER DRAINED! HEADLAMP FULLY RESTORED!");
+            }
             return;
         }
 
-        if (window.soundEngine) window.soundEngine.playHelmetTap();
+        if (!this.isFlashlightMalfunctioning) {
+            return;
+        }
+
         this.tapsRequired--;
 
         if (this.flashlight) {
@@ -3409,8 +3467,22 @@ class PlayerController {
             this.isTumbling = false;
             this.waterEntryTimer = this.waterEntryDuration;
 
-            if (this.flashlight) this.flashlight.intensity = 3.6;
-            if (window.soundEngine) window.soundEngine.playWaterSplash(true);
+            // Senter (headlamp) mati total setelah kecebur air!
+            this.isFlashlightWaterlogged = true;
+            this.isFlashlightOn = false;
+            this.tapsRequired = 2;
+            if (this.flashlight) this.flashlight.intensity = 0;
+            if (this.ambientBulb) this.ambientBulb.intensity = 0;
+
+            if (window.soundEngine) {
+                window.soundEngine.playWaterSplash(true);
+                window.soundEngine.playElectricalGlitch(); // Short-circuit fizzle
+            }
+
+            // Spawn the ethereal golden Lily scene in the pitch dark water
+            if (window.gameWorld) {
+                window.gameWorld.spawnWaterLilyScene();
+            }
 
             // Trigger splash visual burst
             const splashVignette = document.getElementById('water-splash-vignette');
@@ -3421,11 +3493,11 @@ class PlayerController {
             }
 
             if (window.gameState) {
-                window.gameState.triggerMonologue("tumbleLanded");
+                window.gameState.triggerMonologue("waterLilyScene");
             }
 
             if (window.eventManager) {
-                window.eventManager.showNotification("CRITICAL RESPIRATOR DAMAGE! VALVE COMPROMISED - OXYGEN LEAKING!");
+                window.eventManager.showNotification("HEADLAMP SHORTED OUT IN WATER! FOLLOW LILY'S GOLDEN LIGHT ACROSS THE FLOODED SUMP!");
             }
         }
     }
@@ -3596,9 +3668,21 @@ class PlayerController {
             return;
         }
 
+        // Headlamp waterlogged maintenance
+        if (this.isFlashlightWaterlogged) {
+            if (this.ambientBulb) this.ambientBulb.intensity = 0;
+            if (this.position.z <= -176) {
+                const tapAlert = document.getElementById('helmet-tap-alert');
+                if (tapAlert) {
+                    tapAlert.textContent = "⚠ HEADLAMP WATERLOGGED! PRESS [F] TO DRAIN & RESTORE!";
+                    tapAlert.classList.add('active');
+                }
+            }
+        }
+
         // 6. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
-        if (this.nextMalfunctionCheck <= 0) {
+        if (this.nextMalfunctionCheck <= 0 && !this.isFlashlightWaterlogged) {
             this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
             if (Math.random() < 0.45) {
                 this.triggerFlashlightMalfunction();
@@ -4374,6 +4458,12 @@ class GameState {
             });
         }
 
+        window.addEventListener('keydown', (e) => {
+            if (this.state === 'MENU' && (e.code === 'Space' || e.code === 'Enter')) {
+                this.startGame();
+            }
+        });
+
         if (window.polaroidSystem) {
             window.polaroidSystem.setupCanvases();
             window.polaroidSystem.updateHUD(100);
@@ -4381,9 +4471,13 @@ class GameState {
     }
 
     startGame() {
-        if (window.soundEngine) {
-            window.soundEngine.init();
-            window.soundEngine.resume();
+        try {
+            if (window.soundEngine) {
+                window.soundEngine.init();
+                window.soundEngine.resume();
+            }
+        } catch (err) {
+            console.warn("Audio init deferred:", err);
         }
 
         const titleScreen = document.getElementById('title-screen');
@@ -4394,8 +4488,16 @@ class GameState {
 
         this.state = 'PLAYING';
         this.oxygen = 100.0;
-        this.player.oxygen = 100.0;
-        this.player.domElement.requestPointerLock();
+        if (this.player) {
+            this.player.oxygen = 100.0;
+            try {
+                if (this.player.domElement) {
+                    this.player.domElement.requestPointerLock();
+                }
+            } catch (e) {
+                console.warn("Pointer lock deferred:", e);
+            }
+        }
 
         setTimeout(() => {
             this.triggerMonologue("start");
@@ -4428,6 +4530,9 @@ class GameState {
             case "tumbleLanded":
                 line = "Aaargh! The precipice gave way! I fell down into the lower flooded drainage rift... my mask cracked! The air is leaking out! No more backups down here... I have to climb up fast!";
                 this.monologueFlags.tumbleLanded = true;
+                break;
+            case "waterLilyScene":
+                line = "My headlamp... water killed the bulb! It's pitch black down here... Wait! Lily?! Is that you in the golden light across the water? Sweetheart, wait for daddy... don't fade away!";
                 break;
             case "swimming":
                 line = "Water is freezing... respirator is submerged! Gotta keep paddling across this flooded sump to reach the rope!";
@@ -4646,9 +4751,20 @@ class GameState {
 }
 
 window.gameState = new GameState();
-window.addEventListener('DOMContentLoaded', () => {
-    window.gameState.init();
-});
+
+function launchGameInit() {
+    if (window.gameState && !window.gameState.isInitialized) {
+        window.gameState.isInitialized = true;
+        window.gameState.init();
+    }
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', launchGameInit);
+} else {
+    launchGameInit();
+}
+window.addEventListener('load', launchGameInit);
 
 </script>
 

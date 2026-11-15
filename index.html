@@ -195,7 +195,7 @@
             </div>
         </div>
 
-        <button id="btn-start-game" class="btn-primary">BEGIN ASCENT TO SURFACE</button>
+        <button id="btn-start-game" class="btn-primary" onclick="if(window.gameState){window.gameState.startGame();}">BEGIN ASCENT TO SURFACE</button>
     </div>
 
     <!-- Game Over Screen (Hypoxia Death) -->
@@ -204,7 +204,7 @@
         <p id="gameover-reason" style="font-size: 16px; color: #e57373; margin-bottom: 16px;">Oxygen depleted in the subterranean abyss.</p>
         <p id="gameover-stats" style="color: #9e9e9e; font-size: 14px; margin-bottom: 28px;"></p>
         <p style="font-style: italic; color: #ffca28; margin-bottom: 30px;">"Lily still sits on the front porch waiting for your return... which never comes."</p>
-        <button id="btn-restart-game" class="btn-primary">TRY AGAIN FROM THE BOTTOM</button>
+        <button id="btn-restart-game" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">TRY AGAIN FROM THE BOTTOM</button>
     </div>
 
     <!-- Victory Screen (Surface Reached) -->
@@ -225,7 +225,7 @@
         </div>
 
         <p id="victory-time" style="font-size: 15px; color: #555; margin-bottom: 25px;"></p>
-        <button id="btn-win-restart" class="btn-primary">PLAY AGAIN</button>
+        <button id="btn-win-restart" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">PLAY AGAIN</button>
     </div>
 
     <!-- Game Scripts in strict dependency order -->

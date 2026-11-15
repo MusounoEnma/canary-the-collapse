@@ -959,6 +959,21 @@ class MineWorld {
             h.arm.rotation.z = -Math.PI / 3 + Math.sin(h.time * 6) * 0.35;
         }
 
+        // Dedicated Waterlogged Golden Lily Scene in flooded cavern (Senter Mati Total)
+        if (h.isWaterScene && h.active) {
+            h.materials[0].opacity = 0.95;
+            // Ethereal golden beacon illumination in pitch darkness
+            h.light.intensity = 3.2 + Math.sin(h.time * 3.2) * 0.45;
+            const baseY = this.getPathY(h.group.position.z);
+            h.group.position.y = baseY + 1.1 + Math.sin(h.time * 2.2) * 0.12;
+
+            const dist = playerPos.distanceTo(h.group.position);
+            if (dist < 4.8 || playerPos.z <= -176) {
+                this.dissolveHallucination();
+            }
+            return;
+        }
+
         if (oxygen < 35 && !h.active && !h.dissolving) {
             const spawnZ = playerPos.z - 22;
             const spawnX = this.getPathX(spawnZ);
@@ -986,11 +1001,34 @@ class MineWorld {
             if (h.materials[0].opacity <= 0) {
                 h.dissolving = false;
                 h.active = false;
+                h.isWaterScene = false;
             }
         } else {
             h.materials[0].opacity = 0;
             h.light.intensity = 0;
         }
+    }
+
+    spawnWaterLilyScene() {
+        if (!this.hallucination) return;
+        const h = this.hallucination;
+        const lz = -172;
+        const lx = this.getPathX(lz);
+        const ly = this.getPathY(lz) + 1.25;
+
+        h.group.position.set(lx, ly, lz);
+        h.active = true;
+        h.isWaterScene = true;
+        h.dissolving = false;
+        h.time = 0;
+        h.materials[0].opacity = 0.95;
+
+        // The ONLY light in the flooded cavern: Lily's warm golden aura
+        h.light.color.setHex(0xffea00);
+        h.light.intensity = 3.6;
+        h.light.distance = 28;
+
+        if (window.soundEngine) window.soundEngine.playLilyWhisper();
     }
 
     dissolveHallucination() {

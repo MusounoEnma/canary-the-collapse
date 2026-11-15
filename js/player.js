@@ -63,6 +63,7 @@ class PlayerController {
         this.flashlight = null;
         this.flashlightTarget = null;
         this.isFlashlightOn = true;
+        this.isFlashlightWaterlogged = false;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
         this.nextMalfunctionCheck = 28.0;
@@ -214,12 +215,30 @@ class PlayerController {
     }
 
     handleHelmetTap() {
-        if (!this.isFlashlightMalfunctioning) {
-            if (window.soundEngine) window.soundEngine.playHelmetTap();
+        if (window.soundEngine) window.soundEngine.playHelmetTap();
+
+        // Waterlogged headlamp from tumbling into flooded water
+        if (this.isFlashlightWaterlogged) {
+            this.tapsRequired = (this.tapsRequired || 2) - 1;
+            if (this.flashlight) {
+                this.flashlight.intensity = Math.random() < 0.5 ? 1.2 : 0.0;
+            }
+            if (this.tapsRequired <= 0) {
+                this.isFlashlightWaterlogged = false;
+                this.isFlashlightOn = true;
+                if (this.flashlight) this.flashlight.intensity = 3.6;
+                if (this.ambientBulb) this.ambientBulb.intensity = 0.6;
+                const tapAlert = document.getElementById('helmet-tap-alert');
+                if (tapAlert) tapAlert.classList.remove('active');
+                if (window.eventManager) window.eventManager.showNotification("WATER DRAINED! HEADLAMP FULLY RESTORED!");
+            }
             return;
         }
 
-        if (window.soundEngine) window.soundEngine.playHelmetTap();
+        if (!this.isFlashlightMalfunctioning) {
+            return;
+        }
+
         this.tapsRequired--;
 
         if (this.flashlight) {
@@ -308,8 +327,22 @@ class PlayerController {
             this.isTumbling = false;
             this.waterEntryTimer = this.waterEntryDuration;
 
-            if (this.flashlight) this.flashlight.intensity = 3.6;
-            if (window.soundEngine) window.soundEngine.playWaterSplash(true);
+            // Senter (headlamp) mati total setelah kecebur air!
+            this.isFlashlightWaterlogged = true;
+            this.isFlashlightOn = false;
+            this.tapsRequired = 2;
+            if (this.flashlight) this.flashlight.intensity = 0;
+            if (this.ambientBulb) this.ambientBulb.intensity = 0;
+
+            if (window.soundEngine) {
+                window.soundEngine.playWaterSplash(true);
+                window.soundEngine.playElectricalGlitch(); // Short-circuit fizzle
+            }
+
+            // Spawn the ethereal golden Lily scene in the pitch dark water
+            if (window.gameWorld) {
+                window.gameWorld.spawnWaterLilyScene();
+            }
 
             // Trigger splash visual burst
             const splashVignette = document.getElementById('water-splash-vignette');
@@ -320,11 +353,11 @@ class PlayerController {
             }
 
             if (window.gameState) {
-                window.gameState.triggerMonologue("tumbleLanded");
+                window.gameState.triggerMonologue("waterLilyScene");
             }
 
             if (window.eventManager) {
-                window.eventManager.showNotification("CRITICAL RESPIRATOR DAMAGE! VALVE COMPROMISED - OXYGEN LEAKING!");
+                window.eventManager.showNotification("HEADLAMP SHORTED OUT IN WATER! FOLLOW LILY'S GOLDEN LIGHT ACROSS THE FLOODED SUMP!");
             }
         }
     }
@@ -495,9 +528,21 @@ class PlayerController {
             return;
         }
 
+        // Headlamp waterlogged maintenance
+        if (this.isFlashlightWaterlogged) {
+            if (this.ambientBulb) this.ambientBulb.intensity = 0;
+            if (this.position.z <= -176) {
+                const tapAlert = document.getElementById('helmet-tap-alert');
+                if (tapAlert) {
+                    tapAlert.textContent = "⚠ HEADLAMP WATERLOGGED! PRESS [F] TO DRAIN & RESTORE!";
+                    tapAlert.classList.add('active');
+                }
+            }
+        }
+
         // 6. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
-        if (this.nextMalfunctionCheck <= 0) {
+        if (this.nextMalfunctionCheck <= 0 && !this.isFlashlightWaterlogged) {
             this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
             if (Math.random() < 0.45) {
                 this.triggerFlashlightMalfunction();

@@ -147,6 +147,12 @@ class GameState {
             });
         }
 
+        window.addEventListener('keydown', (e) => {
+            if (this.state === 'MENU' && (e.code === 'Space' || e.code === 'Enter')) {
+                this.startGame();
+            }
+        });
+
         if (window.polaroidSystem) {
             window.polaroidSystem.setupCanvases();
             window.polaroidSystem.updateHUD(100);
@@ -154,9 +160,13 @@ class GameState {
     }
 
     startGame() {
-        if (window.soundEngine) {
-            window.soundEngine.init();
-            window.soundEngine.resume();
+        try {
+            if (window.soundEngine) {
+                window.soundEngine.init();
+                window.soundEngine.resume();
+            }
+        } catch (err) {
+            console.warn("Audio init deferred:", err);
         }
 
         const titleScreen = document.getElementById('title-screen');
@@ -167,8 +177,16 @@ class GameState {
 
         this.state = 'PLAYING';
         this.oxygen = 100.0;
-        this.player.oxygen = 100.0;
-        this.player.domElement.requestPointerLock();
+        if (this.player) {
+            this.player.oxygen = 100.0;
+            try {
+                if (this.player.domElement) {
+                    this.player.domElement.requestPointerLock();
+                }
+            } catch (e) {
+                console.warn("Pointer lock deferred:", e);
+            }
+        }
 
         setTimeout(() => {
             this.triggerMonologue("start");
@@ -201,6 +219,9 @@ class GameState {
             case "tumbleLanded":
                 line = "Aaargh! The precipice gave way! I fell down into the lower flooded drainage rift... my mask cracked! The air is leaking out! No more backups down here... I have to climb up fast!";
                 this.monologueFlags.tumbleLanded = true;
+                break;
+            case "waterLilyScene":
+                line = "My headlamp... water killed the bulb! It's pitch black down here... Wait! Lily?! Is that you in the golden light across the water? Sweetheart, wait for daddy... don't fade away!";
                 break;
             case "swimming":
                 line = "Water is freezing... respirator is submerged! Gotta keep paddling across this flooded sump to reach the rope!";
@@ -419,6 +440,17 @@ class GameState {
 }
 
 window.gameState = new GameState();
-window.addEventListener('DOMContentLoaded', () => {
-    window.gameState.init();
-});
+
+function launchGameInit() {
+    if (window.gameState && !window.gameState.isInitialized) {
+        window.gameState.isInitialized = true;
+        window.gameState.init();
+    }
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', launchGameInit);
+} else {
+    launchGameInit();
+}
+window.addEventListener('load', launchGameInit);
