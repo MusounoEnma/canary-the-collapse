@@ -67,10 +67,62 @@ body, html {
     height: 100vh;
     pointer-events: none;
     z-index: 12;
-    background: radial-gradient(circle at center, rgba(16, 92, 107, 0.4) 0%, rgba(8, 48, 64, 0.75) 60%, rgba(2, 20, 30, 0.94) 100%);
+    background: radial-gradient(circle at center, rgba(16, 92, 107, 0.42) 0%, rgba(8, 48, 64, 0.78) 60%, rgba(2, 20, 30, 0.95) 100%);
     backdrop-filter: blur(1.8px);
-    display: none;
-    box-shadow: inset 0 0 100px rgba(0, 255, 230, 0.2);
+    opacity: 0;
+    transition: opacity 0.75s ease-in-out;
+    box-shadow: inset 0 0 100px rgba(0, 255, 230, 0.25);
+}
+
+#underwater-overlay.active {
+    opacity: 1;
+}
+
+#water-splash-vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 14;
+    background: radial-gradient(circle at center, transparent 35%, rgba(120, 220, 255, 0.45) 70%, rgba(0, 100, 160, 0.85) 100%);
+    opacity: 0;
+    transform: scale(0.92);
+}
+
+#water-splash-vignette.active {
+    animation: waterSplashBurst 0.9s cubic-bezier(0.1, 0.8, 0.3, 1.0) forwards;
+}
+
+@keyframes waterSplashBurst {
+    0% { opacity: 0.9; transform: scale(1.05); filter: blur(0px); }
+    50% { opacity: 0.6; transform: scale(1.0); filter: blur(1px); }
+    100% { opacity: 0; transform: scale(0.96); filter: blur(2px); }
+}
+
+#glitch-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 15;
+    background: rgba(255, 23, 68, 0.14);
+    opacity: 0;
+}
+
+#glitch-overlay.active {
+    animation: tremorGlitchStrobe 0.18s infinite;
+}
+
+@keyframes tremorGlitchStrobe {
+    0% { opacity: 0.28; filter: hue-rotate(0deg) contrast(1.3); }
+    30% { opacity: 0.05; }
+    50% { opacity: 0.38; filter: hue-rotate(15deg) contrast(1.5); }
+    70% { opacity: 0.08; }
+    100% { opacity: 0.22; filter: hue-rotate(-15deg); }
 }
 
 #hypoxia-overlay.active {
@@ -896,6 +948,12 @@ body.earthquake-shake {
     <!-- Underwater Submersion Screen Post-Processing Overlay -->
     <div id="underwater-overlay"></div>
 
+    <!-- Water Splash Entry Vignette Burst -->
+    <div id="water-splash-vignette"></div>
+
+    <!-- Tremor & Electrical Strobe Glitch Overlay -->
+    <div id="glitch-overlay"></div>
+
     <!-- Heads-Up Display (HUD) Layer -->
     <div id="hud-layer">
         <!-- Center Aim Crosshair -->
@@ -1176,8 +1234,9 @@ class SoundEngine {
     setUnderwater(active) {
         if (!this.underwaterFilter || !this.ctx) return;
         this.isUnderwater = active;
-        const targetFreq = active ? 450 : 22000;
-        this.underwaterFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.3);
+        const targetFreq = active ? 400 : 22000;
+        this.underwaterFilter.frequency.cancelScheduledValues(this.ctx.currentTime);
+        this.underwaterFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.45);
     }
 
     initAmbience() {
@@ -1241,13 +1300,14 @@ class SoundEngine {
     playWaterSplash(isSprinting = false) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        const dur = isSprinting ? 0.22 : 0.28;
+        const dur = isSprinting ? 0.35 : 0.45;
 
+        // 1. Water displacement spray
         const bufSize = Math.floor(this.ctx.sampleRate * dur);
         const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
         const d = buf.getChannelData(0);
         for (let i = 0; i < bufSize; i++) {
-            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.4));
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.35));
         }
 
         const noise = this.ctx.createBufferSource();
@@ -1255,18 +1315,30 @@ class SoundEngine {
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1400, now);
-        filter.frequency.exponentialRampToValueAtTime(350, now + dur);
+        filter.frequency.setValueAtTime(1600, now);
+        filter.frequency.exponentialRampToValueAtTime(280, now + dur);
 
         const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(isSprinting ? 0.32 : 0.22, now);
+        gain.gain.setValueAtTime(isSprinting ? 0.42 : 0.32, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
         noise.connect(filter);
         filter.connect(gain);
         gain.connect(this.masterGain);
-
         noise.start(now);
+
+        // 2. Heavy Submerged Plunge Body Thud
+        const osc = this.ctx.createOscillator();
+        const oGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.38);
+        oGain.gain.setValueAtTime(0.55, now);
+        oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.connect(oGain);
+        oGain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.39);
     }
 
     // Underwater Swimming Arm Stroke
@@ -1503,6 +1575,73 @@ class SoundEngine {
             osc.start(now);
             osc.stop(now + 0.31);
         }
+    }
+
+    playPickaxeBreak() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // 1. High metallic snapping ping
+        const osc1 = this.ctx.createOscillator();
+        const g1 = this.ctx.createGain();
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(1850, now);
+        osc1.frequency.exponentialRampToValueAtTime(320, now + 0.55);
+        g1.gain.setValueAtTime(0.7, now);
+        g1.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        osc1.connect(g1);
+        g1.connect(this.masterGain);
+        osc1.start(now);
+        osc1.stop(now + 0.56);
+
+        // 2. Heavy cracking iron fracture crunch
+        const dur = 0.65;
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.22));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(950, now);
+        f.Q.setValueAtTime(4.0, now);
+        const g2 = this.ctx.createGain();
+        g2.gain.setValueAtTime(0.75, now);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        noise.connect(f);
+        f.connect(g2);
+        g2.connect(this.masterGain);
+        noise.start(now);
+    }
+
+    playElectricalGlitch() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = 0.22;
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            // Arcing pulse spikes
+            const spike = (i % 80 < 8) ? 1.0 : 0.05;
+            d[i] = (Math.random() * 2 - 1) * spike;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(2800 + Math.random() * 600, now);
+        f.Q.setValueAtTime(3.5, now);
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.28, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        noise.connect(f);
+        f.connect(g);
+        g.connect(this.masterGain);
+        noise.start(now);
     }
 
     playEarthquake(duration = 3.5) {
@@ -1944,6 +2083,7 @@ class MineWorld {
         this.emergencyLights = [];
         this.escapeHatch = null;
         this.rescueRope = null;
+        this.gearCrate = null;
         this.puddles = [];
 
         this.tunnelLength = 280;
@@ -1953,6 +2093,7 @@ class MineWorld {
         this.buildAtmosphere();
         this.buildInteractables();
         this.buildRescueRope();
+        this.buildGearCrate();
         this.buildHallucination();
     }
 
@@ -1960,12 +2101,13 @@ class MineWorld {
     // EXTREME CURVE & ELEVATION FORMULAS
     // -------------------------------------------------------------
     getPathX(z) {
-        if (z > -140) {
+        if (z > -134) {
             return Math.sin(z * 0.045) * 5.8 + Math.sin(z * 0.02) * 3.4;
-        } else if (z > -175) {
-            // Hairpin curve through the submerged rift
-            const t = (z - (-140)) / (-35);
-            return (Math.sin(-140 * 0.045) * 5.8) + Math.sin(t * Math.PI) * 7.5;
+        } else if (z > -178) {
+            // Curves through the detour bypass chute into flooded rift
+            const startX = Math.sin(-134 * 0.045) * 5.8 + Math.sin(-134 * 0.02) * 3.4;
+            const t = (z - (-134)) / (-44);
+            return startX - Math.sin(t * Math.PI) * 4.8;
         } else {
             // Ascending final canyon shaft towards surface
             return Math.cos(z * 0.035) * 5.2 + Math.sin(z * 0.012) * 2.5;
@@ -1973,14 +2115,14 @@ class MineWorld {
     }
 
     getPathY(z) {
-        if (z > -140) {
+        if (z > -134) {
             const climb = (-z / 140) * 9.5;
             const dips = Math.sin(z * 0.08) * 2.2 + Math.cos(z * 0.04) * 1.5;
             return climb + dips;
         } else if (z > -180) {
-            // Flooded swimming sump basin (lower depth)
-            const t = (-z - 140) / 40;
-            return 2.5 - Math.sin(t * Math.PI) * 1.8;
+            // Detour chute plunge into flooded swimming sump basin
+            const t = (-z - 134) / 46;
+            return 8.2 - (t * 6.5) - Math.sin(t * Math.PI) * 1.2;
         } else {
             // Upper cliff ledge after rope climb: ascends up to +28m at surface hatch
             const t = (-z - 180) / 82;
@@ -2355,26 +2497,50 @@ class MineWorld {
         this.dustParticles = new THREE.Points(dustGeo, dustMat);
         this.scene.add(this.dustParticles);
 
-        const lampPositions = [-25, -75, -125, -195, -235];
-        lampPositions.forEach((lz, idx) => {
-            const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.6 : -1.6);
+        // Industrial utility lamps & Red Emergency Alarm Klaxons throughout the shaft
+        const lampConfigs = [
+            { z: -12, type: 'amber' },
+            { z: -25, type: 'red_alarm' },
+            { z: -42, type: 'amber' },
+            { z: -60, type: 'red_alarm' },
+            { z: -78, type: 'amber' },
+            { z: -96, type: 'red_alarm' },
+            { z: -114, type: 'amber' },
+            { z: -130, type: 'amber' },
+            { z: -134, type: 'red_alarm' }, // Right at the monolithic bedrock wall
+            { z: -138, type: 'amber' },     // Detour entrance chute
+            { z: -152, type: 'red_alarm' }, // Lower drainage rift
+            { z: -165, type: 'amber' },
+            { z: -176, type: 'red_alarm' }, // Rescue rope zone
+            { z: -192, type: 'amber' },
+            { z: -208, type: 'red_alarm' },
+            { z: -224, type: 'amber' },
+            { z: -242, type: 'red_alarm' },
+            { z: -258, type: 'amber' }
+        ];
+
+        lampConfigs.forEach((cfg, idx) => {
+            const lz = cfg.z;
+            const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.75 : -1.75);
             const ly = this.getPathY(lz) + 2.7;
 
             const lampGroup = new THREE.Group();
+            const isRed = (cfg.type === 'red_alarm');
+            const colorHex = isRed ? 0xff1744 : 0xffb300;
 
             const cage = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.14, 0.14, 0.32, 8),
-                new THREE.MeshBasicMaterial({ color: idx % 2 === 0 ? 0xffaa33 : 0xff3322, wireframe: true })
+                new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true })
             );
             lampGroup.add(cage);
 
             const bulb = new THREE.Mesh(
                 new THREE.SphereGeometry(0.08, 8, 8),
-                new THREE.MeshBasicMaterial({ color: idx % 2 === 0 ? 0xffaa44 : 0xff4433 })
+                new THREE.MeshBasicMaterial({ color: colorHex })
             );
             lampGroup.add(bulb);
 
-            const pLight = new THREE.PointLight(idx % 2 === 0 ? 0xffaa33 : 0xff3322, 0.9, 11, 2);
+            const pLight = new THREE.PointLight(colorHex, isRed ? 1.3 : 0.85, isRed ? 14 : 11, 2);
             pLight.position.set(0, -0.1, 0);
             lampGroup.add(pLight);
 
@@ -2384,7 +2550,8 @@ class MineWorld {
             this.emergencyLights.push({
                 group: lampGroup,
                 light: pLight,
-                baseIntensity: idx % 2 === 0 ? 0.85 : 0.95,
+                type: cfg.type,
+                baseIntensity: isRed ? 1.3 : 0.85,
                 flickerSeed: Math.random() * 100
             });
         });
@@ -2447,14 +2614,122 @@ class MineWorld {
         s2.position.set(this.getPathX(z2) - 1.8, this.getPathY(z2) + 1.9, z2);
         s2.rotation.y = Math.PI / 3;
         this.scene.add(s2);
+
+        // Illuminated Bypass Detour Sign at z = -135
+        const detourCanvas = document.createElement('canvas');
+        detourCanvas.width = 256;
+        detourCanvas.height = 128;
+        const dctx = detourCanvas.getContext('2d');
+        dctx.fillStyle = '#d84315';
+        dctx.fillRect(0, 0, 256, 128);
+        dctx.strokeStyle = '#fff';
+        dctx.lineWidth = 5;
+        dctx.strokeRect(6, 6, 244, 116);
+        dctx.fillStyle = '#fff';
+        dctx.font = 'bold 18px monospace';
+        dctx.textAlign = 'center';
+        dctx.fillText('◄ EMERGENCY BYPASS', 128, 40);
+        dctx.fillStyle = '#ffeb3b';
+        dctx.font = 'bold 14px monospace';
+        dctx.fillText('SUMP DRAINAGE CHUTE', 128, 75);
+        dctx.fillText('MAIN DRIFT CHOKED', 128, 102);
+
+        const detourTex = new THREE.CanvasTexture(detourCanvas);
+        const detourSign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshStandardMaterial({ map: detourTex }));
+        const zd = -135;
+        detourSign.position.set(this.getPathX(zd) - 1.9, this.getPathY(zd) + 2.2, zd);
+        detourSign.rotation.y = Math.PI / 4;
+        this.scene.add(detourSign);
+    }
+
+    buildGearCrate() {
+        // Abandoned Foreman's Emergency Rescue Gear Locker at Upper Canyon Ledge (z = -190)
+        const z = -190;
+        const x = this.getPathX(z) + 1.6;
+        const y = this.getPathY(z);
+
+        const group = new THREE.Group();
+
+        // Heavy industrial high-visibility yellow reinforced equipment chest
+        const chestMat = new THREE.MeshStandardMaterial({
+            color: 0xfbc02d,
+            roughness: 0.45,
+            metalness: 0.5
+        });
+        const chest = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.7), chestMat);
+        chest.position.set(0, 0.35, 0);
+        group.add(chest);
+
+        // Black corner protectors
+        const cornerMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        for (let dx of [-0.58, 0.58]) {
+            for (let dy of [0.05, 0.65]) {
+                const corner = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.72), cornerMat);
+                corner.position.set(dx, dy, 0);
+                group.add(corner);
+            }
+        }
+
+        // Heavy Carbide Crowbar lying on top of chest
+        const barMat = new THREE.MeshStandardMaterial({
+            color: 0x37474f,
+            metalness: 0.9,
+            roughness: 0.25
+        });
+        const crowbar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.15, 8), barMat);
+        crowbar.rotation.z = Math.PI / 4;
+        crowbar.position.set(0, 0.76, 0);
+        group.add(crowbar);
+
+        // Glowing locator light
+        const crateBeacon = new THREE.PointLight(0xffd54f, 1.2, 7.0, 2);
+        crateBeacon.position.set(0, 1.0, 0);
+        group.add(crateBeacon);
+
+        // Stencil sign canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 256, 128);
+        ctx.fillStyle = '#ffeb3b';
+        ctx.font = 'bold 20px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('EMERGENCY GEAR', 128, 45);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 15px monospace';
+        ctx.fillText('CARBIDE CROWBAR', 128, 78);
+        ctx.fillText('SHAFT 07 RESCUE', 128, 105);
+
+        const sign = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.9, 0.45),
+            new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) })
+        );
+        sign.position.set(0, 0.38, 0.36);
+        group.add(sign);
+
+        group.position.set(x, y, z);
+        this.scene.add(group);
+
+        this.gearCrate = {
+            group: group,
+            crowbar: crowbar,
+            x: x,
+            y: y,
+            z: z,
+            beacon: crateBeacon,
+            retrieved: false
+        };
+        this.scene.add(s2);
     }
 
     buildInteractables() {
         // 1. RUBBLE OBSTACLES - CLEAN SOLID LOW-POLY BOULDERS (Zero spiky glitch anomaly!)
         const rubbleConfigs = [
-            { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Upper Shaft)" },
-            { id: 2, z: -128, health: 2, name: "Fractured Fault Boulder Block" },
-            { id: 3, z: -215, health: 2, name: "Granite Surface Gate Barrier" }
+            { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Upper Shaft)", isBedrock: false },
+            { id: 2, z: -134, health: 999, name: "Monolithic Ironstone Intrusion (Shaft 07 Main Drift)", isBedrock: true },
+            { id: 3, z: -215, health: 2, name: "Granite Surface Gate Barrier", requiresCrowbar: true }
         ];
 
         rubbleConfigs.forEach(cfg => {
@@ -2466,18 +2741,18 @@ class MineWorld {
                 map: this.rockTexture,
                 roughness: 0.90,
                 metalness: 0.1,
-                color: 0x4e4a44
+                color: cfg.isBedrock ? 0x2e2b26 : 0x4e4a44
             });
 
-            // Realistic solid low-poly boulders (NO vertex random distortion glitches!)
-            for (let i = 0; i < 18; i++) {
-                const s = 0.7 + (i % 5) * 0.22;
-                // Clean Dodecahedron with detail 0 (clean facet geometry)
+            // Realistic solid low-poly boulders
+            const rockCount = cfg.isBedrock ? 28 : 18;
+            for (let i = 0; i < rockCount; i++) {
+                const s = 0.7 + (i % 5) * 0.24 + (cfg.isBedrock ? 0.35 : 0);
                 const rGeo = new THREE.DodecahedronGeometry(s, 0);
                 const rockMesh = new THREE.Mesh(rGeo, rockMat);
 
-                const ox = ((i % 5) - 2) * 0.85 + (Math.sin(i) * 0.4);
-                const oy = Math.floor(i / 5) * 0.9 + 0.3;
+                const ox = ((i % 5) - 2) * 0.9 + (Math.sin(i) * 0.4);
+                const oy = Math.floor(i / 5) * 0.85 + 0.3;
                 const oz = ((i % 3) - 1) * 0.7;
 
                 rockMesh.position.set(ox, oy, oz);
@@ -2488,10 +2763,10 @@ class MineWorld {
 
             // Warning marker above rubble
             const glowMat = new THREE.MeshBasicMaterial({
-                color: 0xffb300,
+                color: cfg.isBedrock ? 0xff1744 : 0xffb300,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.45
+                opacity: 0.5
             });
             const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.38, 0), glowMat);
             marker.position.set(0, 2.7, 0);
@@ -2506,6 +2781,8 @@ class MineWorld {
                 z: cfg.z,
                 x: rx,
                 y: ry,
+                isBedrock: cfg.isBedrock === true,
+                requiresCrowbar: cfg.requiresCrowbar === true,
                 maxHealth: cfg.health,
                 currentHealth: cfg.health,
                 cleared: false,
@@ -2702,9 +2979,26 @@ class MineWorld {
         }
 
         const time = Date.now() * 0.005;
+        const isTremor = window.eventManager && window.eventManager.isEarthquakeShaking;
+
         this.emergencyLights.forEach(lamp => {
-            const flicker = Math.sin(time + lamp.flickerSeed) * Math.cos(time * 2.3 + lamp.flickerSeed);
-            lamp.light.intensity = Math.max(0.1, lamp.baseIntensity + flicker * 0.35);
+            if (isTremor) {
+                // Violent electrical brownout & surge glitching during tremors
+                const glitch = Math.random() < 0.35 ? 0.04 : (Math.random() < 0.2 ? 2.5 : lamp.baseIntensity * 0.5);
+                lamp.light.intensity = glitch;
+                if (Math.random() < 0.035 && window.soundEngine) {
+                    window.soundEngine.playElectricalGlitch();
+                }
+            } else if (lamp.type === 'red_alarm') {
+                // Pulsating industrial red emergency alarm beacon
+                const pulse = Math.sin(time * 4.0 + lamp.flickerSeed);
+                const strobe = pulse > 0.2 ? 1.65 : 0.22;
+                lamp.light.intensity = strobe;
+            } else {
+                // Warm tungsten filament hum and subtle flicker
+                const flicker = Math.sin(time + lamp.flickerSeed) * Math.cos(time * 2.3 + lamp.flickerSeed);
+                lamp.light.intensity = Math.max(0.15, lamp.baseIntensity + flicker * 0.25);
+            }
         });
 
         this.rubbleObjects.forEach(r => {
@@ -2787,6 +3081,17 @@ class MineWorld {
             }
         }, 25);
     }
+
+    retrieveCrowbar() {
+        if (!this.gearCrate || this.gearCrate.retrieved) return;
+        this.gearCrate.retrieved = true;
+        if (this.gearCrate.crowbar) {
+            this.gearCrate.group.remove(this.gearCrate.crowbar);
+        }
+        if (this.gearCrate.beacon) {
+            this.gearCrate.beacon.intensity = 0.2;
+        }
+    }
 }
 
 window.MineWorld = MineWorld;
@@ -2829,17 +3134,23 @@ class PlayerController {
         this.isDead = false;
         this.isRespiratorLeaking = false;
 
-        // Cinematic Tumble & Roll Event
+        // Equipment progression
+        this.hasBrokenPickaxe = false;
+        this.hasCrowbar = false;
+
+        // Cinematic Tumble & Roll Event (Side Bypass Chute)
         this.hasTumbled = false;
         this.isTumbling = false;
         this.tumbleTimer = 0;
         this.tumbleDuration = 2.2;
-        this.tumbleStartZ = -140;
+        this.tumbleStartZ = -137;
         this.tumbleEndZ = -162;
 
-        // Underwater Swimming Stage
+        // Underwater Swimming Stage & Smooth Water Transition
         this.isSwimming = false;
         this.swimStrokeTimer = 0;
+        this.waterEntryTimer = 0;
+        this.waterEntryDuration = 1.6;
 
         // Vertical Rescue Rope Climbing Stage
         this.isClimbingRope = false;
@@ -3096,11 +3407,18 @@ class PlayerController {
 
         if (progress >= 1.0) {
             this.isTumbling = false;
-            this.roll = 0;
-            this.pitch = 0;
+            this.waterEntryTimer = this.waterEntryDuration;
 
             if (this.flashlight) this.flashlight.intensity = 3.6;
             if (window.soundEngine) window.soundEngine.playWaterSplash(true);
+
+            // Trigger splash visual burst
+            const splashVignette = document.getElementById('water-splash-vignette');
+            if (splashVignette) {
+                splashVignette.classList.remove('active');
+                void splashVignette.offsetWidth;
+                splashVignette.classList.add('active');
+            }
 
             if (window.gameState) {
                 window.gameState.triggerMonologue("tumbleLanded");
@@ -3217,7 +3535,15 @@ class PlayerController {
             return;
         }
 
-        // 3. Underwater Swimming Stage Detection (z between -162 and -178)
+        // Smooth buoyant recovery bobbing after tumbling into water
+        if (this.waterEntryTimer > 0) {
+            this.waterEntryTimer -= delta;
+            const t = 1.0 - Math.max(0, this.waterEntryTimer / this.waterEntryDuration);
+            this.roll = (1.0 - t) * Math.sin(t * Math.PI * 4) * 0.16;
+            this.pitch = (1.0 - t) * Math.sin(t * Math.PI * 3) * 0.14;
+        }
+
+        // 3. Underwater Swimming Stage Detection (z between -161 and -178)
         const inSwimmingZone = (this.position.z <= -161 && this.position.z >= -178);
         if (inSwimmingZone !== this.isSwimming) {
             this.isSwimming = inSwimmingZone;
@@ -3225,7 +3551,11 @@ class PlayerController {
 
             const underOverlay = document.getElementById('underwater-overlay');
             if (underOverlay) {
-                underOverlay.style.display = this.isSwimming ? 'block' : 'none';
+                if (this.isSwimming) {
+                    underOverlay.classList.add('active');
+                } else {
+                    underOverlay.classList.remove('active');
+                }
             }
 
             if (this.isSwimming && window.gameState) {
@@ -3260,8 +3590,8 @@ class PlayerController {
             return;
         }
 
-        // 5. Trigger Rockslide Tumble Check (at z = -139)
-        if (!this.hasTumbled && this.position.z <= -139 && this.position.z >= -144) {
+        // 5. Trigger Rockslide Tumble Check (in side bypass chute at z <= -136.5)
+        if (!this.hasTumbled && this.position.z <= -136.5 && this.position.z >= -144) {
             this.triggerRockslideTumble();
             return;
         }
@@ -3404,6 +3734,7 @@ class EventManager {
         this.currentRubble = null;
         this.currentCorpse = null;
         this.isNearRope = false;
+        this.isNearCrate = false;
         this.isNearHatch = false;
         
         // Rhythm Mini-game state
@@ -3484,8 +3815,23 @@ class EventManager {
 
         if (foundRubble) {
             this.currentRubble = foundRubble;
-            const remaining = foundRubble.currentHealth;
-            promptText = `[E] BREACH BOULDER RUBBLE WITH PICKAXE (${remaining} STRIKE${remaining > 1 ? 'S' : ''} NEEDED)`;
+            if (foundRubble.isBedrock) {
+                if (player.hasBrokenPickaxe) {
+                    promptText = "[IMPASSABLE] MONOLITHIC BEDROCK - PICKAXE BROKEN! TAKE BYPASS DETOUR ◄";
+                } else {
+                    promptText = "[E] ATTEMPT TO BREACH SOLID BEDROCK WITH PICKAXE";
+                }
+            } else if (foundRubble.requiresCrowbar) {
+                if (!player.hasCrowbar) {
+                    promptText = "[BLOCKED] REQUIRES HEAVY CROWBAR (Find gear crate at Upper Ledge)";
+                } else {
+                    const remaining = foundRubble.currentHealth;
+                    promptText = `[E] PRY BOULDER BARRIER WITH CARBIDE CROWBAR (${remaining} PRY STRIKE${remaining > 1 ? 'S' : ''})`;
+                }
+            } else {
+                const remaining = foundRubble.currentHealth;
+                promptText = `[E] BREACH BOULDER RUBBLE WITH PICKAXE (${remaining} STRIKE${remaining > 1 ? 'S' : ''} NEEDED)`;
+            }
         } else {
             this.currentRubble = null;
         }
@@ -3525,8 +3871,21 @@ class EventManager {
             this.isNearRope = false;
         }
 
-        // 4. Check Escape Hatch at Surface Shaft Head
-        if (!foundRubble && !foundCorpse && !this.isNearRope && world.escapeHatch) {
+        // 4. Check Emergency Gear Crate (z = -190)
+        if (!foundRubble && !foundCorpse && !this.isNearRope && world.gearCrate && !world.gearCrate.retrieved) {
+            const distToCrate = Math.hypot(pPos.x - world.gearCrate.x, pPos.z - world.gearCrate.z);
+            if (distToCrate < 2.8) {
+                this.isNearCrate = true;
+                promptText = "[E] RETRIEVE HEAVY CARBIDE CROWBAR FROM RESCUE GEAR CRATE";
+            } else {
+                this.isNearCrate = false;
+            }
+        } else {
+            this.isNearCrate = false;
+        }
+
+        // 5. Check Escape Hatch at Surface Shaft Head
+        if (!foundRubble && !foundCorpse && !this.isNearRope && !this.isNearCrate && world.escapeHatch) {
             const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
             if (distToHatch < 3.6) {
                 this.isNearHatch = true;
@@ -3548,11 +3907,37 @@ class EventManager {
 
     handleInteraction() {
         if (this.currentRubble) {
+            if (this.currentRubble.isBedrock) {
+                if (window.gamePlayer && window.gamePlayer.hasBrokenPickaxe) {
+                    this.showNotification("Pickaxe is broken! Take the illuminated side bypass chute!");
+                    return;
+                }
+                // Break pickaxe sequence!
+                if (window.soundEngine) window.soundEngine.playPickaxeBreak();
+                if (window.gamePlayer) window.gamePlayer.hasBrokenPickaxe = true;
+                this.triggerScreenShake(1.2, 14);
+                this.showNotification("CLANG! PICKAXE HEAD SHATTERED ON MONOLITHIC BEDROCK! Main drift blocked — take the side drainage chute detour!");
+                if (window.gameState) {
+                    window.gameState.triggerMonologue("pickaxeBroken");
+                }
+                return;
+            }
+            if (this.currentRubble.requiresCrowbar && (!window.gamePlayer || !window.gamePlayer.hasCrowbar)) {
+                this.showNotification("Granite boulders jammed tight! Need heavy crowbar from Upper Ledge crate!");
+                return;
+            }
             this.startRhythmMinigame(this.currentRubble);
         } else if (this.currentCorpse) {
             this.lootCorpse(this.currentCorpse);
         } else if (this.isNearRope && window.gamePlayer && window.gameWorld && window.gameWorld.rescueRope) {
             window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
+        } else if (this.isNearCrate && window.gameWorld && window.gameWorld.gearCrate) {
+            window.gameWorld.retrieveCrowbar();
+            if (window.gamePlayer) window.gamePlayer.hasCrowbar = true;
+            this.isNearCrate = false;
+            if (window.soundEngine) window.soundEngine.playFootstep(true);
+            this.showNotification("EQUIPPED: HEAVY CARBIDE CROWBAR! Can now pry loose massive rock barricades!");
+            if (window.gameState) window.gameState.triggerMonologue("crowbarRetrieved");
         } else if (this.isNearHatch) {
             this.triggerEscapeSequence();
         }
@@ -3789,7 +4174,14 @@ class EventManager {
             }, 3500);
         }
         document.body.classList.add('earthquake-shake');
-        this.showNotification("WARNING: AFTERSHOCK TREMOR SHAKING SHAFT CEILING! DEBRIS FALLING!");
+        const glitchEl = document.getElementById('glitch-overlay');
+        if (glitchEl) {
+            glitchEl.classList.add('active');
+            setTimeout(() => {
+                glitchEl.classList.remove('active');
+            }, 4200);
+        }
+        this.showNotification("WARNING: AFTERSHOCK TREMOR SHAKING SHAFT CEILING! ELECTRICAL SURGE GLITCHING!");
     }
 
     triggerScreenShake(duration, intensity) {
@@ -4030,6 +4422,9 @@ class GameState {
                 line = "A massive rockslide blocked the path completely. My pickaxe... remember the mining drills. Strike anywhere in the green zone!";
                 this.monologueFlags.firstRubble = true;
                 break;
+            case "pickaxeBroken":
+                line = "Dammit! The pickaxe snapped clean in two on that bedrock! Main drift is sealed shut... wait, there's a side drainage chute on the left! It's steep, but it's my only way!";
+                break;
             case "tumbleLanded":
                 line = "Aaargh! The precipice gave way! I fell down into the lower flooded drainage rift... my mask cracked! The air is leaking out! No more backups down here... I have to climb up fast!";
                 this.monologueFlags.tumbleLanded = true;
@@ -4041,6 +4436,9 @@ class GameState {
             case "ropeClimbed":
                 line = "Made it up the rope... arms burning. The surface escape hatch is just ahead in the upper canyon!";
                 this.monologueFlags.ropeClimbed = true;
+                break;
+            case "crowbarRetrieved":
+                line = "A heavy carbide crowbar! Sturdy and solid steel. If there are more cave-ins near the surface, I can pry them open now.";
                 break;
             case "midway":
                 line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";

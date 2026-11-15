@@ -11,6 +11,7 @@ class EventManager {
         this.currentRubble = null;
         this.currentCorpse = null;
         this.isNearRope = false;
+        this.isNearCrate = false;
         this.isNearHatch = false;
         
         // Rhythm Mini-game state
@@ -91,8 +92,23 @@ class EventManager {
 
         if (foundRubble) {
             this.currentRubble = foundRubble;
-            const remaining = foundRubble.currentHealth;
-            promptText = `[E] BREACH BOULDER RUBBLE WITH PICKAXE (${remaining} STRIKE${remaining > 1 ? 'S' : ''} NEEDED)`;
+            if (foundRubble.isBedrock) {
+                if (player.hasBrokenPickaxe) {
+                    promptText = "[IMPASSABLE] MONOLITHIC BEDROCK - PICKAXE BROKEN! TAKE BYPASS DETOUR ◄";
+                } else {
+                    promptText = "[E] ATTEMPT TO BREACH SOLID BEDROCK WITH PICKAXE";
+                }
+            } else if (foundRubble.requiresCrowbar) {
+                if (!player.hasCrowbar) {
+                    promptText = "[BLOCKED] REQUIRES HEAVY CROWBAR (Find gear crate at Upper Ledge)";
+                } else {
+                    const remaining = foundRubble.currentHealth;
+                    promptText = `[E] PRY BOULDER BARRIER WITH CARBIDE CROWBAR (${remaining} PRY STRIKE${remaining > 1 ? 'S' : ''})`;
+                }
+            } else {
+                const remaining = foundRubble.currentHealth;
+                promptText = `[E] BREACH BOULDER RUBBLE WITH PICKAXE (${remaining} STRIKE${remaining > 1 ? 'S' : ''} NEEDED)`;
+            }
         } else {
             this.currentRubble = null;
         }
@@ -132,8 +148,21 @@ class EventManager {
             this.isNearRope = false;
         }
 
-        // 4. Check Escape Hatch at Surface Shaft Head
-        if (!foundRubble && !foundCorpse && !this.isNearRope && world.escapeHatch) {
+        // 4. Check Emergency Gear Crate (z = -190)
+        if (!foundRubble && !foundCorpse && !this.isNearRope && world.gearCrate && !world.gearCrate.retrieved) {
+            const distToCrate = Math.hypot(pPos.x - world.gearCrate.x, pPos.z - world.gearCrate.z);
+            if (distToCrate < 2.8) {
+                this.isNearCrate = true;
+                promptText = "[E] RETRIEVE HEAVY CARBIDE CROWBAR FROM RESCUE GEAR CRATE";
+            } else {
+                this.isNearCrate = false;
+            }
+        } else {
+            this.isNearCrate = false;
+        }
+
+        // 5. Check Escape Hatch at Surface Shaft Head
+        if (!foundRubble && !foundCorpse && !this.isNearRope && !this.isNearCrate && world.escapeHatch) {
             const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
             if (distToHatch < 3.6) {
                 this.isNearHatch = true;
@@ -155,11 +184,37 @@ class EventManager {
 
     handleInteraction() {
         if (this.currentRubble) {
+            if (this.currentRubble.isBedrock) {
+                if (window.gamePlayer && window.gamePlayer.hasBrokenPickaxe) {
+                    this.showNotification("Pickaxe is broken! Take the illuminated side bypass chute!");
+                    return;
+                }
+                // Break pickaxe sequence!
+                if (window.soundEngine) window.soundEngine.playPickaxeBreak();
+                if (window.gamePlayer) window.gamePlayer.hasBrokenPickaxe = true;
+                this.triggerScreenShake(1.2, 14);
+                this.showNotification("CLANG! PICKAXE HEAD SHATTERED ON MONOLITHIC BEDROCK! Main drift blocked — take the side drainage chute detour!");
+                if (window.gameState) {
+                    window.gameState.triggerMonologue("pickaxeBroken");
+                }
+                return;
+            }
+            if (this.currentRubble.requiresCrowbar && (!window.gamePlayer || !window.gamePlayer.hasCrowbar)) {
+                this.showNotification("Granite boulders jammed tight! Need heavy crowbar from Upper Ledge crate!");
+                return;
+            }
             this.startRhythmMinigame(this.currentRubble);
         } else if (this.currentCorpse) {
             this.lootCorpse(this.currentCorpse);
         } else if (this.isNearRope && window.gamePlayer && window.gameWorld && window.gameWorld.rescueRope) {
             window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
+        } else if (this.isNearCrate && window.gameWorld && window.gameWorld.gearCrate) {
+            window.gameWorld.retrieveCrowbar();
+            if (window.gamePlayer) window.gamePlayer.hasCrowbar = true;
+            this.isNearCrate = false;
+            if (window.soundEngine) window.soundEngine.playFootstep(true);
+            this.showNotification("EQUIPPED: HEAVY CARBIDE CROWBAR! Can now pry loose massive rock barricades!");
+            if (window.gameState) window.gameState.triggerMonologue("crowbarRetrieved");
         } else if (this.isNearHatch) {
             this.triggerEscapeSequence();
         }
@@ -396,7 +451,14 @@ class EventManager {
             }, 3500);
         }
         document.body.classList.add('earthquake-shake');
-        this.showNotification("WARNING: AFTERSHOCK TREMOR SHAKING SHAFT CEILING! DEBRIS FALLING!");
+        const glitchEl = document.getElementById('glitch-overlay');
+        if (glitchEl) {
+            glitchEl.classList.add('active');
+            setTimeout(() => {
+                glitchEl.classList.remove('active');
+            }, 4200);
+        }
+        this.showNotification("WARNING: AFTERSHOCK TREMOR SHAKING SHAFT CEILING! ELECTRICAL SURGE GLITCHING!");
     }
 
     triggerScreenShake(duration, intensity) {

@@ -18,6 +18,7 @@ class MineWorld {
         this.emergencyLights = [];
         this.escapeHatch = null;
         this.rescueRope = null;
+        this.gearCrate = null;
         this.puddles = [];
 
         this.tunnelLength = 280;
@@ -27,6 +28,7 @@ class MineWorld {
         this.buildAtmosphere();
         this.buildInteractables();
         this.buildRescueRope();
+        this.buildGearCrate();
         this.buildHallucination();
     }
 
@@ -34,12 +36,13 @@ class MineWorld {
     // EXTREME CURVE & ELEVATION FORMULAS
     // -------------------------------------------------------------
     getPathX(z) {
-        if (z > -140) {
+        if (z > -134) {
             return Math.sin(z * 0.045) * 5.8 + Math.sin(z * 0.02) * 3.4;
-        } else if (z > -175) {
-            // Hairpin curve through the submerged rift
-            const t = (z - (-140)) / (-35);
-            return (Math.sin(-140 * 0.045) * 5.8) + Math.sin(t * Math.PI) * 7.5;
+        } else if (z > -178) {
+            // Curves through the detour bypass chute into flooded rift
+            const startX = Math.sin(-134 * 0.045) * 5.8 + Math.sin(-134 * 0.02) * 3.4;
+            const t = (z - (-134)) / (-44);
+            return startX - Math.sin(t * Math.PI) * 4.8;
         } else {
             // Ascending final canyon shaft towards surface
             return Math.cos(z * 0.035) * 5.2 + Math.sin(z * 0.012) * 2.5;
@@ -47,14 +50,14 @@ class MineWorld {
     }
 
     getPathY(z) {
-        if (z > -140) {
+        if (z > -134) {
             const climb = (-z / 140) * 9.5;
             const dips = Math.sin(z * 0.08) * 2.2 + Math.cos(z * 0.04) * 1.5;
             return climb + dips;
         } else if (z > -180) {
-            // Flooded swimming sump basin (lower depth)
-            const t = (-z - 140) / 40;
-            return 2.5 - Math.sin(t * Math.PI) * 1.8;
+            // Detour chute plunge into flooded swimming sump basin
+            const t = (-z - 134) / 46;
+            return 8.2 - (t * 6.5) - Math.sin(t * Math.PI) * 1.2;
         } else {
             // Upper cliff ledge after rope climb: ascends up to +28m at surface hatch
             const t = (-z - 180) / 82;
@@ -429,26 +432,50 @@ class MineWorld {
         this.dustParticles = new THREE.Points(dustGeo, dustMat);
         this.scene.add(this.dustParticles);
 
-        const lampPositions = [-25, -75, -125, -195, -235];
-        lampPositions.forEach((lz, idx) => {
-            const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.6 : -1.6);
+        // Industrial utility lamps & Red Emergency Alarm Klaxons throughout the shaft
+        const lampConfigs = [
+            { z: -12, type: 'amber' },
+            { z: -25, type: 'red_alarm' },
+            { z: -42, type: 'amber' },
+            { z: -60, type: 'red_alarm' },
+            { z: -78, type: 'amber' },
+            { z: -96, type: 'red_alarm' },
+            { z: -114, type: 'amber' },
+            { z: -130, type: 'amber' },
+            { z: -134, type: 'red_alarm' }, // Right at the monolithic bedrock wall
+            { z: -138, type: 'amber' },     // Detour entrance chute
+            { z: -152, type: 'red_alarm' }, // Lower drainage rift
+            { z: -165, type: 'amber' },
+            { z: -176, type: 'red_alarm' }, // Rescue rope zone
+            { z: -192, type: 'amber' },
+            { z: -208, type: 'red_alarm' },
+            { z: -224, type: 'amber' },
+            { z: -242, type: 'red_alarm' },
+            { z: -258, type: 'amber' }
+        ];
+
+        lampConfigs.forEach((cfg, idx) => {
+            const lz = cfg.z;
+            const lx = this.getPathX(lz) + (idx % 2 === 0 ? 1.75 : -1.75);
             const ly = this.getPathY(lz) + 2.7;
 
             const lampGroup = new THREE.Group();
+            const isRed = (cfg.type === 'red_alarm');
+            const colorHex = isRed ? 0xff1744 : 0xffb300;
 
             const cage = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.14, 0.14, 0.32, 8),
-                new THREE.MeshBasicMaterial({ color: idx % 2 === 0 ? 0xffaa33 : 0xff3322, wireframe: true })
+                new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true })
             );
             lampGroup.add(cage);
 
             const bulb = new THREE.Mesh(
                 new THREE.SphereGeometry(0.08, 8, 8),
-                new THREE.MeshBasicMaterial({ color: idx % 2 === 0 ? 0xffaa44 : 0xff4433 })
+                new THREE.MeshBasicMaterial({ color: colorHex })
             );
             lampGroup.add(bulb);
 
-            const pLight = new THREE.PointLight(idx % 2 === 0 ? 0xffaa33 : 0xff3322, 0.9, 11, 2);
+            const pLight = new THREE.PointLight(colorHex, isRed ? 1.3 : 0.85, isRed ? 14 : 11, 2);
             pLight.position.set(0, -0.1, 0);
             lampGroup.add(pLight);
 
@@ -458,7 +485,8 @@ class MineWorld {
             this.emergencyLights.push({
                 group: lampGroup,
                 light: pLight,
-                baseIntensity: idx % 2 === 0 ? 0.85 : 0.95,
+                type: cfg.type,
+                baseIntensity: isRed ? 1.3 : 0.85,
                 flickerSeed: Math.random() * 100
             });
         });
@@ -521,14 +549,122 @@ class MineWorld {
         s2.position.set(this.getPathX(z2) - 1.8, this.getPathY(z2) + 1.9, z2);
         s2.rotation.y = Math.PI / 3;
         this.scene.add(s2);
+
+        // Illuminated Bypass Detour Sign at z = -135
+        const detourCanvas = document.createElement('canvas');
+        detourCanvas.width = 256;
+        detourCanvas.height = 128;
+        const dctx = detourCanvas.getContext('2d');
+        dctx.fillStyle = '#d84315';
+        dctx.fillRect(0, 0, 256, 128);
+        dctx.strokeStyle = '#fff';
+        dctx.lineWidth = 5;
+        dctx.strokeRect(6, 6, 244, 116);
+        dctx.fillStyle = '#fff';
+        dctx.font = 'bold 18px monospace';
+        dctx.textAlign = 'center';
+        dctx.fillText('◄ EMERGENCY BYPASS', 128, 40);
+        dctx.fillStyle = '#ffeb3b';
+        dctx.font = 'bold 14px monospace';
+        dctx.fillText('SUMP DRAINAGE CHUTE', 128, 75);
+        dctx.fillText('MAIN DRIFT CHOKED', 128, 102);
+
+        const detourTex = new THREE.CanvasTexture(detourCanvas);
+        const detourSign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshStandardMaterial({ map: detourTex }));
+        const zd = -135;
+        detourSign.position.set(this.getPathX(zd) - 1.9, this.getPathY(zd) + 2.2, zd);
+        detourSign.rotation.y = Math.PI / 4;
+        this.scene.add(detourSign);
+    }
+
+    buildGearCrate() {
+        // Abandoned Foreman's Emergency Rescue Gear Locker at Upper Canyon Ledge (z = -190)
+        const z = -190;
+        const x = this.getPathX(z) + 1.6;
+        const y = this.getPathY(z);
+
+        const group = new THREE.Group();
+
+        // Heavy industrial high-visibility yellow reinforced equipment chest
+        const chestMat = new THREE.MeshStandardMaterial({
+            color: 0xfbc02d,
+            roughness: 0.45,
+            metalness: 0.5
+        });
+        const chest = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.7), chestMat);
+        chest.position.set(0, 0.35, 0);
+        group.add(chest);
+
+        // Black corner protectors
+        const cornerMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        for (let dx of [-0.58, 0.58]) {
+            for (let dy of [0.05, 0.65]) {
+                const corner = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.72), cornerMat);
+                corner.position.set(dx, dy, 0);
+                group.add(corner);
+            }
+        }
+
+        // Heavy Carbide Crowbar lying on top of chest
+        const barMat = new THREE.MeshStandardMaterial({
+            color: 0x37474f,
+            metalness: 0.9,
+            roughness: 0.25
+        });
+        const crowbar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.15, 8), barMat);
+        crowbar.rotation.z = Math.PI / 4;
+        crowbar.position.set(0, 0.76, 0);
+        group.add(crowbar);
+
+        // Glowing locator light
+        const crateBeacon = new THREE.PointLight(0xffd54f, 1.2, 7.0, 2);
+        crateBeacon.position.set(0, 1.0, 0);
+        group.add(crateBeacon);
+
+        // Stencil sign canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 256, 128);
+        ctx.fillStyle = '#ffeb3b';
+        ctx.font = 'bold 20px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('EMERGENCY GEAR', 128, 45);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 15px monospace';
+        ctx.fillText('CARBIDE CROWBAR', 128, 78);
+        ctx.fillText('SHAFT 07 RESCUE', 128, 105);
+
+        const sign = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.9, 0.45),
+            new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) })
+        );
+        sign.position.set(0, 0.38, 0.36);
+        group.add(sign);
+
+        group.position.set(x, y, z);
+        this.scene.add(group);
+
+        this.gearCrate = {
+            group: group,
+            crowbar: crowbar,
+            x: x,
+            y: y,
+            z: z,
+            beacon: crateBeacon,
+            retrieved: false
+        };
+        this.scene.add(s2);
     }
 
     buildInteractables() {
         // 1. RUBBLE OBSTACLES - CLEAN SOLID LOW-POLY BOULDERS (Zero spiky glitch anomaly!)
         const rubbleConfigs = [
-            { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Upper Shaft)" },
-            { id: 2, z: -128, health: 2, name: "Fractured Fault Boulder Block" },
-            { id: 3, z: -215, health: 2, name: "Granite Surface Gate Barrier" }
+            { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Upper Shaft)", isBedrock: false },
+            { id: 2, z: -134, health: 999, name: "Monolithic Ironstone Intrusion (Shaft 07 Main Drift)", isBedrock: true },
+            { id: 3, z: -215, health: 2, name: "Granite Surface Gate Barrier", requiresCrowbar: true }
         ];
 
         rubbleConfigs.forEach(cfg => {
@@ -540,18 +676,18 @@ class MineWorld {
                 map: this.rockTexture,
                 roughness: 0.90,
                 metalness: 0.1,
-                color: 0x4e4a44
+                color: cfg.isBedrock ? 0x2e2b26 : 0x4e4a44
             });
 
-            // Realistic solid low-poly boulders (NO vertex random distortion glitches!)
-            for (let i = 0; i < 18; i++) {
-                const s = 0.7 + (i % 5) * 0.22;
-                // Clean Dodecahedron with detail 0 (clean facet geometry)
+            // Realistic solid low-poly boulders
+            const rockCount = cfg.isBedrock ? 28 : 18;
+            for (let i = 0; i < rockCount; i++) {
+                const s = 0.7 + (i % 5) * 0.24 + (cfg.isBedrock ? 0.35 : 0);
                 const rGeo = new THREE.DodecahedronGeometry(s, 0);
                 const rockMesh = new THREE.Mesh(rGeo, rockMat);
 
-                const ox = ((i % 5) - 2) * 0.85 + (Math.sin(i) * 0.4);
-                const oy = Math.floor(i / 5) * 0.9 + 0.3;
+                const ox = ((i % 5) - 2) * 0.9 + (Math.sin(i) * 0.4);
+                const oy = Math.floor(i / 5) * 0.85 + 0.3;
                 const oz = ((i % 3) - 1) * 0.7;
 
                 rockMesh.position.set(ox, oy, oz);
@@ -562,10 +698,10 @@ class MineWorld {
 
             // Warning marker above rubble
             const glowMat = new THREE.MeshBasicMaterial({
-                color: 0xffb300,
+                color: cfg.isBedrock ? 0xff1744 : 0xffb300,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.45
+                opacity: 0.5
             });
             const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.38, 0), glowMat);
             marker.position.set(0, 2.7, 0);
@@ -580,6 +716,8 @@ class MineWorld {
                 z: cfg.z,
                 x: rx,
                 y: ry,
+                isBedrock: cfg.isBedrock === true,
+                requiresCrowbar: cfg.requiresCrowbar === true,
                 maxHealth: cfg.health,
                 currentHealth: cfg.health,
                 cleared: false,
@@ -776,9 +914,26 @@ class MineWorld {
         }
 
         const time = Date.now() * 0.005;
+        const isTremor = window.eventManager && window.eventManager.isEarthquakeShaking;
+
         this.emergencyLights.forEach(lamp => {
-            const flicker = Math.sin(time + lamp.flickerSeed) * Math.cos(time * 2.3 + lamp.flickerSeed);
-            lamp.light.intensity = Math.max(0.1, lamp.baseIntensity + flicker * 0.35);
+            if (isTremor) {
+                // Violent electrical brownout & surge glitching during tremors
+                const glitch = Math.random() < 0.35 ? 0.04 : (Math.random() < 0.2 ? 2.5 : lamp.baseIntensity * 0.5);
+                lamp.light.intensity = glitch;
+                if (Math.random() < 0.035 && window.soundEngine) {
+                    window.soundEngine.playElectricalGlitch();
+                }
+            } else if (lamp.type === 'red_alarm') {
+                // Pulsating industrial red emergency alarm beacon
+                const pulse = Math.sin(time * 4.0 + lamp.flickerSeed);
+                const strobe = pulse > 0.2 ? 1.65 : 0.22;
+                lamp.light.intensity = strobe;
+            } else {
+                // Warm tungsten filament hum and subtle flicker
+                const flicker = Math.sin(time + lamp.flickerSeed) * Math.cos(time * 2.3 + lamp.flickerSeed);
+                lamp.light.intensity = Math.max(0.15, lamp.baseIntensity + flicker * 0.25);
+            }
         });
 
         this.rubbleObjects.forEach(r => {
@@ -860,6 +1015,17 @@ class MineWorld {
                 this.scene.remove(rubble.group);
             }
         }, 25);
+    }
+
+    retrieveCrowbar() {
+        if (!this.gearCrate || this.gearCrate.retrieved) return;
+        this.gearCrate.retrieved = true;
+        if (this.gearCrate.crowbar) {
+            this.gearCrate.group.remove(this.gearCrate.crowbar);
+        }
+        if (this.gearCrate.beacon) {
+            this.gearCrate.beacon.intensity = 0.2;
+        }
     }
 }
 

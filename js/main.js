@@ -195,6 +195,9 @@ class GameState {
                 line = "A massive rockslide blocked the path completely. My pickaxe... remember the mining drills. Strike anywhere in the green zone!";
                 this.monologueFlags.firstRubble = true;
                 break;
+            case "pickaxeBroken":
+                line = "Dammit! The pickaxe snapped clean in two on that bedrock! Main drift is sealed shut... wait, there's a side drainage chute on the left! It's steep, but it's my only way!";
+                break;
             case "tumbleLanded":
                 line = "Aaargh! The precipice gave way! I fell down into the lower flooded drainage rift... my mask cracked! The air is leaking out! No more backups down here... I have to climb up fast!";
                 this.monologueFlags.tumbleLanded = true;
@@ -206,6 +209,9 @@ class GameState {
             case "ropeClimbed":
                 line = "Made it up the rope... arms burning. The surface escape hatch is just ahead in the upper canyon!";
                 this.monologueFlags.ropeClimbed = true;
+                break;
+            case "crowbarRetrieved":
+                line = "A heavy carbide crowbar! Sturdy and solid steel. If there are more cave-ins near the surface, I can pry them open now.";
                 break;
             case "midway":
                 line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";

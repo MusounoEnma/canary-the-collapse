@@ -71,8 +71,9 @@ class SoundEngine {
     setUnderwater(active) {
         if (!this.underwaterFilter || !this.ctx) return;
         this.isUnderwater = active;
-        const targetFreq = active ? 450 : 22000;
-        this.underwaterFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.3);
+        const targetFreq = active ? 400 : 22000;
+        this.underwaterFilter.frequency.cancelScheduledValues(this.ctx.currentTime);
+        this.underwaterFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.45);
     }
 
     initAmbience() {
@@ -136,13 +137,14 @@ class SoundEngine {
     playWaterSplash(isSprinting = false) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        const dur = isSprinting ? 0.22 : 0.28;
+        const dur = isSprinting ? 0.35 : 0.45;
 
+        // 1. Water displacement spray
         const bufSize = Math.floor(this.ctx.sampleRate * dur);
         const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
         const d = buf.getChannelData(0);
         for (let i = 0; i < bufSize; i++) {
-            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.4));
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.35));
         }
 
         const noise = this.ctx.createBufferSource();
@@ -150,18 +152,30 @@ class SoundEngine {
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1400, now);
-        filter.frequency.exponentialRampToValueAtTime(350, now + dur);
+        filter.frequency.setValueAtTime(1600, now);
+        filter.frequency.exponentialRampToValueAtTime(280, now + dur);
 
         const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(isSprinting ? 0.32 : 0.22, now);
+        gain.gain.setValueAtTime(isSprinting ? 0.42 : 0.32, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
         noise.connect(filter);
         filter.connect(gain);
         gain.connect(this.masterGain);
-
         noise.start(now);
+
+        // 2. Heavy Submerged Plunge Body Thud
+        const osc = this.ctx.createOscillator();
+        const oGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.38);
+        oGain.gain.setValueAtTime(0.55, now);
+        oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.connect(oGain);
+        oGain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.39);
     }
 
     // Underwater Swimming Arm Stroke
@@ -398,6 +412,73 @@ class SoundEngine {
             osc.start(now);
             osc.stop(now + 0.31);
         }
+    }
+
+    playPickaxeBreak() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // 1. High metallic snapping ping
+        const osc1 = this.ctx.createOscillator();
+        const g1 = this.ctx.createGain();
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(1850, now);
+        osc1.frequency.exponentialRampToValueAtTime(320, now + 0.55);
+        g1.gain.setValueAtTime(0.7, now);
+        g1.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        osc1.connect(g1);
+        g1.connect(this.masterGain);
+        osc1.start(now);
+        osc1.stop(now + 0.56);
+
+        // 2. Heavy cracking iron fracture crunch
+        const dur = 0.65;
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.22));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(950, now);
+        f.Q.setValueAtTime(4.0, now);
+        const g2 = this.ctx.createGain();
+        g2.gain.setValueAtTime(0.75, now);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        noise.connect(f);
+        f.connect(g2);
+        g2.connect(this.masterGain);
+        noise.start(now);
+    }
+
+    playElectricalGlitch() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = 0.22;
+        const bufSize = Math.floor(this.ctx.sampleRate * dur);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            // Arcing pulse spikes
+            const spike = (i % 80 < 8) ? 1.0 : 0.05;
+            d[i] = (Math.random() * 2 - 1) * spike;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(2800 + Math.random() * 600, now);
+        f.Q.setValueAtTime(3.5, now);
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.28, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        noise.connect(f);
+        f.connect(g);
+        g.connect(this.masterGain);
+        noise.start(now);
     }
 
     playEarthquake(duration = 3.5) {

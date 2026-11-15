@@ -33,17 +33,23 @@ class PlayerController {
         this.isDead = false;
         this.isRespiratorLeaking = false;
 
-        // Cinematic Tumble & Roll Event
+        // Equipment progression
+        this.hasBrokenPickaxe = false;
+        this.hasCrowbar = false;
+
+        // Cinematic Tumble & Roll Event (Side Bypass Chute)
         this.hasTumbled = false;
         this.isTumbling = false;
         this.tumbleTimer = 0;
         this.tumbleDuration = 2.2;
-        this.tumbleStartZ = -140;
+        this.tumbleStartZ = -137;
         this.tumbleEndZ = -162;
 
-        // Underwater Swimming Stage
+        // Underwater Swimming Stage & Smooth Water Transition
         this.isSwimming = false;
         this.swimStrokeTimer = 0;
+        this.waterEntryTimer = 0;
+        this.waterEntryDuration = 1.6;
 
         // Vertical Rescue Rope Climbing Stage
         this.isClimbingRope = false;
@@ -300,11 +306,18 @@ class PlayerController {
 
         if (progress >= 1.0) {
             this.isTumbling = false;
-            this.roll = 0;
-            this.pitch = 0;
+            this.waterEntryTimer = this.waterEntryDuration;
 
             if (this.flashlight) this.flashlight.intensity = 3.6;
             if (window.soundEngine) window.soundEngine.playWaterSplash(true);
+
+            // Trigger splash visual burst
+            const splashVignette = document.getElementById('water-splash-vignette');
+            if (splashVignette) {
+                splashVignette.classList.remove('active');
+                void splashVignette.offsetWidth;
+                splashVignette.classList.add('active');
+            }
 
             if (window.gameState) {
                 window.gameState.triggerMonologue("tumbleLanded");
@@ -421,7 +434,15 @@ class PlayerController {
             return;
         }
 
-        // 3. Underwater Swimming Stage Detection (z between -162 and -178)
+        // Smooth buoyant recovery bobbing after tumbling into water
+        if (this.waterEntryTimer > 0) {
+            this.waterEntryTimer -= delta;
+            const t = 1.0 - Math.max(0, this.waterEntryTimer / this.waterEntryDuration);
+            this.roll = (1.0 - t) * Math.sin(t * Math.PI * 4) * 0.16;
+            this.pitch = (1.0 - t) * Math.sin(t * Math.PI * 3) * 0.14;
+        }
+
+        // 3. Underwater Swimming Stage Detection (z between -161 and -178)
         const inSwimmingZone = (this.position.z <= -161 && this.position.z >= -178);
         if (inSwimmingZone !== this.isSwimming) {
             this.isSwimming = inSwimmingZone;
@@ -429,7 +450,11 @@ class PlayerController {
 
             const underOverlay = document.getElementById('underwater-overlay');
             if (underOverlay) {
-                underOverlay.style.display = this.isSwimming ? 'block' : 'none';
+                if (this.isSwimming) {
+                    underOverlay.classList.add('active');
+                } else {
+                    underOverlay.classList.remove('active');
+                }
             }
 
             if (this.isSwimming && window.gameState) {
@@ -464,8 +489,8 @@ class PlayerController {
             return;
         }
 
-        // 5. Trigger Rockslide Tumble Check (at z = -139)
-        if (!this.hasTumbled && this.position.z <= -139 && this.position.z >= -144) {
+        // 5. Trigger Rockslide Tumble Check (in side bypass chute at z <= -136.5)
+        if (!this.hasTumbled && this.position.z <= -136.5 && this.position.z >= -144) {
             this.triggerRockslideTumble();
             return;
         }
