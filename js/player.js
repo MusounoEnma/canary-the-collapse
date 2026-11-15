@@ -1,10 +1,10 @@
 /**
  * CANARY: The Collapse - FPS Player Controller
  * Features:
- * - Traverses undulating climbing hills, dips, and water sumps.
- * - Allows exploration of the secret Sub-Shaft 07-C dead-end branch.
- * - Dynamic water splash audio when stepping through flooded puddle dips.
- * - Solid non-slippery foot friction.
+ * - Dramatic Rockslide Tumble: Player slips and rolls 720 degrees down the steep chute into the lower flooded rift.
+ * - Dynamic route switch after tumbling.
+ * - Critical Oxygen Leak Climax: Unassisted high-tension oxygen depletion in the final stretch towards the surface hatch.
+ * - Solid non-slippery foot friction & responsive camera controls.
  */
 
 class PlayerController {
@@ -21,15 +21,25 @@ class PlayerController {
         this.isMoving = false;
         this.stepTimer = 0;
 
-        // Camera Look Pitch/Yaw (Firm, non-slippery sensitivity)
+        // Camera Look Pitch/Yaw/Roll
         this.yaw = 0;
         this.pitch = 0;
+        this.roll = 0; // Roll angle used for dramatic tumbling
         this.isLocked = false;
         this.sensitivity = 0.0016;
 
         // Oxygen & Vitals
         this.oxygen = 100.0;
         this.isDead = false;
+        this.isRespiratorLeaking = false;
+
+        // Cinematic Tumble & Roll Event
+        this.hasTumbled = false;
+        this.isTumbling = false;
+        this.tumbleTimer = 0;
+        this.tumbleDuration = 2.2;
+        this.tumbleStartZ = -140;
+        this.tumbleEndZ = -162;
 
         // Flashlight (Helmet Headlamp)
         this.flashlight = null;
@@ -48,7 +58,6 @@ class PlayerController {
         this.bobCycle = 0;
         this.cameraBaseY = 1.7;
 
-        // Input states
         this.keys = {
             forward: false,
             backward: false,
@@ -92,14 +101,14 @@ class PlayerController {
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!this.isLocked || this.isDead) return;
+            if (!this.isLocked || this.isDead || this.isTumbling) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
             this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
         });
 
         window.addEventListener('keydown', (e) => {
-            if (this.isDead) return;
+            if (this.isDead || this.isTumbling) return;
             switch (e.code) {
                 case 'KeyW':
                 case 'ArrowUp':
@@ -202,7 +211,7 @@ class PlayerController {
     }
 
     triggerFlashlightMalfunction() {
-        if (this.isFlashlightMalfunctioning) return;
+        if (this.isFlashlightMalfunctioning || this.isTumbling) return;
         this.isFlashlightMalfunctioning = true;
         this.tapsRequired = Math.floor(1 + Math.random() * 2);
 
@@ -223,8 +232,76 @@ class PlayerController {
         }, 110);
     }
 
+    // -------------------------------------------------------------
+    // CINEMATIC ROCKSLIDE TUMBLE & ROUTE SWITCH
+    // -------------------------------------------------------------
+    triggerRockslideTumble() {
+        if (this.hasTumbled || this.isTumbling) return;
+        this.hasTumbled = true;
+        this.isTumbling = true;
+        this.tumbleTimer = 0;
+
+        // Play heavy tumbling earthquake & rock shatter sound
+        if (window.soundEngine) {
+            window.soundEngine.playEarthquake(3.5);
+            window.soundEngine.playWaterSplash(true);
+            window.soundEngine.setTinnitus(0.25);
+            setTimeout(() => {
+                if (window.soundEngine) window.soundEngine.setTinnitus(0.0001);
+            }, 3000);
+        }
+
+        if (window.eventManager) {
+            window.eventManager.triggerScreenShake(2.2, 18);
+            window.eventManager.showNotification("PRECIPICE COLLAPSE! SLIDING AND TUMBLING DOWN THE SHAFT!");
+        }
+
+        // Damage respirator seal -> starts high tension unassisted oxygen leak
+        this.isRespiratorLeaking = true;
+        this.oxygen = Math.max(12, this.oxygen - 18.0); // Loses burst of air in the fall
+    }
+
+    updateTumble(delta, world) {
+        this.tumbleTimer += delta;
+        const progress = Math.min(1.0, this.tumbleTimer / this.tumbleDuration);
+
+        // Smooth cubic plunge along the steep chute
+        const easeT = progress * progress * (3 - 2 * progress);
+        this.position.z = THREE.MathUtils.lerp(this.tumbleStartZ, this.tumbleEndZ, easeT);
+        this.position.x = world.getPathX(this.position.z);
+        this.position.y = world.getPathY(this.position.z);
+
+        // Violent tumbling camera roll: 720 degrees (2 full barrel rolls)
+        this.roll = progress * Math.PI * 4;
+        this.pitch = Math.sin(progress * Math.PI * 6) * 0.45;
+
+        // Flashlight flickers violently during the tumble
+        if (this.flashlight) {
+            this.flashlight.intensity = Math.random() > 0.4 ? 2.5 : 0.2;
+        }
+
+        if (progress >= 1.0) {
+            // Landed into the flooded drainage rift pool!
+            this.isTumbling = false;
+            this.roll = 0;
+            this.pitch = 0;
+
+            if (this.flashlight) this.flashlight.intensity = 3.6;
+            if (window.soundEngine) window.soundEngine.playWaterSplash(true);
+
+            // Trigger dramatic post-tumble monologue
+            if (window.gameState) {
+                window.gameState.triggerMonologue("tumbleLanded");
+            }
+
+            if (window.eventManager) {
+                window.eventManager.showNotification("CRITICAL RESPIRATOR DAMAGE! VALVE COMPROMISED - OXYGEN LEAKING!");
+            }
+        }
+    }
+
     triggerStumble() {
-        if (this.isStumbled) return;
+        if (this.isStumbled || this.isTumbling) return;
         this.isStumbled = true;
         this.stumbleRecoveryTimer = 1.4;
         if (window.soundEngine) {
@@ -232,7 +309,7 @@ class PlayerController {
             window.soundEngine.playFootstep(true);
         }
         if (window.eventManager) {
-            window.eventManager.showNotification("Slipped in deep flooded mine puddle! Lost breath!");
+            window.eventManager.showNotification("Slipped in deep flooded puddle! Lost breath!");
         }
         this.oxygen = Math.max(0, this.oxygen - 3.0);
     }
@@ -240,12 +317,42 @@ class PlayerController {
     update(delta, world) {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
 
-        // 1. Oxygen Depletion
-        let drainRate = 0.50;
+        // Handle Active Tumble Event
+        if (this.isTumbling) {
+            this.updateTumble(delta, world);
+
+            // Update Camera Transformations during tumble
+            this.camera.position.set(this.position.x, this.position.y + 1.2, this.position.z);
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.rotation.y = this.yaw;
+            this.camera.rotation.x = this.pitch;
+            this.camera.rotation.z = this.roll; // Tumbling roll!
+
+            if (this.flashlight && this.flashlightTarget) {
+                this.flashlight.position.copy(this.camera.position);
+                const lookDir = new THREE.Vector3();
+                this.camera.getWorldDirection(lookDir);
+                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(6));
+            }
+            return;
+        }
+
+        // 1. Oxygen Depletion & High-Tension Climax Calculation
+        let drainRate = 0.48;
         this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
 
         if (this.isSprinting) {
             drainRate *= 3.0;
+        }
+
+        // After the tumble and entering the final canyon (z < -162), respirator leak accelerates tension!
+        if (this.isRespiratorLeaking) {
+            drainRate += 0.85; // Faster leak
+        }
+
+        // Final desperate stretch (z < -215): tightly calibrated so player arrives with ~5% - 10% O2!
+        if (this.position.z < -215) {
+            drainRate += 1.15; // Lungs burning, tank gasping
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -254,7 +361,13 @@ class PlayerController {
             return;
         }
 
-        // 2. Headlamp Malfunction Random Check
+        // 2. Check Trigger for Dramatic Rockslide Tumble (at z = -139)
+        if (!this.hasTumbled && this.position.z <= -139 && this.position.z >= -144) {
+            this.triggerRockslideTumble();
+            return;
+        }
+
+        // 3. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
         if (this.nextMalfunctionCheck <= 0) {
             this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
@@ -263,7 +376,7 @@ class PlayerController {
             }
         }
 
-        // 3. Flooded Puddle Check & Tripping Hazard
+        // 4. Flooded Puddle Check & Tripping Hazard
         let inWater = false;
         world.puddles.forEach(p => {
             if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.8) {
@@ -283,7 +396,7 @@ class PlayerController {
             }
         }
 
-        // 4. Movement Calculation with Solid Footing
+        // 5. Movement Calculation with Solid Footing
         const speed = (this.isSprinting ? this.moveSpeed * this.sprintMultiplier : this.moveSpeed) * (this.isStumbled ? 0.35 : 1.0);
         const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
         const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
@@ -301,19 +414,11 @@ class PlayerController {
             this.velocity.copy(moveDir).multiplyScalar(speed * delta);
 
             const nextZ = this.position.z + this.velocity.z;
-
-            // Check if entering the Sub-Shaft 07-C dead-end branch (around z = -80 to -108, x > 1.0)
-            const isNearBranch = (nextZ < -78 && nextZ > -110 && (this.position.x > 1.2 || this.velocity.x > 0));
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
 
-            if (isNearBranch) {
-                // Allow walking into the right side branch up to +16.0 meters
-                nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 16.0, nextX));
-            } else {
-                // Strict Main Tunnel Boundary
-                nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
-            }
+            // Clamped strictly within the cavern walls (+/- 1.85m)
+            nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
 
             let blockedByRubble = false;
 
@@ -339,7 +444,7 @@ class PlayerController {
                 }
             }
 
-            // Footstep sounds (Splashes if in water sump, rock crunch otherwise)
+            // Footstep sounds
             this.stepTimer -= delta * (this.isSprinting ? 1.6 : 1.0);
             if (this.stepTimer <= 0) {
                 if (inWater && window.soundEngine) {
@@ -366,6 +471,7 @@ class PlayerController {
         this.camera.rotation.set(0, 0, 0);
         this.camera.rotation.y = this.yaw;
         this.camera.rotation.x = this.pitch + this.stumblePitchOffset;
+        this.camera.rotation.z = 0; // Reset roll when not tumbling
 
         // Update Flashlight position & direction
         if (this.flashlight && this.flashlightTarget) {

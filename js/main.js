@@ -2,7 +2,8 @@
  * CANARY: The Collapse - Main Game Orchestrator & State Machine
  * Features:
  * - Real-time climbing depth & distance-to-hatch compass indicator.
- * - Narrative monologue subtitle system triggering at key story milestones.
+ * - Narrative monologue subtitle system triggering at key story milestones (including post-tumble & final desperation).
+ * - High-tension oxygen calculation in final unassisted stretch.
  * - Full English standardization.
  */
 
@@ -26,8 +27,10 @@ class GameState {
             start: false,
             firstCorpse: false,
             firstRubble: false,
+            tumbleLanded: false,
             midway: false,
             hypoxia: false,
+            finalDesperation: false,
             nearExit: false
         };
         this.monologueTimer = null;
@@ -41,7 +44,6 @@ class GameState {
         // Three.js Scene Setup
         this.scene = new THREE.Scene();
         window.gameScene = this.scene;
-        // Atmospheric mine dust fog (gentle density so cave walls are visible)
         this.scene.fog = new THREE.FogExp2(0x121014, 0.024);
 
         // Ambient & Directional Cave Illumination
@@ -82,10 +84,8 @@ class GameState {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Initialize UI Elements & Event Listeners
         this.initUI();
 
-        // Start Loop
         requestAnimationFrame((t) => this.loop(t));
     }
 
@@ -134,7 +134,6 @@ class GameState {
             });
         }
 
-        // Click HUD polaroid to inspect
         const hudPolaroid = document.getElementById('polaroid-container');
         if (hudPolaroid) {
             hudPolaroid.addEventListener('click', () => {
@@ -146,7 +145,6 @@ class GameState {
             });
         }
 
-        // Initial render of Polaroid thumbnail on HUD
         if (window.polaroidSystem) {
             window.polaroidSystem.setupCanvases();
             window.polaroidSystem.updateHUD(100);
@@ -170,7 +168,6 @@ class GameState {
         this.player.oxygen = 100.0;
         this.player.domElement.requestPointerLock();
 
-        // Initial story monologue
         setTimeout(() => {
             this.triggerMonologue("start");
         }, 1200);
@@ -193,8 +190,12 @@ class GameState {
                 this.monologueFlags.firstCorpse = true;
                 break;
             case "firstRubble":
-                line = "A massive rockslide blocked the path completely. My pickaxe... remember the mining drills. Strike the weak fracture point!";
+                line = "A massive rockslide blocked the path completely. My pickaxe... remember the mining drills. Strike anywhere in the green zone!";
                 this.monologueFlags.firstRubble = true;
+                break;
+            case "tumbleLanded":
+                line = "Aaargh! The precipice gave way! I fell down into the lower flooded drainage rift... my mask cracked! The air is leaking out! No more backups down here... I have to climb up fast!";
+                this.monologueFlags.tumbleLanded = true;
                 break;
             case "midway":
                 line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";
@@ -203,6 +204,10 @@ class GameState {
             case "hypoxia":
                 line = "Lily...? Is that you in the golden light? Sweetheart, wait for daddy! Don't fade into the dust... please don't leave me!";
                 this.monologueFlags.hypoxia = true;
+                break;
+            case "finalDesperation":
+                line = "Lungs... on fire... can't breathe... Lily, I'm right here! Don't let me fall now!";
+                this.monologueFlags.finalDesperation = true;
                 break;
             case "headlamp":
                 line = "Dammit, not now! Headlamp wire came loose... need to tap my helmet [F] to kickstart the battery!";
@@ -273,11 +278,13 @@ class GameState {
                     this.triggerMonologue("firstCorpse");
                 } else if (!this.monologueFlags.firstRubble && pz < -42 && pz > -55) {
                     this.triggerMonologue("firstRubble");
-                } else if (!this.monologueFlags.midway && pz < -120 && pz > -140) {
+                } else if (!this.monologueFlags.midway && pz < -115 && pz > -130) {
                     this.triggerMonologue("midway");
                 } else if (!this.monologueFlags.hypoxia && this.oxygen < 35 && this.oxygen > 15) {
                     this.triggerMonologue("hypoxia");
-                } else if (!this.monologueFlags.nearExit && pz < -240) {
+                } else if (!this.monologueFlags.finalDesperation && this.oxygen < 12 && pz < -210) {
+                    this.triggerMonologue("finalDesperation");
+                } else if (!this.monologueFlags.nearExit && pz < -245) {
                     this.triggerMonologue("nearExit");
                 }
             }
@@ -295,18 +302,31 @@ class GameState {
         const o2BarEl = document.getElementById('hud-o2-fill');
         const depthValEl = document.getElementById('hud-depth-value');
         const sprintIndicator = document.getElementById('hud-sprint-status');
+        const pressureStatus = document.getElementById('hud-pressure-status');
 
         const o2 = Math.max(0, Math.min(100, this.oxygen));
 
         if (o2ValEl) o2ValEl.textContent = `${Math.ceil(o2)}%`;
         if (o2BarEl) {
             o2BarEl.style.width = `${o2}%`;
-            if (o2 < 25) {
+            if (o2 < 20) {
                 o2BarEl.style.backgroundColor = '#ff1744';
-            } else if (o2 < 50) {
+            } else if (o2 < 45) {
                 o2BarEl.style.backgroundColor = '#ff9100';
             } else {
                 o2BarEl.style.backgroundColor = '#00e676';
+            }
+        }
+
+        if (pressureStatus && this.player) {
+            if (this.player.isRespiratorLeaking) {
+                pressureStatus.textContent = "VALVE BREACH: CRITICAL LEAK!";
+                pressureStatus.style.color = "#ff1744";
+                pressureStatus.style.fontWeight = "bold";
+            } else {
+                pressureStatus.textContent = "PRESSURE: NOMINAL";
+                pressureStatus.style.color = "#aaa";
+                pressureStatus.style.fontWeight = "normal";
             }
         }
 
@@ -325,10 +345,10 @@ class GameState {
             if (o2 < 35) {
                 hypoxiaOverlay.classList.add('active');
                 const severity = (35 - o2) / 35;
-                const vignetteStrength = (0.4 + severity * 0.55).toFixed(2);
-                hypoxiaOverlay.style.background = `radial-gradient(circle, rgba(0,0,0,0) 25%, rgba(0,0,0,${vignetteStrength}) 85%)`;
+                const vignetteStrength = (0.4 + severity * 0.58).toFixed(2);
+                hypoxiaOverlay.style.background = `radial-gradient(circle, rgba(0,0,0,0) 20%, rgba(20,0,0,${vignetteStrength}) 85%)`;
                 if (window.soundEngine) {
-                    window.soundEngine.setTinnitus(severity * 0.22);
+                    window.soundEngine.setTinnitus(severity * 0.25);
                 }
             } else {
                 hypoxiaOverlay.classList.remove('active');
