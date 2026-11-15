@@ -46,6 +46,22 @@
             </div>
         </div>
 
+        <!-- Mini Directional Compass HUD -->
+        <div class="hud-compass-bar">
+            <span class="compass-edge">◄ DEPTH 780m</span>
+            <div class="compass-center">
+                <span class="compass-arrow">▲</span>
+                <span id="compass-target-text">CLIMBING TOWARDS SURFACE HATCH (<span id="hud-distance-to-hatch">262m</span>)</span>
+            </div>
+            <span class="compass-edge">SURFACE 0m ►</span>
+        </div>
+
+        <!-- Cinematic Character Monologue Box -->
+        <div id="monologue-box">
+            <span class="monologue-speaker">HENRY (YOU)</span>
+            <p id="monologue-text">"God... the whole shaft collapsed. I have to crawl upward... Lily is waiting for me."</p>
+        </div>
+
         <!-- Center Notification Banner -->
         <div id="notification-banner">Shaft 07 has collapsed! Climb upward to the emergency hatch!</div>
 
@@ -58,10 +74,10 @@
         <!-- Pointer Lock Center Prompt -->
         <div id="lock-prompt">CLICK TO LOCK MOUSE LOOK</div>
 
-        <!-- Bottom Left: Polaroid Anchor of Lily (Fades with Hypoxia) -->
+        <!-- Bottom Left: Direct Native Canvas Polaroid (100% Reliable, Never Breaks) -->
         <div id="polaroid-container" title="Click or press [T] to inspect Lily's polaroid">
             <div class="polaroid-tape"></div>
-            <img id="polaroid-hud-img" alt="Lily's Polaroid Photo" src="">
+            <canvas id="polaroid-hud-canvas" width="240" height="280"></canvas>
             <div class="polaroid-hint">[T] INSPECT PHOTO</div>
         </div>
 
@@ -105,9 +121,9 @@
     <div id="polaroid-inspect-modal">
         <div class="polaroid-card-3d">
             <div id="polaroid-card-inner">
-                <!-- Front Side: Drawing of Lily -->
+                <!-- Front Side: Native Canvas of Lily -->
                 <div class="polaroid-face polaroid-face-front">
-                    <img id="inspect-polaroid-img" alt="Lily's Photograph" src="">
+                    <canvas id="inspect-polaroid-canvas" width="340" height="400"></canvas>
                 </div>
                 <!-- Back Side: Handwritten note -->
                 <div class="polaroid-face polaroid-face-back">

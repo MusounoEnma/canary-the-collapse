@@ -1,6 +1,9 @@
 /**
  * CANARY: The Collapse - Main Game Orchestrator & State Machine
- * Standardized in full English.
+ * Features:
+ * - Real-time climbing depth & distance-to-hatch compass indicator.
+ * - Narrative monologue subtitle system triggering at key story milestones.
+ * - Full English standardization.
  */
 
 class GameState {
@@ -17,6 +20,17 @@ class GameState {
         this.world = null;
         this.player = null;
         this.events = null;
+
+        // Monologue story tracking flags
+        this.monologueFlags = {
+            start: false,
+            firstCorpse: false,
+            firstRubble: false,
+            midway: false,
+            hypoxia: false,
+            nearExit: false
+        };
+        this.monologueTimer = null;
 
         this.lastTime = performance.now();
     }
@@ -126,6 +140,7 @@ class GameState {
 
         // Initial render of Polaroid thumbnail on HUD
         if (window.polaroidSystem) {
+            window.polaroidSystem.setupCanvases();
             window.polaroidSystem.updateHUD(100);
         }
     }
@@ -147,9 +162,58 @@ class GameState {
         this.player.oxygen = 100.0;
         this.player.domElement.requestPointerLock();
 
-        if (this.events) {
-            this.events.showNotification("Shaft 07 has collapsed! Climb upward through the winding tunnel before oxygen runs out!");
+        // Initial story monologue
+        setTimeout(() => {
+            this.triggerMonologue("start");
+        }, 1200);
+    }
+
+    // Monologue Subtitle System
+    triggerMonologue(type) {
+        const box = document.getElementById('monologue-box');
+        const textEl = document.getElementById('monologue-text');
+        if (!box || !textEl) return;
+
+        let line = "";
+        switch (type) {
+            case "start":
+                line = "God... the whole shaft collapsed on us. I have to crawl upward... Lily is waiting on the porch for me.";
+                this.monologueFlags.start = true;
+                break;
+            case "firstCorpse":
+                line = "Tomas... no, not you too brother. Forgive me, I need your oxygen tank. I made a promise to my girl... I have to make it home.";
+                this.monologueFlags.firstCorpse = true;
+                break;
+            case "firstRubble":
+                line = "A massive rockslide blocked the path completely. My pickaxe... remember the mining drills. Strike the weak fracture point!";
+                this.monologueFlags.firstRubble = true;
+                break;
+            case "midway":
+                line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";
+                this.monologueFlags.midway = true;
+                break;
+            case "hypoxia":
+                line = "Lily...? Is that you in the golden light? Sweetheart, wait for daddy! Don't fade into the dust... please don't leave me!";
+                this.monologueFlags.hypoxia = true;
+                break;
+            case "headlamp":
+                line = "Dammit, not now! Headlamp wire came loose... need to tap my helmet [F] to kickstart the battery!";
+                break;
+            case "nearExit":
+                line = "I see the green beacon of Emergency Hatch B-4! I can smell fresh mountain air! Almost there!";
+                this.monologueFlags.nearExit = true;
+                break;
         }
+
+        if (!line) return;
+
+        textEl.textContent = `"${line}"`;
+        box.classList.add('visible');
+
+        clearTimeout(this.monologueTimer);
+        this.monologueTimer = setTimeout(() => {
+            box.classList.remove('visible');
+        }, 6500);
     }
 
     triggerPhotoComfort() {
@@ -186,10 +250,28 @@ class GameState {
                 }
             }
 
-            // Real-time Climbing Depth Tracking (780m down to 0m at surface)
+            // Real-time Climbing Depth Tracking & Compass Distance
             if (this.player) {
                 const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 262));
                 this.depth = Math.round(780 * (1.0 - progressRatio));
+
+                const distToHatch = Math.max(0, Math.round(Math.abs(-262 - this.player.position.z)));
+                const distEl = document.getElementById('hud-distance-to-hatch');
+                if (distEl) distEl.textContent = `${distToHatch}m`;
+
+                // Check Story Monologue Triggers along the winding path
+                const pz = this.player.position.z;
+                if (!this.monologueFlags.firstCorpse && pz < -18 && pz > -32) {
+                    this.triggerMonologue("firstCorpse");
+                } else if (!this.monologueFlags.firstRubble && pz < -42 && pz > -55) {
+                    this.triggerMonologue("firstRubble");
+                } else if (!this.monologueFlags.midway && pz < -120 && pz > -140) {
+                    this.triggerMonologue("midway");
+                } else if (!this.monologueFlags.hypoxia && this.oxygen < 35 && this.oxygen > 15) {
+                    this.triggerMonologue("hypoxia");
+                } else if (!this.monologueFlags.nearExit && pz < -240) {
+                    this.triggerMonologue("nearExit");
+                }
             }
 
             this.updateHUDAndHypoxia();

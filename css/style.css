@@ -1,6 +1,6 @@
 /* ==========================================================================
    CANARY: The Collapse - Visual Stylesheet
-   Industrial Retro-Atmospheric Survival Aesthetic
+   Industrial Retro-Atmospheric Survival Aesthetic (Standard English)
    ========================================================================== */
 
 * {
@@ -94,12 +94,12 @@ body.earthquake-shake {
 /* Top Depth & Sector Banner */
 .hud-top-bar {
     position: absolute;
-    top: 24px;
+    top: 18px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: 30px;
-    background: rgba(12, 14, 18, 0.75);
+    background: rgba(12, 14, 18, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 8px 24px;
     border-radius: 4px;
@@ -126,16 +126,102 @@ body.earthquake-shake {
     color: #ffb300;
 }
 
-/* Bottom Left: Polaroid Anchor of Lily */
+/* Mini Directional Compass HUD */
+.hud-compass-bar {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(8, 10, 14, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px 18px;
+    border-radius: 20px;
+    font-family: monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #aaa;
+    backdrop-filter: blur(4px);
+}
+
+.compass-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #69f0ae;
+    font-weight: bold;
+}
+
+.compass-arrow {
+    font-size: 12px;
+    color: #00e676;
+    animation: arrowPulse 1.2s infinite alternate;
+}
+
+@keyframes arrowPulse {
+    0% { transform: translateY(0); opacity: 0.6; }
+    100% { transform: translateY(-2px); opacity: 1; }
+}
+
+.compass-edge {
+    font-size: 10px;
+    color: #666;
+}
+
+/* Cinematic Monologue Subtitle Box */
+#monologue-box {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 680px;
+    background: rgba(10, 12, 16, 0.88);
+    border-left: 3px solid #ffca28;
+    border-right: 3px solid #ffca28;
+    padding: 12px 24px;
+    border-radius: 4px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+#monologue-box.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.monologue-speaker {
+    display: block;
+    font-size: 10px;
+    font-weight: bold;
+    color: #ffca28;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+    font-family: monospace;
+}
+
+#monologue-text {
+    font-size: 14px;
+    color: #eceff1;
+    font-style: italic;
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+}
+
+/* Bottom Left: Native Canvas Polaroid */
 #polaroid-container {
     position: absolute;
     bottom: 24px;
     left: 24px;
-    width: 130px;
-    height: 155px;
+    width: 140px;
+    height: 170px;
     background: #f4efe6;
     padding: 8px 8px 24px 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0,0,0,0.4);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.85);
     transform: rotate(-3deg);
     transition: transform 0.3s ease, filter 0.4s ease;
     pointer-events: auto;
@@ -147,21 +233,21 @@ body.earthquake-shake {
     transform: rotate(0deg) scale(1.05);
 }
 
-#polaroid-hud-img {
+#polaroid-hud-canvas {
     width: 100%;
-    height: 115px;
-    object-fit: cover;
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: filter 0.5s ease;
+    height: 125px;
+    display: block;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 1px;
 }
 
 .polaroid-tape {
     position: absolute;
     top: -12px;
-    left: 30px;
+    left: 35px;
     width: 70px;
     height: 20px;
-    background: rgba(220, 210, 180, 0.65);
+    background: rgba(220, 210, 180, 0.7);
     transform: rotate(3deg);
     border-left: 2px dashed rgba(0,0,0,0.1);
     border-right: 2px dashed rgba(0,0,0,0.1);
@@ -169,7 +255,7 @@ body.earthquake-shake {
 
 .polaroid-hint {
     position: absolute;
-    bottom: 4px;
+    bottom: 5px;
     left: 0;
     width: 100%;
     text-align: center;
@@ -253,10 +339,10 @@ body.earthquake-shake {
 #interaction-prompt {
     display: none;
     position: absolute;
-    top: 60%;
+    top: 58%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(20, 24, 30, 0.9);
+    background: rgba(20, 24, 30, 0.92);
     border: 1px solid #ffb300;
     color: #ffb300;
     font-size: 14px;
@@ -295,7 +381,7 @@ body.earthquake-shake {
 
 #notification-banner {
     position: absolute;
-    top: 90px;
+    top: 105px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(15, 18, 24, 0.92);
@@ -343,6 +429,7 @@ body.earthquake-shake {
     padding: 30px;
     text-align: center;
     box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
 }
 
 .rhythm-title {
@@ -443,7 +530,7 @@ body.earthquake-shake {
 
 .polaroid-card-3d {
     width: 360px;
-    height: 432px;
+    height: 440px;
     perspective: 1200px;
     cursor: pointer;
     margin-bottom: 24px;
@@ -472,10 +559,10 @@ body.earthquake-shake {
     padding: 16px 16px 36px 16px;
 }
 
-.polaroid-face-front img {
+#inspect-polaroid-canvas {
     width: 100%;
-    height: 330px;
-    object-fit: cover;
+    height: 340px;
+    display: block;
     border: 1px solid rgba(0,0,0,0.15);
 }
 
@@ -493,7 +580,7 @@ body.earthquake-shake {
 
 .handwriting-note {
     font-family: 'Brush Script MT', 'Comic Sans MS', cursive;
-    font-size: 22px;
+    font-size: 21px;
     color: #1a237e;
     line-height: 1.5;
     transform: rotate(-2deg);
@@ -725,4 +812,3 @@ body.earthquake-shake {
     z-index: 40;
     pointer-events: none;
 }
-

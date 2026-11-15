@@ -16,7 +16,7 @@
     <style>
 /* ==========================================================================
    CANARY: The Collapse - Visual Stylesheet
-   Industrial Retro-Atmospheric Survival Aesthetic
+   Industrial Retro-Atmospheric Survival Aesthetic (Standard English)
    ========================================================================== */
 
 * {
@@ -110,12 +110,12 @@ body.earthquake-shake {
 /* Top Depth & Sector Banner */
 .hud-top-bar {
     position: absolute;
-    top: 24px;
+    top: 18px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: 30px;
-    background: rgba(12, 14, 18, 0.75);
+    background: rgba(12, 14, 18, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 8px 24px;
     border-radius: 4px;
@@ -142,16 +142,102 @@ body.earthquake-shake {
     color: #ffb300;
 }
 
-/* Bottom Left: Polaroid Anchor of Lily */
+/* Mini Directional Compass HUD */
+.hud-compass-bar {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(8, 10, 14, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px 18px;
+    border-radius: 20px;
+    font-family: monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #aaa;
+    backdrop-filter: blur(4px);
+}
+
+.compass-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #69f0ae;
+    font-weight: bold;
+}
+
+.compass-arrow {
+    font-size: 12px;
+    color: #00e676;
+    animation: arrowPulse 1.2s infinite alternate;
+}
+
+@keyframes arrowPulse {
+    0% { transform: translateY(0); opacity: 0.6; }
+    100% { transform: translateY(-2px); opacity: 1; }
+}
+
+.compass-edge {
+    font-size: 10px;
+    color: #666;
+}
+
+/* Cinematic Monologue Subtitle Box */
+#monologue-box {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 680px;
+    background: rgba(10, 12, 16, 0.88);
+    border-left: 3px solid #ffca28;
+    border-right: 3px solid #ffca28;
+    padding: 12px 24px;
+    border-radius: 4px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+#monologue-box.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.monologue-speaker {
+    display: block;
+    font-size: 10px;
+    font-weight: bold;
+    color: #ffca28;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+    font-family: monospace;
+}
+
+#monologue-text {
+    font-size: 14px;
+    color: #eceff1;
+    font-style: italic;
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+}
+
+/* Bottom Left: Native Canvas Polaroid */
 #polaroid-container {
     position: absolute;
     bottom: 24px;
     left: 24px;
-    width: 130px;
-    height: 155px;
+    width: 140px;
+    height: 170px;
     background: #f4efe6;
     padding: 8px 8px 24px 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0,0,0,0.4);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.85);
     transform: rotate(-3deg);
     transition: transform 0.3s ease, filter 0.4s ease;
     pointer-events: auto;
@@ -163,21 +249,21 @@ body.earthquake-shake {
     transform: rotate(0deg) scale(1.05);
 }
 
-#polaroid-hud-img {
+#polaroid-hud-canvas {
     width: 100%;
-    height: 115px;
-    object-fit: cover;
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: filter 0.5s ease;
+    height: 125px;
+    display: block;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 1px;
 }
 
 .polaroid-tape {
     position: absolute;
     top: -12px;
-    left: 30px;
+    left: 35px;
     width: 70px;
     height: 20px;
-    background: rgba(220, 210, 180, 0.65);
+    background: rgba(220, 210, 180, 0.7);
     transform: rotate(3deg);
     border-left: 2px dashed rgba(0,0,0,0.1);
     border-right: 2px dashed rgba(0,0,0,0.1);
@@ -185,7 +271,7 @@ body.earthquake-shake {
 
 .polaroid-hint {
     position: absolute;
-    bottom: 4px;
+    bottom: 5px;
     left: 0;
     width: 100%;
     text-align: center;
@@ -269,10 +355,10 @@ body.earthquake-shake {
 #interaction-prompt {
     display: none;
     position: absolute;
-    top: 60%;
+    top: 58%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(20, 24, 30, 0.9);
+    background: rgba(20, 24, 30, 0.92);
     border: 1px solid #ffb300;
     color: #ffb300;
     font-size: 14px;
@@ -311,7 +397,7 @@ body.earthquake-shake {
 
 #notification-banner {
     position: absolute;
-    top: 90px;
+    top: 105px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(15, 18, 24, 0.92);
@@ -359,6 +445,7 @@ body.earthquake-shake {
     padding: 30px;
     text-align: center;
     box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
 }
 
 .rhythm-title {
@@ -459,7 +546,7 @@ body.earthquake-shake {
 
 .polaroid-card-3d {
     width: 360px;
-    height: 432px;
+    height: 440px;
     perspective: 1200px;
     cursor: pointer;
     margin-bottom: 24px;
@@ -488,10 +575,10 @@ body.earthquake-shake {
     padding: 16px 16px 36px 16px;
 }
 
-.polaroid-face-front img {
+#inspect-polaroid-canvas {
     width: 100%;
-    height: 330px;
-    object-fit: cover;
+    height: 340px;
+    display: block;
     border: 1px solid rgba(0,0,0,0.15);
 }
 
@@ -509,7 +596,7 @@ body.earthquake-shake {
 
 .handwriting-note {
     font-family: 'Brush Script MT', 'Comic Sans MS', cursive;
-    font-size: 22px;
+    font-size: 21px;
     color: #1a237e;
     line-height: 1.5;
     transform: rotate(-2deg);
@@ -742,7 +829,6 @@ body.earthquake-shake {
     pointer-events: none;
 }
 
-
 </style>
     <!-- Local Three.js r128 (100% Offline Compatible) -->
     
@@ -776,6 +862,22 @@ body.earthquake-shake {
             </div>
         </div>
 
+        <!-- Mini Directional Compass HUD -->
+        <div class="hud-compass-bar">
+            <span class="compass-edge">◄ DEPTH 780m</span>
+            <div class="compass-center">
+                <span class="compass-arrow">▲</span>
+                <span id="compass-target-text">CLIMBING TOWARDS SURFACE HATCH (<span id="hud-distance-to-hatch">262m</span>)</span>
+            </div>
+            <span class="compass-edge">SURFACE 0m ►</span>
+        </div>
+
+        <!-- Cinematic Character Monologue Box -->
+        <div id="monologue-box">
+            <span class="monologue-speaker">HENRY (YOU)</span>
+            <p id="monologue-text">"God... the whole shaft collapsed. I have to crawl upward... Lily is waiting for me."</p>
+        </div>
+
         <!-- Center Notification Banner -->
         <div id="notification-banner">Shaft 07 has collapsed! Climb upward to the emergency hatch!</div>
 
@@ -788,10 +890,10 @@ body.earthquake-shake {
         <!-- Pointer Lock Center Prompt -->
         <div id="lock-prompt">CLICK TO LOCK MOUSE LOOK</div>
 
-        <!-- Bottom Left: Polaroid Anchor of Lily (Fades with Hypoxia) -->
+        <!-- Bottom Left: Direct Native Canvas Polaroid (100% Reliable, Never Breaks) -->
         <div id="polaroid-container" title="Click or press [T] to inspect Lily's polaroid">
             <div class="polaroid-tape"></div>
-            <img id="polaroid-hud-img" alt="Lily's Polaroid Photo" src="">
+            <canvas id="polaroid-hud-canvas" width="240" height="280"></canvas>
             <div class="polaroid-hint">[T] INSPECT PHOTO</div>
         </div>
 
@@ -835,9 +937,9 @@ body.earthquake-shake {
     <div id="polaroid-inspect-modal">
         <div class="polaroid-card-3d">
             <div id="polaroid-card-inner">
-                <!-- Front Side: Drawing of Lily -->
+                <!-- Front Side: Native Canvas of Lily -->
                 <div class="polaroid-face polaroid-face-front">
-                    <img id="inspect-polaroid-img" alt="Lily's Photograph" src="">
+                    <canvas id="inspect-polaroid-canvas" width="340" height="400"></canvas>
                 </div>
                 <!-- Back Side: Handwritten note -->
                 <div class="polaroid-face polaroid-face-back">
@@ -1421,47 +1523,62 @@ window.soundEngine = new SoundEngine();
 /* --- POLAROID SYSTEM --- */
 /**
  * CANARY: The Collapse - Polaroid Photo & Emotional Anchor System
- * Procedurally draws Lily's polaroid with real-time hypoxia fading and inspection modal.
- * Standardized in full English.
+ * Directly renders Lily's procedural portrait to native HTML5 Canvases (Zero broken images).
+ * Dynamic real-time hypoxia fading and inspection modal.
  */
 
 class PolaroidSystem {
     constructor() {
-        this.canvas = null;
-        this.ctx = null;
-        this.hudImageElement = null;
         this.isInspecting = false;
         this.isFlipped = false;
+        this.hudCanvas = null;
+        this.inspectCanvas = null;
         this.init();
     }
 
     init() {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = 400;
-        this.canvas.height = 480;
-        this.ctx = this.canvas.getContext('2d');
-        this.generatePolaroidBase();
+        // Will be called on DOM load
+        window.addEventListener('DOMContentLoaded', () => {
+            this.setupCanvases();
+        });
     }
 
-    generatePolaroidBase() {
-        const c = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+    setupCanvases() {
+        this.hudCanvas = document.getElementById('polaroid-hud-canvas');
+        this.inspectCanvas = document.getElementById('inspect-polaroid-canvas');
 
-        // Polaroid Frame (aged white paper with dirty edges)
-        c.fillStyle = '#f2efe9';
+        if (this.hudCanvas) {
+            this.drawPolaroidToCanvas(this.hudCanvas, 240, 280);
+        }
+        if (this.inspectCanvas) {
+            this.drawPolaroidToCanvas(this.inspectCanvas, 340, 400);
+        }
+    }
+
+    drawPolaroidToCanvas(canvas, w, h) {
+        if (!canvas) return;
+        const c = canvas.getContext('2d');
+        canvas.width = w;
+        canvas.height = h;
+
+        // Paper frame background (aged photo paper)
+        c.fillStyle = '#f5f2eb';
         c.fillRect(0, 0, w, h);
 
-        // Dirty aged vignette border on paper
-        const paperGrad = c.createRadialGradient(w/2, h/2, 100, w/2, h/2, 260);
+        // Dirty aged vignette border
+        const paperGrad = c.createRadialGradient(w/2, h/2, w*0.25, w/2, h/2, w*0.7);
         paperGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        paperGrad.addColorStop(1, 'rgba(90, 75, 55, 0.28)');
+        paperGrad.addColorStop(1, 'rgba(95, 75, 55, 0.28)');
         c.fillStyle = paperGrad;
         c.fillRect(0, 0, w, h);
 
-        // Photo Square (340 x 340) with margin 30px
-        const px = 30, py = 30, pw = 340, ph = 340;
-        
+        // Photo Square inside frame
+        const margin = Math.round(w * 0.08);
+        const px = margin;
+        const py = margin;
+        const pw = w - margin * 2;
+        const ph = Math.round(h * 0.76);
+
         // Sunny meadow background
         const skyGrad = c.createLinearGradient(px, py, px, py + ph);
         skyGrad.addColorStop(0, '#5cb8ff');
@@ -1474,191 +1591,166 @@ class PolaroidSystem {
         // Distant hills
         c.fillStyle = '#6ab840';
         c.beginPath();
-        c.arc(px + 90, py + 240, 110, Math.PI, 0, false);
+        c.arc(px + pw * 0.28, py + ph * 0.72, pw * 0.35, Math.PI, 0, false);
         c.fill();
         c.beginPath();
-        c.arc(px + 260, py + 230, 140, Math.PI, 0, false);
+        c.arc(px + pw * 0.75, py + ph * 0.68, pw * 0.42, Math.PI, 0, false);
         c.fill();
 
-        // Warm sun rays
-        c.fillStyle = 'rgba(255, 245, 180, 0.4)';
+        // Warm sun
+        c.fillStyle = 'rgba(255, 245, 180, 0.45)';
         c.beginPath();
-        c.arc(px + 60, py + 60, 45, 0, Math.PI * 2);
+        c.arc(px + pw * 0.2, py + ph * 0.2, pw * 0.14, 0, Math.PI * 2);
         c.fill();
 
-        // Yellow wild canary flowers in meadow
-        for (let i = 0; i < 35; i++) {
-            const fx = px + 15 + Math.random() * (pw - 30);
-            const fy = py + 215 + Math.random() * 110;
-            c.fillStyle = '#ffd700';
+        // Yellow wild canary flowers
+        c.fillStyle = '#ffd700';
+        for (let i = 0; i < 24; i++) {
+            const fx = px + 10 + (i * 17) % (pw - 20);
+            const fy = py + ph * 0.65 + (i * 13) % (ph * 0.3);
             c.beginPath();
-            c.arc(fx, fy, 3 + Math.random() * 3, 0, Math.PI * 2);
-            c.fill();
-            c.fillStyle = '#fff';
-            c.beginPath();
-            c.arc(fx, fy, 1.5, 0, Math.PI * 2);
+            c.arc(fx, fy, 2.5, 0, Math.PI * 2);
             c.fill();
         }
 
         // Draw Lily (6 years old daughter)
         const lx = px + pw / 2;
-        const ly = py + 195;
+        const ly = py + ph * 0.58;
+        const scale = w / 340;
 
         // Pigtail hair
         c.fillStyle = '#5c3116';
         c.beginPath();
-        c.arc(lx - 42, ly - 35, 22, 0, Math.PI * 2);
-        c.arc(lx + 42, ly - 35, 22, 0, Math.PI * 2);
+        c.arc(lx - 38 * scale, ly - 32 * scale, 20 * scale, 0, Math.PI * 2);
+        c.arc(lx + 38 * scale, ly - 32 * scale, 20 * scale, 0, Math.PI * 2);
         c.fill();
-        // Red hair ribbons
+        // Ribbons
         c.fillStyle = '#e53935';
-        c.fillRect(lx - 46, ly - 38, 8, 7);
-        c.fillRect(lx + 38, ly - 38, 8, 7);
+        c.fillRect(lx - 42 * scale, ly - 35 * scale, 7 * scale, 6 * scale);
+        c.fillRect(lx + 35 * scale, ly - 35 * scale, 7 * scale, 6 * scale);
 
-        // Yellow summer dress
+        // Yellow dress
         c.fillStyle = '#ffca28';
         c.beginPath();
-        c.moveTo(lx - 25, ly + 25);
-        c.lineTo(lx + 25, ly + 25);
-        c.lineTo(lx + 45, ly + 105);
-        c.lineTo(lx - 45, ly + 105);
+        c.moveTo(lx - 22 * scale, ly + 22 * scale);
+        c.lineTo(lx + 22 * scale, ly + 22 * scale);
+        c.lineTo(lx + 40 * scale, ly + 90 * scale);
+        c.lineTo(lx - 40 * scale, ly + 90 * scale);
         c.closePath();
         c.fill();
 
-        // White floral lace collar
+        // White floral collar
         c.fillStyle = '#ffffff';
         c.beginPath();
-        c.arc(lx, ly + 28, 14, 0, Math.PI);
+        c.arc(lx, ly + 24 * scale, 12 * scale, 0, Math.PI);
         c.fill();
 
-        // Arms holding small bouquet of yellow canaries
-        c.fillStyle = '#ffcfb3';
-        c.beginPath();
-        c.arc(lx - 22, ly + 55, 9, 0, Math.PI * 2);
-        c.arc(lx + 22, ly + 55, 9, 0, Math.PI * 2);
-        c.fill();
-
-        // Little yellow flowers bouquet in hands
+        // Bouquet of yellow canary flowers
         c.fillStyle = '#ffd54f';
         c.beginPath();
-        c.arc(lx, ly + 52, 14, 0, Math.PI * 2);
+        c.arc(lx, ly + 46 * scale, 13 * scale, 0, Math.PI * 2);
         c.fill();
 
-        // Neck
-        c.fillStyle = '#ffc0a0';
-        c.fillRect(lx - 8, ly + 12, 16, 16);
+        // Arms holding flowers
+        c.fillStyle = '#ffcfb3';
+        c.beginPath();
+        c.arc(lx - 20 * scale, ly + 48 * scale, 8 * scale, 0, Math.PI * 2);
+        c.arc(lx + 20 * scale, ly + 48 * scale, 8 * scale, 0, Math.PI * 2);
+        c.fill();
 
         // Head / Face
         c.fillStyle = '#ffcfb3';
         c.beginPath();
-        c.arc(lx, ly - 10, 34, 0, Math.PI * 2);
+        c.arc(lx, ly - 10 * scale, 30 * scale, 0, Math.PI * 2);
         c.fill();
 
-        // Front Hair Bangs
+        // Bangs
         c.fillStyle = '#5c3116';
         c.beginPath();
-        c.arc(lx, ly - 22, 35, Math.PI, 0, false);
-        c.fill();
-        c.beginPath();
-        c.moveTo(lx - 30, ly - 20);
-        c.quadraticCurveTo(lx - 10, ly - 6, lx, ly - 20);
-        c.quadraticCurveTo(lx + 15, ly - 4, lx + 30, ly - 20);
+        c.arc(lx, ly - 20 * scale, 31 * scale, Math.PI, 0, false);
         c.fill();
 
-        // Eyes
+        // Big brown eyes
         c.fillStyle = '#3e2723';
         c.beginPath();
-        c.arc(lx - 12, ly - 10, 5.5, 0, Math.PI * 2);
-        c.arc(lx + 12, ly - 10, 5.5, 0, Math.PI * 2);
+        c.arc(lx - 11 * scale, ly - 10 * scale, 5 * scale, 0, Math.PI * 2);
+        c.arc(lx + 11 * scale, ly - 10 * scale, 5 * scale, 0, Math.PI * 2);
         c.fill();
         c.fillStyle = '#ffffff';
         c.beginPath();
-        c.arc(lx - 14, ly - 12, 2, 0, Math.PI * 2);
-        c.arc(lx + 10, ly - 12, 2, 0, Math.PI * 2);
+        c.arc(lx - 13 * scale, ly - 12 * scale, 1.8 * scale, 0, Math.PI * 2);
+        c.arc(lx + 9 * scale, ly - 12 * scale, 1.8 * scale, 0, Math.PI * 2);
         c.fill();
 
         // Rosy cheeks
         c.fillStyle = 'rgba(255, 110, 110, 0.45)';
         c.beginPath();
-        c.arc(lx - 18, ly - 2, 7, 0, Math.PI * 2);
-        c.arc(lx + 18, ly - 2, 7, 0, Math.PI * 2);
+        c.arc(lx - 16 * scale, ly - 3 * scale, 6 * scale, 0, Math.PI * 2);
+        c.arc(lx + 16 * scale, ly - 3 * scale, 6 * scale, 0, Math.PI * 2);
         c.fill();
 
-        // Loving cheerful smile
+        // Cheerful smile
         c.strokeStyle = '#b71c1c';
-        c.lineWidth = 2.5;
+        c.lineWidth = 2 * scale;
         c.beginPath();
-        c.arc(lx, ly - 3, 11, 0.2, Math.PI - 0.2, false);
+        c.arc(lx, ly - 3 * scale, 9 * scale, 0.2, Math.PI - 0.2, false);
         c.stroke();
 
-        // Coal dust thumb smudges
+        // Coal thumb smudge on bottom border
         c.fillStyle = 'rgba(30, 25, 20, 0.35)';
         c.beginPath();
-        c.ellipse(px + 45, h - 45, 24, 18, 0.4, 0, Math.PI * 2);
-        c.fill();
-        c.beginPath();
-        c.ellipse(w - 55, h - 40, 28, 20, -0.3, 0, Math.PI * 2);
+        c.ellipse(px + 35 * scale, h - 25 * scale, 18 * scale, 14 * scale, 0.4, 0, Math.PI * 2);
         c.fill();
 
-        // Handwritten caption in ink on white border (English)
-        c.font = 'italic 16px "Brush Script MT", cursive, sans-serif';
+        // Handwritten caption
+        c.font = `italic ${Math.round(13 * scale)}px "Brush Script MT", cursive, sans-serif`;
         c.fillStyle = '#222';
-        c.fillText('Lily (Age 6) — Spring 1984', px + 40, h - 40);
+        c.fillText('Lily (Age 6) — Spring 1984', px + 25 * scale, h - 16 * scale);
     }
 
     // Dynamic HUD rendering based on Oxygen level
     updateHUD(oxygen) {
-        const hudImg = document.getElementById('polaroid-hud-img');
+        if (!this.hudCanvas) {
+            this.hudCanvas = document.getElementById('polaroid-hud-canvas');
+            if (this.hudCanvas) this.setupCanvases();
+        }
+
         const hudContainer = document.getElementById('polaroid-container');
-        if (!hudImg || !hudContainer) return;
+        if (!hudContainer || !this.hudCanvas) return;
 
         const o2 = Math.max(0, Math.min(100, oxygen));
 
         if (o2 < 35) {
-            // Critical Hypoxia: high grayscale, blur, vibration
+            // Critical Hypoxia: high grayscale, blur, tremble
             const blurPx = ((35 - o2) / 35 * 4.5).toFixed(1);
             const grayPct = (50 + (35 - o2) / 35 * 50).toFixed(0);
             const sepiaPct = ((35 - o2) / 35 * 60).toFixed(0);
-            hudImg.style.filter = `grayscale(${grayPct}%) blur(${blurPx}px) sepia(${sepiaPct}%) contrast(1.4)`;
+            this.hudCanvas.style.filter = `grayscale(${grayPct}%) blur(${blurPx}px) sepia(${sepiaPct}%) contrast(1.4)`;
             hudContainer.classList.add('critical-fade');
         } else if (o2 < 65) {
             const grayPct = ((65 - o2) / 30 * 45).toFixed(0);
-            hudImg.style.filter = `grayscale(${grayPct}%) contrast(1.1)`;
+            this.hudCanvas.style.filter = `grayscale(${grayPct}%) contrast(1.1)`;
             hudContainer.classList.remove('critical-fade');
         } else {
-            hudImg.style.filter = 'none';
+            this.hudCanvas.style.filter = 'none';
             hudContainer.classList.remove('critical-fade');
-        }
-
-        if (!hudImg.src || hudImg.src === '') {
-            hudImg.src = this.canvas.toDataURL('image/jpeg', 0.85);
         }
     }
 
-    // Toggle full inspect mode [T]
     toggleInspect() {
         this.isInspecting = !this.isInspecting;
         this.isFlipped = false;
         const modal = document.getElementById('polaroid-inspect-modal');
-        const modalImg = document.getElementById('inspect-polaroid-img');
         const flipCard = document.getElementById('polaroid-card-inner');
 
         if (!modal) return;
 
         if (this.isInspecting) {
-            if (modalImg) {
-                modalImg.src = this.canvas.toDataURL('image/jpeg', 0.95);
-            }
-            if (flipCard) {
-                flipCard.classList.remove('is-flipped');
-            }
+            if (!this.inspectCanvas) this.setupCanvases();
+            if (flipCard) flipCard.classList.remove('is-flipped');
             modal.classList.add('visible');
-            if (window.soundEngine) {
-                window.soundEngine.playLilyWhisper();
-            }
-            if (window.gameState) {
-                window.gameState.triggerPhotoComfort();
-            }
+            if (window.soundEngine) window.soundEngine.playLilyWhisper();
+            if (window.gameState) window.gameState.triggerPhotoComfort();
         } else {
             modal.classList.remove('visible');
         }
@@ -2420,8 +2512,10 @@ window.MineWorld = MineWorld;
 /* --- PLAYER CONTROLLER --- */
 /**
  * CANARY: The Collapse - FPS Player Controller
- * Handles movement along winding ascending tunnel, oxygen drain, headlamp malfunction & physical tripping.
- * Standardized in full English.
+ * Fixed:
+ * - Hard boundary clamp prevents player from ever clipping through curved tunnel walls.
+ * - Solid non-slippery foot friction and tuned mouse sensitivity.
+ * - Accurate climbing elevation matching the ascending mine shaft.
  */
 
 class PlayerController {
@@ -2432,16 +2526,17 @@ class PlayerController {
         // Position & Movement
         this.position = new THREE.Vector3(0, 1.7, 0);
         this.velocity = new THREE.Vector3();
-        this.moveSpeed = 3.6;
-        this.sprintMultiplier = 1.95;
+        this.moveSpeed = 3.4;
+        this.sprintMultiplier = 1.75;
         this.isSprinting = false;
         this.isMoving = false;
         this.stepTimer = 0;
 
-        // Camera Look Pitch/Yaw
+        // Camera Look Pitch/Yaw (Firm, non-slippery sensitivity)
         this.yaw = 0;
         this.pitch = 0;
         this.isLocked = false;
+        this.sensitivity = 0.0016;
 
         // Oxygen & Vitals
         this.oxygen = 100.0;
@@ -2453,7 +2548,7 @@ class PlayerController {
         this.isFlashlightOn = true;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
-        this.nextMalfunctionCheck = 18.0;
+        this.nextMalfunctionCheck = 25.0;
 
         // Physical Tripping Hazard
         this.isStumbled = false;
@@ -2478,7 +2573,7 @@ class PlayerController {
     }
 
     initFlashlight() {
-        this.flashlight = new THREE.SpotLight(0xfffae0, 2.9, 44, Math.PI / 4.2, 0.45, 1.4);
+        this.flashlight = new THREE.SpotLight(0xfffae0, 3.0, 48, Math.PI / 4.0, 0.45, 1.4);
         this.flashlight.position.copy(this.camera.position);
 
         this.flashlightTarget = new THREE.Object3D();
@@ -2488,7 +2583,7 @@ class PlayerController {
         window.gameScene.add(this.flashlight);
         window.gameScene.add(this.flashlightTarget);
 
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.25, 4.5, 2);
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.3, 5.0, 2);
         window.gameScene.add(this.ambientBulb);
     }
 
@@ -2509,10 +2604,10 @@ class PlayerController {
 
         document.addEventListener('mousemove', (e) => {
             if (!this.isLocked || this.isDead) return;
-            const sensitivity = 0.0022;
-            this.yaw -= e.movementX * sensitivity;
-            this.pitch -= e.movementY * sensitivity;
-            this.pitch = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, this.pitch));
+            this.yaw -= e.movementX * this.sensitivity;
+            this.pitch -= e.movementY * this.sensitivity;
+            // Limit vertical pitch (-80 to +80 degrees)
+            this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
         });
 
         window.addEventListener('keydown', (e) => {
@@ -2603,7 +2698,7 @@ class PlayerController {
         this.tapsRequired--;
 
         if (this.flashlight) {
-            this.flashlight.intensity = 1.2;
+            this.flashlight.intensity = 1.4;
             setTimeout(() => {
                 if (this.isFlashlightMalfunctioning) this.flashlight.intensity = 0;
             }, 60);
@@ -2611,7 +2706,7 @@ class PlayerController {
 
         if (this.tapsRequired <= 0) {
             this.isFlashlightMalfunctioning = false;
-            if (this.flashlight) this.flashlight.intensity = 2.9;
+            if (this.flashlight) this.flashlight.intensity = 3.0;
             const tapAlert = document.getElementById('helmet-tap-alert');
             if (tapAlert) tapAlert.classList.remove('active');
             if (window.eventManager) window.eventManager.showNotification("Helmet headlamp contacts restored!");
@@ -2635,6 +2730,7 @@ class PlayerController {
                 const tapAlert = document.getElementById('helmet-tap-alert');
                 if (tapAlert) tapAlert.classList.add('active');
                 if (window.soundEngine) window.soundEngine.playHelmetTap();
+                if (window.gameState) window.gameState.triggerMonologue("headlamp");
             }
         }, 110);
     }
@@ -2642,7 +2738,7 @@ class PlayerController {
     triggerStumble() {
         if (this.isStumbled) return;
         this.isStumbled = true;
-        this.stumbleRecoveryTimer = 1.6;
+        this.stumbleRecoveryTimer = 1.4;
         if (window.soundEngine) {
             window.soundEngine.playFootstep(true);
             window.soundEngine.playFootstep(true);
@@ -2650,18 +2746,18 @@ class PlayerController {
         if (window.eventManager) {
             window.eventManager.showNotification("Slipped on wet mine rocks! Lost stamina and breath!");
         }
-        this.oxygen = Math.max(0, this.oxygen - 3.5);
+        this.oxygen = Math.max(0, this.oxygen - 3.0);
     }
 
     update(delta, world) {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
 
         // 1. Oxygen Depletion
-        let drainRate = 0.52;
+        let drainRate = 0.50;
         this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
 
         if (this.isSprinting) {
-            drainRate *= 3.0; // 3x faster consumption when sprinting
+            drainRate *= 3.0;
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -2673,7 +2769,7 @@ class PlayerController {
         // 2. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
         if (this.nextMalfunctionCheck <= 0) {
-            this.nextMalfunctionCheck = 22.0 + Math.random() * 20.0;
+            this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
             if (Math.random() < 0.45) {
                 this.triggerFlashlightMalfunction();
             }
@@ -2683,7 +2779,7 @@ class PlayerController {
         if (this.isSprinting && !this.isStumbled) {
             world.puddles.forEach(p => {
                 if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.6) {
-                    if (Math.random() < 0.05) {
+                    if (Math.random() < 0.04) {
                         this.triggerStumble();
                     }
                 }
@@ -2692,43 +2788,44 @@ class PlayerController {
 
         if (this.isStumbled) {
             this.stumbleRecoveryTimer -= delta;
-            this.stumblePitchOffset = Math.sin(this.stumbleRecoveryTimer * 3.5) * -0.35;
+            this.stumblePitchOffset = Math.sin(this.stumbleRecoveryTimer * 3.5) * -0.3;
             if (this.stumbleRecoveryTimer <= 0) {
                 this.isStumbled = false;
                 this.stumblePitchOffset = 0;
             }
         }
 
-        // 4. Movement Calculation
+        // 4. Movement Calculation with Solid Footing
         const speed = (this.isSprinting ? this.moveSpeed * this.sprintMultiplier : this.moveSpeed) * (this.isStumbled ? 0.35 : 1.0);
         const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
         const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
 
-        this.velocity.set(0, 0, 0);
-        if (this.keys.forward) this.velocity.add(forward);
-        if (this.keys.backward) this.velocity.sub(forward);
-        if (this.keys.right) this.velocity.add(right);
-        if (this.keys.left) this.velocity.sub(right);
+        const moveDir = new THREE.Vector3();
+        if (this.keys.forward) moveDir.add(forward);
+        if (this.keys.backward) moveDir.sub(forward);
+        if (this.keys.right) moveDir.add(right);
+        if (this.keys.left) moveDir.sub(right);
 
-        this.isMoving = this.velocity.lengthSq() > 0.001;
+        this.isMoving = moveDir.lengthSq() > 0.001;
 
         if (this.isMoving) {
-            this.velocity.normalize().multiplyScalar(speed * delta);
-            const nextX = this.position.x + this.velocity.x;
+            moveDir.normalize();
+            this.velocity.copy(moveDir).multiplyScalar(speed * delta);
+
             const nextZ = this.position.z + this.velocity.z;
 
-            // Follow curved tunnel centerline X_center(z) with boundary width 2.3m
-            const pathCenter = world.getPathX(nextZ);
-            const distFromCenter = Math.abs(nextX - pathCenter);
+            // Strict Tunnel Boundary Check: Player is ALWAYS clamped within +/- 1.85m of curved path
+            const nextPathX = world.getPathX(nextZ);
+            let nextX = this.position.x + this.velocity.x;
+            nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
 
-            let canMoveX = distFromCenter < 2.3;
             let blockedByRubble = false;
 
             // Rubble Obstacle Collision
             world.rubbleObjects.forEach(r => {
                 if (!r.cleared) {
                     const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
-                    if (distToRubble < 2.8) {
+                    if (distToRubble < 2.5) {
                         blockedByRubble = true;
                     }
                 }
@@ -2739,12 +2836,11 @@ class PlayerController {
                 blockedByRubble = true;
             }
 
-            if (canMoveX && !blockedByRubble) {
+            if (!blockedByRubble) {
                 this.position.x = nextX;
-            }
-
-            if (!blockedByRubble && nextZ < 6.5) {
-                this.position.z = nextZ;
+                if (nextZ < 6.5) {
+                    this.position.z = nextZ;
+                }
             }
 
             // Footstep sounds
@@ -2755,12 +2851,19 @@ class PlayerController {
             }
 
             // Head Bobbing
-            this.bobCycle += delta * (this.isSprinting ? 13 : 8.5);
+            this.bobCycle += delta * (this.isSprinting ? 12 : 8.0);
+        } else {
+            // Immediate firm stop - no icy sliding!
+            this.velocity.set(0, 0, 0);
         }
+
+        // Hard enforce current position is strictly inside tunnel path at all times
+        const currentPathX = world.getPathX(this.position.z);
+        this.position.x = Math.max(currentPathX - 1.85, Math.min(currentPathX + 1.85, this.position.x));
 
         // Natural Climbing Elevation Y along the ascending path
         const currentGroundY = world.getPathY(this.position.z);
-        const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.09 : 0.045) : 0;
+        const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
         this.cameraBaseY = currentGroundY + 1.7 + bobOffset;
         this.position.y = currentGroundY;
 
@@ -3213,7 +3316,10 @@ window.EventManager = EventManager;
 /* --- MAIN ORCHESTRATOR --- */
 /**
  * CANARY: The Collapse - Main Game Orchestrator & State Machine
- * Standardized in full English.
+ * Features:
+ * - Real-time climbing depth & distance-to-hatch compass indicator.
+ * - Narrative monologue subtitle system triggering at key story milestones.
+ * - Full English standardization.
  */
 
 class GameState {
@@ -3230,6 +3336,17 @@ class GameState {
         this.world = null;
         this.player = null;
         this.events = null;
+
+        // Monologue story tracking flags
+        this.monologueFlags = {
+            start: false,
+            firstCorpse: false,
+            firstRubble: false,
+            midway: false,
+            hypoxia: false,
+            nearExit: false
+        };
+        this.monologueTimer = null;
 
         this.lastTime = performance.now();
     }
@@ -3339,6 +3456,7 @@ class GameState {
 
         // Initial render of Polaroid thumbnail on HUD
         if (window.polaroidSystem) {
+            window.polaroidSystem.setupCanvases();
             window.polaroidSystem.updateHUD(100);
         }
     }
@@ -3360,9 +3478,58 @@ class GameState {
         this.player.oxygen = 100.0;
         this.player.domElement.requestPointerLock();
 
-        if (this.events) {
-            this.events.showNotification("Shaft 07 has collapsed! Climb upward through the winding tunnel before oxygen runs out!");
+        // Initial story monologue
+        setTimeout(() => {
+            this.triggerMonologue("start");
+        }, 1200);
+    }
+
+    // Monologue Subtitle System
+    triggerMonologue(type) {
+        const box = document.getElementById('monologue-box');
+        const textEl = document.getElementById('monologue-text');
+        if (!box || !textEl) return;
+
+        let line = "";
+        switch (type) {
+            case "start":
+                line = "God... the whole shaft collapsed on us. I have to crawl upward... Lily is waiting on the porch for me.";
+                this.monologueFlags.start = true;
+                break;
+            case "firstCorpse":
+                line = "Tomas... no, not you too brother. Forgive me, I need your oxygen tank. I made a promise to my girl... I have to make it home.";
+                this.monologueFlags.firstCorpse = true;
+                break;
+            case "firstRubble":
+                line = "A massive rockslide blocked the path completely. My pickaxe... remember the mining drills. Strike the weak fracture point!";
+                this.monologueFlags.firstRubble = true;
+                break;
+            case "midway":
+                line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";
+                this.monologueFlags.midway = true;
+                break;
+            case "hypoxia":
+                line = "Lily...? Is that you in the golden light? Sweetheart, wait for daddy! Don't fade into the dust... please don't leave me!";
+                this.monologueFlags.hypoxia = true;
+                break;
+            case "headlamp":
+                line = "Dammit, not now! Headlamp wire came loose... need to tap my helmet [F] to kickstart the battery!";
+                break;
+            case "nearExit":
+                line = "I see the green beacon of Emergency Hatch B-4! I can smell fresh mountain air! Almost there!";
+                this.monologueFlags.nearExit = true;
+                break;
         }
+
+        if (!line) return;
+
+        textEl.textContent = `"${line}"`;
+        box.classList.add('visible');
+
+        clearTimeout(this.monologueTimer);
+        this.monologueTimer = setTimeout(() => {
+            box.classList.remove('visible');
+        }, 6500);
     }
 
     triggerPhotoComfort() {
@@ -3399,10 +3566,28 @@ class GameState {
                 }
             }
 
-            // Real-time Climbing Depth Tracking (780m down to 0m at surface)
+            // Real-time Climbing Depth Tracking & Compass Distance
             if (this.player) {
                 const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 262));
                 this.depth = Math.round(780 * (1.0 - progressRatio));
+
+                const distToHatch = Math.max(0, Math.round(Math.abs(-262 - this.player.position.z)));
+                const distEl = document.getElementById('hud-distance-to-hatch');
+                if (distEl) distEl.textContent = `${distToHatch}m`;
+
+                // Check Story Monologue Triggers along the winding path
+                const pz = this.player.position.z;
+                if (!this.monologueFlags.firstCorpse && pz < -18 && pz > -32) {
+                    this.triggerMonologue("firstCorpse");
+                } else if (!this.monologueFlags.firstRubble && pz < -42 && pz > -55) {
+                    this.triggerMonologue("firstRubble");
+                } else if (!this.monologueFlags.midway && pz < -120 && pz > -140) {
+                    this.triggerMonologue("midway");
+                } else if (!this.monologueFlags.hypoxia && this.oxygen < 35 && this.oxygen > 15) {
+                    this.triggerMonologue("hypoxia");
+                } else if (!this.monologueFlags.nearExit && pz < -240) {
+                    this.triggerMonologue("nearExit");
+                }
             }
 
             this.updateHUDAndHypoxia();

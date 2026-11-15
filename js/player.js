@@ -1,7 +1,9 @@
 /**
  * CANARY: The Collapse - FPS Player Controller
- * Handles movement along winding ascending tunnel, oxygen drain, headlamp malfunction & physical tripping.
- * Standardized in full English.
+ * Fixed:
+ * - Hard boundary clamp prevents player from ever clipping through curved tunnel walls.
+ * - Solid non-slippery foot friction and tuned mouse sensitivity.
+ * - Accurate climbing elevation matching the ascending mine shaft.
  */
 
 class PlayerController {
@@ -12,16 +14,17 @@ class PlayerController {
         // Position & Movement
         this.position = new THREE.Vector3(0, 1.7, 0);
         this.velocity = new THREE.Vector3();
-        this.moveSpeed = 3.6;
-        this.sprintMultiplier = 1.95;
+        this.moveSpeed = 3.4;
+        this.sprintMultiplier = 1.75;
         this.isSprinting = false;
         this.isMoving = false;
         this.stepTimer = 0;
 
-        // Camera Look Pitch/Yaw
+        // Camera Look Pitch/Yaw (Firm, non-slippery sensitivity)
         this.yaw = 0;
         this.pitch = 0;
         this.isLocked = false;
+        this.sensitivity = 0.0016;
 
         // Oxygen & Vitals
         this.oxygen = 100.0;
@@ -33,7 +36,7 @@ class PlayerController {
         this.isFlashlightOn = true;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
-        this.nextMalfunctionCheck = 18.0;
+        this.nextMalfunctionCheck = 25.0;
 
         // Physical Tripping Hazard
         this.isStumbled = false;
@@ -58,7 +61,7 @@ class PlayerController {
     }
 
     initFlashlight() {
-        this.flashlight = new THREE.SpotLight(0xfffae0, 2.9, 44, Math.PI / 4.2, 0.45, 1.4);
+        this.flashlight = new THREE.SpotLight(0xfffae0, 3.0, 48, Math.PI / 4.0, 0.45, 1.4);
         this.flashlight.position.copy(this.camera.position);
 
         this.flashlightTarget = new THREE.Object3D();
@@ -68,7 +71,7 @@ class PlayerController {
         window.gameScene.add(this.flashlight);
         window.gameScene.add(this.flashlightTarget);
 
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.25, 4.5, 2);
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.3, 5.0, 2);
         window.gameScene.add(this.ambientBulb);
     }
 
@@ -89,10 +92,10 @@ class PlayerController {
 
         document.addEventListener('mousemove', (e) => {
             if (!this.isLocked || this.isDead) return;
-            const sensitivity = 0.0022;
-            this.yaw -= e.movementX * sensitivity;
-            this.pitch -= e.movementY * sensitivity;
-            this.pitch = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, this.pitch));
+            this.yaw -= e.movementX * this.sensitivity;
+            this.pitch -= e.movementY * this.sensitivity;
+            // Limit vertical pitch (-80 to +80 degrees)
+            this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
         });
 
         window.addEventListener('keydown', (e) => {
@@ -183,7 +186,7 @@ class PlayerController {
         this.tapsRequired--;
 
         if (this.flashlight) {
-            this.flashlight.intensity = 1.2;
+            this.flashlight.intensity = 1.4;
             setTimeout(() => {
                 if (this.isFlashlightMalfunctioning) this.flashlight.intensity = 0;
             }, 60);
@@ -191,7 +194,7 @@ class PlayerController {
 
         if (this.tapsRequired <= 0) {
             this.isFlashlightMalfunctioning = false;
-            if (this.flashlight) this.flashlight.intensity = 2.9;
+            if (this.flashlight) this.flashlight.intensity = 3.0;
             const tapAlert = document.getElementById('helmet-tap-alert');
             if (tapAlert) tapAlert.classList.remove('active');
             if (window.eventManager) window.eventManager.showNotification("Helmet headlamp contacts restored!");
@@ -215,6 +218,7 @@ class PlayerController {
                 const tapAlert = document.getElementById('helmet-tap-alert');
                 if (tapAlert) tapAlert.classList.add('active');
                 if (window.soundEngine) window.soundEngine.playHelmetTap();
+                if (window.gameState) window.gameState.triggerMonologue("headlamp");
             }
         }, 110);
     }
@@ -222,7 +226,7 @@ class PlayerController {
     triggerStumble() {
         if (this.isStumbled) return;
         this.isStumbled = true;
-        this.stumbleRecoveryTimer = 1.6;
+        this.stumbleRecoveryTimer = 1.4;
         if (window.soundEngine) {
             window.soundEngine.playFootstep(true);
             window.soundEngine.playFootstep(true);
@@ -230,18 +234,18 @@ class PlayerController {
         if (window.eventManager) {
             window.eventManager.showNotification("Slipped on wet mine rocks! Lost stamina and breath!");
         }
-        this.oxygen = Math.max(0, this.oxygen - 3.5);
+        this.oxygen = Math.max(0, this.oxygen - 3.0);
     }
 
     update(delta, world) {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
 
         // 1. Oxygen Depletion
-        let drainRate = 0.52;
+        let drainRate = 0.50;
         this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
 
         if (this.isSprinting) {
-            drainRate *= 3.0; // 3x faster consumption when sprinting
+            drainRate *= 3.0;
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -253,7 +257,7 @@ class PlayerController {
         // 2. Headlamp Malfunction Random Check
         this.nextMalfunctionCheck -= delta;
         if (this.nextMalfunctionCheck <= 0) {
-            this.nextMalfunctionCheck = 22.0 + Math.random() * 20.0;
+            this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
             if (Math.random() < 0.45) {
                 this.triggerFlashlightMalfunction();
             }
@@ -263,7 +267,7 @@ class PlayerController {
         if (this.isSprinting && !this.isStumbled) {
             world.puddles.forEach(p => {
                 if (Math.hypot(this.position.x - p.position.x, this.position.z - p.position.z) < 1.6) {
-                    if (Math.random() < 0.05) {
+                    if (Math.random() < 0.04) {
                         this.triggerStumble();
                     }
                 }
@@ -272,43 +276,44 @@ class PlayerController {
 
         if (this.isStumbled) {
             this.stumbleRecoveryTimer -= delta;
-            this.stumblePitchOffset = Math.sin(this.stumbleRecoveryTimer * 3.5) * -0.35;
+            this.stumblePitchOffset = Math.sin(this.stumbleRecoveryTimer * 3.5) * -0.3;
             if (this.stumbleRecoveryTimer <= 0) {
                 this.isStumbled = false;
                 this.stumblePitchOffset = 0;
             }
         }
 
-        // 4. Movement Calculation
+        // 4. Movement Calculation with Solid Footing
         const speed = (this.isSprinting ? this.moveSpeed * this.sprintMultiplier : this.moveSpeed) * (this.isStumbled ? 0.35 : 1.0);
         const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
         const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
 
-        this.velocity.set(0, 0, 0);
-        if (this.keys.forward) this.velocity.add(forward);
-        if (this.keys.backward) this.velocity.sub(forward);
-        if (this.keys.right) this.velocity.add(right);
-        if (this.keys.left) this.velocity.sub(right);
+        const moveDir = new THREE.Vector3();
+        if (this.keys.forward) moveDir.add(forward);
+        if (this.keys.backward) moveDir.sub(forward);
+        if (this.keys.right) moveDir.add(right);
+        if (this.keys.left) moveDir.sub(right);
 
-        this.isMoving = this.velocity.lengthSq() > 0.001;
+        this.isMoving = moveDir.lengthSq() > 0.001;
 
         if (this.isMoving) {
-            this.velocity.normalize().multiplyScalar(speed * delta);
-            const nextX = this.position.x + this.velocity.x;
+            moveDir.normalize();
+            this.velocity.copy(moveDir).multiplyScalar(speed * delta);
+
             const nextZ = this.position.z + this.velocity.z;
 
-            // Follow curved tunnel centerline X_center(z) with boundary width 2.3m
-            const pathCenter = world.getPathX(nextZ);
-            const distFromCenter = Math.abs(nextX - pathCenter);
+            // Strict Tunnel Boundary Check: Player is ALWAYS clamped within +/- 1.85m of curved path
+            const nextPathX = world.getPathX(nextZ);
+            let nextX = this.position.x + this.velocity.x;
+            nextX = Math.max(nextPathX - 1.85, Math.min(nextPathX + 1.85, nextX));
 
-            let canMoveX = distFromCenter < 2.3;
             let blockedByRubble = false;
 
             // Rubble Obstacle Collision
             world.rubbleObjects.forEach(r => {
                 if (!r.cleared) {
                     const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
-                    if (distToRubble < 2.8) {
+                    if (distToRubble < 2.5) {
                         blockedByRubble = true;
                     }
                 }
@@ -319,12 +324,11 @@ class PlayerController {
                 blockedByRubble = true;
             }
 
-            if (canMoveX && !blockedByRubble) {
+            if (!blockedByRubble) {
                 this.position.x = nextX;
-            }
-
-            if (!blockedByRubble && nextZ < 6.5) {
-                this.position.z = nextZ;
+                if (nextZ < 6.5) {
+                    this.position.z = nextZ;
+                }
             }
 
             // Footstep sounds
@@ -335,12 +339,19 @@ class PlayerController {
             }
 
             // Head Bobbing
-            this.bobCycle += delta * (this.isSprinting ? 13 : 8.5);
+            this.bobCycle += delta * (this.isSprinting ? 12 : 8.0);
+        } else {
+            // Immediate firm stop - no icy sliding!
+            this.velocity.set(0, 0, 0);
         }
+
+        // Hard enforce current position is strictly inside tunnel path at all times
+        const currentPathX = world.getPathX(this.position.z);
+        this.position.x = Math.max(currentPathX - 1.85, Math.min(currentPathX + 1.85, this.position.x));
 
         // Natural Climbing Elevation Y along the ascending path
         const currentGroundY = world.getPathY(this.position.z);
-        const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.09 : 0.045) : 0;
+        const bobOffset = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
         this.cameraBaseY = currentGroundY + 1.7 + bobOffset;
         this.position.y = currentGroundY;
 
