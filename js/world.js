@@ -658,7 +658,6 @@ class MineWorld {
             beacon: crateBeacon,
             retrieved: false
         };
-        this.scene.add(s2);
     }
 
     buildInteractables() {
