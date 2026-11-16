@@ -607,9 +607,135 @@ class SoundEngine {
         this.tinnitusGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.2);
     }
 
+    playHeavyCaveInThud() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Sub-bass impact thud
+        const osc = this.ctx.createOscillator();
+        const oGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(95, now);
+        osc.frequency.exponentialRampToValueAtTime(22, now + 0.65);
+        oGain.gain.setValueAtTime(0.85, now);
+        oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.connect(oGain);
+        oGain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.72);
+
+        // Crushing stone crunch noise
+        const dur = 0.55;
+        const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * dur), this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(450, now);
+        filter.frequency.exponentialRampToValueAtTime(80, now + dur);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.65, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        src.start(now);
+    }
+
+    playRockCollapse() {
+        this.playHeavyCaveInThud();
+    }
+
+    playHeavyHeartbeat() {
+        this.triggerHeartbeat(0.45);
+    }
+
+    playRaggedBreath() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = 1.4;
+        const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * dur), this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1);
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(650, now);
+        filter.frequency.linearRampToValueAtTime(1100, now + 0.7);
+        filter.frequency.linearRampToValueAtTime(450, now + dur);
+        filter.Q.setValueAtTime(2.5, now);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.38, now + 0.6);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        src.start(now);
+    }
+
+    stopCaveAmbience() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (this.ambienceGain) {
+            try {
+                this.ambienceGain.gain.cancelScheduledValues(now);
+                this.ambienceGain.gain.setValueAtTime(this.ambienceGain.gain.value, now);
+                this.ambienceGain.gain.linearRampToValueAtTime(0.0001, now + 1.2);
+            } catch (e) {}
+        }
+        if (this.tinnitusGain) {
+            try {
+                this.tinnitusGain.gain.cancelScheduledValues(now);
+                this.tinnitusGain.gain.setValueAtTime(0.0001, now);
+            } catch (e) {}
+        }
+        if (this.breathingTimer) {
+            clearTimeout(this.breathingTimer);
+            this.breathingTimer = null;
+        }
+        if (this.heartbeatTimer) {
+            clearTimeout(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+
+    playMemoryMusicBox() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Tender, poignant music box motif (Lily's lullaby)
+        const notes = [523.25, 659.25, 783.99, 1046.50, 880.00, 783.99, 659.25];
+        notes.forEach((f, idx) => {
+            const time = now + idx * 0.75;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, time);
+
+            gain.gain.setValueAtTime(0.001, time);
+            gain.gain.linearRampToValueAtTime(0.08, time + 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.0001, time + 1.6);
+
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(time);
+            osc.stop(time + 1.7);
+        });
+    }
+
     playVictorySequence() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
+
+        // Fully mute and silence the underground cave drone, heavy breathing, and tinnitus!
+        this.stopCaveAmbience();
 
         const chords = [261.63, 329.63, 392.00, 523.25];
         chords.forEach(f => {
@@ -619,9 +745,12 @@ class SoundEngine {
             osc.frequency.setValueAtTime(f, now);
             g.gain.setValueAtTime(0.01, now);
             g.gain.linearRampToValueAtTime(0.14, now + 1.5);
+            g.gain.linearRampToValueAtTime(0.14, now + 6.0);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + 9.5);
             osc.connect(g);
             g.connect(this.masterGain);
             osc.start(now);
+            osc.stop(now + 9.8);
         });
 
         for (let b = 0; b < 6; b++) {

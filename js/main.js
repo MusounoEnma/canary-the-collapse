@@ -30,11 +30,16 @@ class GameState {
             tumbleLanded: false,
             swimming: false,
             ropeClimbed: false,
+            crawlspace: false,
             midway: false,
             hypoxia: false,
             finalDesperation: false,
-            nearExit: false
+            nearExit: false,
+            climaxCaveIn: false,
+            climaxWaking: false,
+            climaxStagger: false
         };
+        this.climaxTriggered = false;
         this.monologueTimer = null;
 
         this.lastTime = performance.now();
@@ -160,6 +165,13 @@ class GameState {
     }
 
     startGame() {
+        if (this.state === 'PLAYING') return;
+
+        if (!this.isInitialized) {
+            this.isInitialized = true;
+            this.init();
+        }
+
         try {
             if (window.soundEngine) {
                 window.soundEngine.init();
@@ -172,25 +184,34 @@ class GameState {
         const titleScreen = document.getElementById('title-screen');
         const hud = document.getElementById('hud-layer');
 
-        if (titleScreen) titleScreen.style.display = 'none';
+        if (titleScreen) {
+            titleScreen.style.display = 'none';
+            titleScreen.style.pointerEvents = 'none';
+        }
         if (hud) hud.style.display = 'block';
 
         this.state = 'PLAYING';
         this.oxygen = 100.0;
         if (this.player) {
             this.player.oxygen = 100.0;
+            this.player.startWakeUpIntro();
             try {
                 if (this.player.domElement) {
-                    this.player.domElement.requestPointerLock();
+                    const lockPromise = this.player.domElement.requestPointerLock();
+                    if (lockPromise && lockPromise.catch) {
+                        lockPromise.catch(e => {
+                            console.warn("Pointer lock deferred (click viewport to lock):", e);
+                        });
+                    }
                 }
             } catch (e) {
-                console.warn("Pointer lock deferred:", e);
+                console.warn("Pointer lock error deferred:", e);
             }
         }
 
         setTimeout(() => {
             this.triggerMonologue("start");
-        }, 1200);
+        }, 3600);
     }
 
     // Monologue Subtitle System
@@ -232,7 +253,11 @@ class GameState {
                 this.monologueFlags.ropeClimbed = true;
                 break;
             case "crowbarRetrieved":
-                line = "A heavy carbide crowbar! Sturdy and solid steel. If there are more cave-ins near the surface, I can pry them open now.";
+                line = "A heavy carbide crowbar and a spare O2 canister! Restored some air (+15%). If there are more cave-ins near the surface, I can pry them open now.";
+                break;
+            case "crawlspace":
+                line = "The cavern ceiling collapsed into a razor-thin fissure... I have to drop down on my knees [C] and crawl under the crushing weight.";
+                this.monologueFlags.crawlspace = true;
                 break;
             case "midway":
                 line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";
@@ -252,6 +277,18 @@ class GameState {
             case "nearExit":
                 line = "I see the green beacon of Emergency Hatch B-4! I can smell fresh mountain air! Almost there!";
                 this.monologueFlags.nearExit = true;
+                break;
+            case "climaxCaveIn":
+                line = "WHAT'S HAPPENING?! THE WHOLE CEILING IS CRACKING OPEN—! LOOK OUT!!";
+                this.monologueFlags.climaxCaveIn = true;
+                break;
+            case "climaxWaking":
+                line = "Ugh... god... my ribs... pinned under the stones... I can't move... vision fading...";
+                this.monologueFlags.climaxWaking = true;
+                break;
+            case "climaxStagger":
+                line = "Lily... I promised on the porch. I will NOT die in this darkness! GET UP, HENRY! PUSH FOR THE LIGHT!";
+                this.monologueFlags.climaxStagger = true;
                 break;
         }
 
@@ -302,26 +339,30 @@ class GameState {
 
             // Real-time Climbing Depth Tracking & Compass Distance
             if (this.player) {
-                const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 262));
+                const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 340));
                 this.depth = Math.round(780 * (1.0 - progressRatio));
 
-                const distToHatch = Math.max(0, Math.round(Math.abs(-262 - this.player.position.z)));
+                const distToHatch = Math.max(0, Math.round(Math.abs(-340 - this.player.position.z)));
                 const distEl = document.getElementById('hud-distance-to-hatch');
                 if (distEl) distEl.textContent = `${distToHatch}m`;
 
                 // Check Story Monologue Triggers along the winding path
                 const pz = this.player.position.z;
-                if (!this.monologueFlags.firstCorpse && pz < -18 && pz > -32) {
+                if (!this.climaxTriggered && pz <= -326) {
+                    this.triggerClimaxCaveIn();
+                } else if (!this.monologueFlags.firstCorpse && pz < -18 && pz > -32) {
                     this.triggerMonologue("firstCorpse");
                 } else if (!this.monologueFlags.firstRubble && pz < -42 && pz > -55) {
                     this.triggerMonologue("firstRubble");
                 } else if (!this.monologueFlags.midway && pz < -115 && pz > -130) {
                     this.triggerMonologue("midway");
+                } else if (!this.monologueFlags.crawlspace && pz < -226 && pz > -235) {
+                    this.triggerMonologue("crawlspace");
                 } else if (!this.monologueFlags.hypoxia && this.oxygen < 35 && this.oxygen > 15) {
                     this.triggerMonologue("hypoxia");
-                } else if (!this.monologueFlags.finalDesperation && this.oxygen < 12 && pz < -210) {
+                } else if (!this.monologueFlags.finalDesperation && this.oxygen < 12 && pz < -280) {
                     this.triggerMonologue("finalDesperation");
-                } else if (!this.monologueFlags.nearExit && pz < -245) {
+                } else if (!this.monologueFlags.nearExit && pz < -320) {
                     this.triggerMonologue("nearExit");
                 }
             }
@@ -332,6 +373,124 @@ class GameState {
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
         }
+    }
+
+    triggerClimaxCaveIn() {
+        this.climaxTriggered = true;
+        this.triggerMonologue("climaxCaveIn");
+
+        // 1. Catastrophic violent earthquake tremor & boulder shower from ceiling
+        if (this.events) {
+            this.events.triggerScreenShake(2.5, 26);
+        }
+        if (window.soundEngine) {
+            window.soundEngine.playHeavyCaveInThud();
+        }
+        if (this.world && this.player) {
+            this.world.spawnClimaxFallingBoulders(this.player.position);
+        }
+
+        // 2. Heavy crushing stone impact & blackout (knocked unconscious)
+        setTimeout(() => {
+            const blackout = document.getElementById('climax-blackout-overlay');
+            if (blackout) blackout.classList.add('blackout');
+
+            if (this.player) {
+                this.player.isClimaxKnockedOut = true;
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.playHeavyCaveInThud();
+                window.soundEngine.setTinnitus(0.35);
+            }
+        }, 1500);
+
+        // 3. Narrative Unconscious Memory Sequence: Promises to Lily in the darkness
+        const memContainer = document.getElementById('climax-memory-container');
+        const memSpeaker = document.getElementById('climax-memory-speaker');
+        const memText = document.getElementById('climax-memory-text');
+
+        // First Memory (2.8s)
+        setTimeout(() => {
+            if (memContainer) memContainer.classList.add('active');
+            if (memSpeaker) memSpeaker.textContent = "LILY'S VOICE (IN YOUR FADING MIND)";
+            if (memText) memText.textContent = "“Daddy, don't forget your promise... You said we'd plant sunflowers by the porch this spring.”";
+            if (window.soundEngine) window.soundEngine.playMemoryMusicBox();
+        }, 2800);
+
+        // Second Memory (7.8s)
+        setTimeout(() => {
+            if (memSpeaker) memSpeaker.textContent = "MEMORY OF HOME";
+            if (memText) memText.textContent = "Her tiny laugh... Her warm little hand clutching my miner coat before the morning horn blew.";
+            if (window.soundEngine) window.soundEngine.playHeavyHeartbeat();
+        }, 7800);
+
+        // Third Memory (12.8s)
+        setTimeout(() => {
+            if (memSpeaker) memSpeaker.textContent = "YOUR SACRED VOW";
+            if (memText) memText.textContent = "“I promised on Sarah's grave... I will NOT leave my little girl alone in this world. I'M COMING HOME!”";
+            if (window.soundEngine) window.soundEngine.playHeavyHeartbeat();
+        }, 12800);
+
+        // 4. Regaining consciousness (siuman): blurred vision & ragged gasping breath (17.5s)
+        setTimeout(() => {
+            if (memContainer) memContainer.classList.remove('active');
+
+            const blackout = document.getElementById('climax-blackout-overlay');
+            if (blackout) {
+                blackout.classList.remove('blackout');
+                blackout.classList.add('blurred-vision');
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.playRaggedBreath();
+                window.soundEngine.setTinnitus(0.12);
+            }
+
+            this.triggerMonologue("climaxWaking");
+        }, 17500);
+
+        // 5. Focus on Lily's Photo clutched tightly in hand (Restoring Resolve & Adrenaline) (20.5s)
+        setTimeout(() => {
+            const polaroidContainer = document.getElementById('climax-polaroid-container');
+            if (polaroidContainer) polaroidContainer.classList.add('active');
+
+            if (window.polaroidSystem && typeof window.polaroidSystem.setupCanvases === 'function') {
+                window.polaroidSystem.setupCanvases();
+            }
+
+            // Adrenaline surge: restore emergency breath & willpower
+            if (this.player) {
+                this.player.oxygen = Math.max(this.player.oxygen, 28);
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.playHeavyHeartbeat();
+            }
+        }, 20500);
+
+        // 6. Stand up and stagger toward the dawn light at the exit hatch (25.0s)
+        setTimeout(() => {
+            const polaroidContainer = document.getElementById('climax-polaroid-container');
+            if (polaroidContainer) polaroidContainer.classList.remove('active');
+
+            const blackout = document.getElementById('climax-blackout-overlay');
+            if (blackout) blackout.classList.remove('blurred-vision');
+
+            if (this.player) {
+                this.player.isClimaxKnockedOut = false;
+                this.player.isStaggering = true;
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.setTinnitus(0.0001);
+            }
+
+            this.triggerMonologue("climaxStagger");
+            if (this.events) {
+                this.events.showNotification("SURGE OF ADRENALINE! STAGGER TOWARDS THE DAWN LIGHT AT EMERGENCY HATCH B-4!");
+            }
+        }, 25000);
     }
 
     updateHUDAndHypoxia() {
@@ -419,6 +578,7 @@ class GameState {
         document.exitPointerLock();
 
         if (window.soundEngine) {
+            window.soundEngine.stopCaveAmbience();
             window.soundEngine.playVictorySequence();
         }
 

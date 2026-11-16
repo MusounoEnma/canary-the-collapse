@@ -83,8 +83,9 @@ class EventManager {
         let foundRubble = null;
         world.rubbleObjects.forEach(r => {
             if (!r.cleared) {
+                const distThresh = r.isBedrock ? 4.2 : 3.2;
                 const dist = Math.hypot(pPos.x - r.x, pPos.z - r.z);
-                if (dist < 3.2) {
+                if (dist < distThresh) {
                     foundRubble = r;
                 }
             }
@@ -133,14 +134,14 @@ class EventManager {
             }
         }
 
-        // 3. Check Rescue Rope at Cliff Ledge (z = -180)
+        // 3. Check Rescue Rope at Cliff Ledge (z = -195)
         let foundRope = null;
         if (!foundRubble && !foundCorpse && world.rescueRope && !player.hasClimbedRope) {
             const distToRope = Math.hypot(pPos.x - world.rescueRope.x, pPos.z - world.rescueRope.z);
-            if (distToRope < 3.2) {
+            if (distToRope < 4.8) {
                 foundRope = world.rescueRope;
                 this.isNearRope = true;
-                promptText = `[E] CLIMB RESCUE ROPE TO UPPER CANYON (7.5m VERTICAL ASCENT)`;
+                promptText = `[E] CLIMB RESCUE ROPE TO UPPER CANYON (6.9m VERTICAL ASCENT)`;
             } else {
                 this.isNearRope = false;
             }
@@ -148,10 +149,10 @@ class EventManager {
             this.isNearRope = false;
         }
 
-        // 4. Check Emergency Gear Crate (z = -190)
+        // 4. Check Emergency Gear Crate (z = -208)
         if (!foundRubble && !foundCorpse && !this.isNearRope && world.gearCrate && !world.gearCrate.retrieved) {
             const distToCrate = Math.hypot(pPos.x - world.gearCrate.x, pPos.z - world.gearCrate.z);
-            if (distToCrate < 2.8) {
+            if (distToCrate < 3.8) {
                 this.isNearCrate = true;
                 promptText = "[E] RETRIEVE HEAVY CARBIDE CROWBAR FROM RESCUE GEAR CRATE";
             } else {
@@ -161,12 +162,12 @@ class EventManager {
             this.isNearCrate = false;
         }
 
-        // 5. Check Escape Hatch at Surface Shaft Head
+        // 5. Check Escape Hatch at Surface Shaft Head (z = -340)
         if (!foundRubble && !foundCorpse && !this.isNearRope && !this.isNearCrate && world.escapeHatch) {
             const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
-            if (distToHatch < 3.6) {
+            if (distToHatch < 4.8) {
                 this.isNearHatch = true;
-                promptText = `[E] TURN EMERGENCY SURFACE VALVE WHEEL (780m ➔ 0m)`;
+                promptText = `[E] HEAVE OPEN EMERGENCY SURFACE HATCH (ESCAPE TO SUNLIGHT)`;
             } else {
                 this.isNearHatch = false;
             }
@@ -192,8 +193,11 @@ class EventManager {
                 // Break pickaxe sequence!
                 if (window.soundEngine) window.soundEngine.playPickaxeBreak();
                 if (window.gamePlayer) window.gamePlayer.hasBrokenPickaxe = true;
+                if (window.gameWorld && typeof window.gameWorld.revealChuteOpening === 'function') {
+                    window.gameWorld.revealChuteOpening();
+                }
                 this.triggerScreenShake(1.2, 14);
-                this.showNotification("CLANG! PICKAXE SHATTERED ON MONOLITHIC BEDROCK! Main drift blocked — take the EMERGENCY DRAINAGE CHUTE on the left ◄");
+                this.showNotification("CLANG! PICKAXE SHATTERED ON MONOLITHIC BEDROCK! A gaping fissure cracked open on the left wall ◄");
                 const objEl = document.querySelector('.hud-top-value[style*="69f0ae"]');
                 if (objEl) objEl.textContent = "CHUTE ◄";
                 if (window.gameState) {
@@ -212,10 +216,16 @@ class EventManager {
             window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
         } else if (this.isNearCrate && window.gameWorld && window.gameWorld.gearCrate) {
             window.gameWorld.retrieveCrowbar();
-            if (window.gamePlayer) window.gamePlayer.hasCrowbar = true;
+            if (window.gamePlayer) {
+                window.gamePlayer.hasCrowbar = true;
+                window.gamePlayer.oxygen = Math.min(100.0, window.gamePlayer.oxygen + 15.0);
+            }
             this.isNearCrate = false;
-            if (window.soundEngine) window.soundEngine.playFootstep(true);
-            this.showNotification("EQUIPPED: HEAVY CARBIDE CROWBAR! Can now pry loose massive rock barricades!");
+            if (window.soundEngine) {
+                window.soundEngine.playFootstep(true);
+                window.soundEngine.playOxygenRefill();
+            }
+            this.showNotification("EQUIPPED: HEAVY CARBIDE CROWBAR (+15% O₂)! Found emergency respirator cartridge in gear crate!");
             if (window.gameState) window.gameState.triggerMonologue("crowbarRetrieved");
         } else if (this.isNearHatch) {
             this.triggerEscapeSequence();
@@ -230,13 +240,15 @@ class EventManager {
         this.currentRubble = rubble;
         this.needlePos = 8;
         this.needleDir = 1;
-        this.needleSpeed = 62; // Smooth, easy-to-read rhythm oscillation
-        this.hitsNeeded = rubble.maxHealth;
-        this.hitsDone = rubble.maxHealth - rubble.currentHealth;
+        this.needleSpeed = 50; // Smooth, relaxed rhythm oscillation
 
-        // Wide, generous 30% sweet spot area
-        this.sweetSpotMin = 32 + Math.random() * 12;
-        this.sweetSpotMax = this.sweetSpotMin + 30; // 30% width!
+        // Runtuhan akhir pas mau keluar (Granite Barrier at z = -285) harus 3x hijau!
+        this.hitsNeeded = (rubble.requiresCrowbar || rubble.id === 3) ? 3 : 1;
+        this.hitsDone = 0;
+
+        // Wide, generous 38% sweet spot area
+        this.sweetSpotMin = 26 + Math.random() * 16;
+        this.sweetSpotMax = this.sweetSpotMin + 38; // Generous green zone
         this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
 
         const overlay = document.getElementById('rhythm-minigame-overlay');
@@ -246,7 +258,9 @@ class EventManager {
 
         if (titleEl) titleEl.textContent = rubble.name;
         if (feedbackEl) {
-            feedbackEl.textContent = "PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!";
+            feedbackEl.textContent = this.hitsNeeded > 1 
+                ? "STRIKE INSIDE GREEN ZONE 3 TIMES TO PRY OPEN THE MASSIVE GRANITE BARRICADE!" 
+                : "PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!";
             feedbackEl.className = "";
         }
         this.updateRhythmHealthDisplay();
@@ -267,9 +281,12 @@ class EventManager {
     updateRhythmHealthDisplay() {
         const healthEl = document.getElementById('rhythm-health-text');
         if (!healthEl || !this.currentRubble) return;
-        const remaining = Math.max(0, this.currentRubble.currentHealth);
-        const pct = Math.round((this.hitsDone / this.hitsNeeded) * 100);
-        healthEl.textContent = `Structural Integrity: ${remaining} Strikes Remaining (${pct}% Fractured)`;
+        if (this.hitsNeeded > 1) {
+            const left = this.hitsNeeded - this.hitsDone;
+            healthEl.textContent = `Massive granite barricade: Land 3 green strikes with crowbar (${left} strike${left > 1 ? 's' : ''} remaining)!`;
+        } else {
+            healthEl.textContent = "Fracture line exposed: Any strike in the green zone shatters the rock!";
+        }
     }
 
     updateRhythm(delta) {
@@ -295,69 +312,83 @@ class EventManager {
 
         const feedbackEl = document.getElementById('rhythm-feedback');
 
-        // Generous Hit Detection: ANYWHERE inside the entire green zone (+4% edge padding) counts as a successful hit!
-        const tolerance = 4.0;
+        // Generous Hit Detection: ANYWHERE inside the green zone (+5% edge padding)
+        const tolerance = 5.0;
         const isInsideGreenZone = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
 
         if (isInsideGreenZone) {
-            // Check if bullseye critical hit (near the center line)
-            const isCritical = Math.abs(this.needlePos - this.sweetSpotCenter) < 5.5;
-
             if (window.soundEngine) window.soundEngine.playPickaxeHit(true);
 
-            const damage = isCritical ? 2 : 1;
-            this.currentRubble.currentHealth -= damage;
-            this.hitsDone = Math.min(this.hitsNeeded, this.hitsDone + damage);
+            this.hitsDone++;
+            this.triggerScreenShake(0.45, 12);
+            const remaining = this.hitsNeeded - this.hitsDone;
 
-            this.triggerScreenShake(0.35, 9);
-            this.updateRhythmHealthDisplay();
-
-            if (this.currentRubble.currentHealth <= 0) {
-                // Completely breached!
-                if (feedbackEl) {
-                    feedbackEl.textContent = isCritical ? "CRITICAL BULLSEYE! BOULDERS SHATTERED TO DUST!" : "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
-                    feedbackEl.className = "hit-perfect";
-                }
-
-                // Instantly remove collision & clear obstacle
-                if (window.gameWorld) window.gameWorld.removeRubble(this.currentRubble.id);
-
-                setTimeout(() => {
-                    this.showNotification("Cave-in rubble destroyed! Keep moving forward!");
-                    this.closeRhythmMinigame();
-                }, 400);
-            } else {
-                if (feedbackEl) {
-                    feedbackEl.textContent = isCritical ? "CRITICAL HIT! DEEP STRUCTURAL FRACTURE! (1 MORE TO SHATTER)" : `SUCCESSFUL STRIKE! FRACTURE EXPANDING! (${this.currentRubble.currentHealth} MORE TO SHATTER)`;
-                    feedbackEl.className = "hit-perfect";
-                }
-
-                // Move sweet spot slightly for next strike
-                this.sweetSpotMin = 24 + Math.random() * 32;
-                this.sweetSpotMax = this.sweetSpotMin + 30;
+            if (remaining > 0) {
+                // Relocate sweet spot for next strike
+                this.sweetSpotMin = 20 + Math.random() * 26;
+                this.sweetSpotMax = this.sweetSpotMin + 36;
                 this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
-
                 const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
                 if (sweetSpotEl) {
                     sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
                     sweetSpotEl.style.width = `${this.sweetSpotMax - this.sweetSpotMin}%`;
                 }
+
+                if (feedbackEl) {
+                    feedbackEl.textContent = `SOLID GREEN HIT! (${this.hitsDone}/3) — ${remaining} MORE GREEN STRIKE${remaining > 1 ? 'S' : ''}!`;
+                    feedbackEl.className = "hit-perfect";
+                }
+                this.updateRhythmHealthDisplay();
+            } else {
+                // All required green hits completed!
+                this.currentRubble.currentHealth = 0;
+                this.updateRhythmHealthDisplay();
+
+                const isGranite = (this.hitsNeeded > 1 || this.currentRubble.requiresCrowbar);
+                if (feedbackEl) {
+                    feedbackEl.textContent = isGranite 
+                        ? "FINAL GREEN STRIKE! GRANITE SHATTERED! PATH CLEARED!" 
+                        : "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
+                    feedbackEl.className = "hit-perfect";
+                }
+
+                try {
+                    if (window.soundEngine && typeof window.soundEngine.playRockCollapse === 'function') {
+                        window.soundEngine.playRockCollapse();
+                    } else if (window.soundEngine && typeof window.soundEngine.playHeavyCaveInThud === 'function') {
+                        window.soundEngine.playHeavyCaveInThud();
+                    }
+                } catch (e) {
+                    console.warn("Audio error ignored:", e);
+                }
+
+                const rubbleId = this.currentRubble.id;
+                if (window.gameWorld && typeof window.gameWorld.removeRubble === 'function') {
+                    window.gameWorld.removeRubble(rubbleId);
+                }
+
+                setTimeout(() => {
+                    this.showNotification(isGranite 
+                        ? "Final granite barricade pried open! The surface hatch is ahead!" 
+                        : "Cave-in rubble destroyed! Keep moving forward!");
+                    this.closeRhythmMinigame();
+                }, 350);
             }
         } else {
             // Missed outside green zone
             if (window.soundEngine) {
                 window.soundEngine.playPickaxeHit(false);
-                window.soundEngine.playEarthquake(1.8);
+                window.soundEngine.playEarthquake(1.2);
             }
             if (feedbackEl) {
-                feedbackEl.textContent = "MISSED GREEN ZONE! GLANCING BLOW CAUSED VIBRATION!";
+                feedbackEl.textContent = "MISSED! PRESS [SPACE] OR CLICK WHEN NEEDLE IS IN GREEN AREA!";
                 feedbackEl.className = "hit-miss";
             }
 
             if (window.gamePlayer) {
-                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 3.5);
+                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 2.0);
             }
-            this.triggerScreenShake(0.6, 11);
+            this.triggerScreenShake(0.35, 7);
         }
     }
 
@@ -369,7 +400,10 @@ class EventManager {
         if (window.gameState && window.gameState.state === 'MINIGAME') {
             window.gameState.state = 'PLAYING';
             if (window.gamePlayer && window.gamePlayer.domElement) {
-                window.gamePlayer.domElement.requestPointerLock();
+                try {
+                    const p = window.gamePlayer.domElement.requestPointerLock();
+                    if (p && p.catch) p.catch(() => {});
+                } catch (e) {}
             }
         }
     }

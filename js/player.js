@@ -73,9 +73,25 @@ class PlayerController {
         this.stumblePitchOffset = 0;
         this.stumbleRecoveryTimer = 0;
 
+        // Climax Knockout & Wounded Staggering Finale
+        this.isClimaxKnockedOut = false;
+        this.isStaggering = false;
+        this.staggerBob = 0;
+
+        // Initial Game Intro: Waking Up Prone from Collapse Knockout
+        this.isWakingUp = false;
+        this.wakeUpTimer = 0;
+        this.wakeUpDuration = 3.6;
+
+        // Crouch / Crawl Mechanics
+        this.isCrouching = false;
+        this.standEyeHeight = 1.65;
+        this.crouchEyeHeight = 0.82;
+        this.currentEyeHeight = 1.65;
+
         // Head Bobbing & Elevation
         this.bobCycle = 0;
-        this.cameraBaseY = 1.7;
+        this.cameraBaseY = 1.65;
 
         this.keys = {
             forward: false,
@@ -116,14 +132,19 @@ class PlayerController {
         // Click anywhere on viewport to lock mouse in PLAYING mode
         window.addEventListener('click', (e) => {
             if (!this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
-                if (e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal')) {
+                if (e.target.closest('#title-screen') || e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal')) {
                     return;
                 }
                 if (this.domElement && document.pointerLockElement !== this.domElement) {
                     try {
-                        this.domElement.requestPointerLock();
+                        const lockPromise = this.domElement.requestPointerLock();
+                        if (lockPromise && lockPromise.catch) {
+                            lockPromise.catch(err => {
+                                console.warn("Pointer lock request warning:", err);
+                            });
+                        }
                     } catch (err) {
-                        console.warn("Pointer lock request warning:", err);
+                        console.warn("Pointer lock request error:", err);
                     }
                 }
             }
@@ -179,6 +200,11 @@ class PlayerController {
                 case 'ShiftRight':
                     this.keys.shift = true;
                     break;
+                case 'KeyC':
+                case 'ControlLeft':
+                case 'ControlRight':
+                    this.toggleCrouch();
+                    break;
                 case 'KeyF':
                     this.handleHelmetTap();
                     break;
@@ -232,6 +258,19 @@ class PlayerController {
                     break;
             }
         });
+    }
+
+    toggleCrouch() {
+        if (this.isDead || this.isTumbling || this.isClimbingRope || this.isSwimming) return;
+        this.isCrouching = !this.isCrouching;
+        const stanceVal = document.getElementById('hud-stance-value');
+        if (stanceVal) {
+            stanceVal.textContent = this.isCrouching ? "CROUCHING [C]" : "STANDING [C]";
+            stanceVal.style.color = this.isCrouching ? "#ffb300" : "#69f0ae";
+        }
+        if (window.soundEngine) {
+            window.soundEngine.playFootstep(false);
+        }
     }
 
     handleHelmetTap() {
@@ -427,9 +466,10 @@ class PlayerController {
             this.pitch = 0;
             this.roll = 0;
 
-            // Step onto the solid rock of upper ledge
-            this.position.z = -183;
+            // Step onto the solid rock of upper ledge (z = -197, y = 10.5)
+            this.position.z = -197;
             this.position.y = this.ropeEndY;
+            this.cameraBaseY = this.ropeEndY + this.currentEyeHeight;
 
             if (window.soundEngine) window.soundEngine.playFootstep(true);
             if (window.eventManager) window.eventManager.showNotification("SUCCESS! REACHED UPPER CANYON LEDGE!");
@@ -451,8 +491,78 @@ class PlayerController {
         this.oxygen = Math.max(0, this.oxygen - 3.0);
     }
 
+    startWakeUpIntro() {
+        this.isWakingUp = true;
+        this.wakeUpTimer = 0;
+        const overlay = document.getElementById('intro-wake-overlay');
+        if (overlay) {
+            overlay.classList.remove('awake');
+            overlay.classList.add('active');
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                overlay.classList.add('awake');
+            }, 600);
+        }
+        if (window.soundEngine) {
+            window.soundEngine.playRaggedBreath();
+        }
+    }
+
     update(delta, world) {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
+
+        // Initial Game Intro: Waking up from unconsciousness on the shaft floor
+        if (this.isWakingUp) {
+            this.velocity.set(0, 0, 0);
+            this.wakeUpTimer += delta;
+            const t = Math.min(1.0, this.wakeUpTimer / this.wakeUpDuration);
+            const ease = t * t * (3 - 2 * t);
+
+            const currentGroundY = world.getPathY(this.position.z);
+            const proneY = currentGroundY + 0.32;
+            const standY = currentGroundY + this.standEyeHeight;
+            const currentY = THREE.MathUtils.lerp(proneY, standY, ease);
+
+            const currentRoll = (1.0 - ease) * 0.52; // Tilted head against rock floor
+            const currentPitch = (1.0 - ease) * -0.32; // Groggily looking down at rubble
+
+            this.camera.position.set(this.position.x, currentY, this.position.z);
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.rotation.y = this.yaw;
+            this.camera.rotation.x = this.pitch + currentPitch;
+            this.camera.rotation.z = currentRoll;
+
+            if (this.flashlight && this.flashlightTarget) {
+                this.flashlight.position.copy(this.camera.position);
+                const lookDir = new THREE.Vector3();
+                this.camera.getWorldDirection(lookDir);
+                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(5));
+                if (this.ambientBulb) this.ambientBulb.position.copy(this.camera.position);
+            }
+
+            if (t >= 1.0) {
+                this.isWakingUp = false;
+            }
+            return;
+        }
+
+        // Climax Catastrophic Cave-in Knockout (Prone on ground under rubble)
+        if (this.isClimaxKnockedOut) {
+            this.velocity.set(0, 0, 0);
+            const currentGroundY = world.getPathY(this.position.z);
+            this.camera.position.set(this.position.x, currentGroundY + 0.38, this.position.z);
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.rotation.y = this.yaw;
+            this.camera.rotation.x = -0.42;
+            this.camera.rotation.z = 0.35;
+            if (this.flashlight && this.flashlightTarget) {
+                this.flashlight.position.copy(this.camera.position);
+                const lookDir = new THREE.Vector3();
+                this.camera.getWorldDirection(lookDir);
+                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(4));
+            }
+            return;
+        }
 
         // 1. Handle Active Tumble Event
         if (this.isTumbling) {
@@ -496,10 +606,13 @@ class PlayerController {
             this.pitch = (1.0 - t) * Math.sin(t * Math.PI * 3) * 0.14;
         }
 
-        // 3. Underwater Swimming Stage Detection (z between -161 and -178)
-        const inSwimmingZone = (this.position.z <= -161 && this.position.z >= -178);
+        // 3. Underwater Swimming Stage Detection (z between -160 and -182)
+        const inSwimmingZone = (this.position.z <= -160 && this.position.z >= -182);
         if (inSwimmingZone !== this.isSwimming) {
             this.isSwimming = inSwimmingZone;
+            if (this.isSwimming) {
+                this.isCrouching = false;
+            }
             if (window.soundEngine) window.soundEngine.setUnderwater(this.isSwimming);
 
             const underOverlay = document.getElementById('underwater-overlay');
@@ -518,7 +631,7 @@ class PlayerController {
 
         // 4. Oxygen Depletion & High-Tension Climax Calculation
         let drainRate = 0.48;
-        this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
+        this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right) && !this.isCrouching;
 
         if (this.isSprinting) {
             drainRate *= 3.0;
@@ -528,13 +641,17 @@ class PlayerController {
             drainRate += 0.45; // Struggling in deep water
         }
 
+        if (this.isCrouching) {
+            drainRate += 0.15; // Physical strain of crawling on hands and knees
+        }
+
         if (this.isRespiratorLeaking) {
             drainRate += 0.85;
         }
 
-        // Final desperate stretch (z < -215): tightly calibrated so player arrives with ~5% - 10% O2!
-        if (this.position.z < -215) {
-            drainRate += 1.15;
+        // Final desperate stretch (z < -280): intense climax tension balanced with golden Lily oxygen restores
+        if (this.position.z < -280) {
+            drainRate += 0.45;
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -543,11 +660,11 @@ class PlayerController {
             return;
         }
 
-        // 5. Trigger Rockslide Tumble Check (in side bypass chute at z <= -131.2)
-        if (!this.hasTumbled && this.position.z <= -131.2 && this.position.z >= -144) {
+        // 5. Trigger Rockslide Tumble Check (ONLY AFTER pickaxe is broken and player walks left into the side drainage chute)
+        if (this.hasBrokenPickaxe && !this.hasTumbled && this.position.z <= -130.2 && this.position.z >= -142) {
             const currentPathX = world.getPathX(this.position.z);
-            // If player steps left towards/into the chute opening (x < currentPathX - 0.6) OR reaches z <= -133.0 OR pickaxe is broken and stepping towards chute:
-            if (this.position.x < currentPathX - 0.6 || this.position.z <= -133.0 || (this.hasBrokenPickaxe && this.position.z <= -132.0)) {
+            // Player must intentionally turn and walk into the side drainage chute opening on the left (x < currentPathX - 1.15)
+            if (this.position.x < currentPathX - 1.15) {
                 this.triggerRockslideTumble();
                 return;
             }
@@ -576,8 +693,12 @@ class PlayerController {
 
         // 7. Movement Calculation
         let speed = this.moveSpeed;
-        if (this.isSwimming) {
+        if (this.isStaggering) {
+            speed *= 0.52; // Injured staggering limp
+        } else if (this.isSwimming) {
             speed *= 0.75; // Slower viscous swimming speed
+        } else if (this.isCrouching) {
+            speed *= 0.52; // Authentic crawling / crouching speed
         } else if (this.isSprinting) {
             speed *= this.sprintMultiplier;
         }
@@ -602,21 +723,38 @@ class PlayerController {
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
 
-            // Near the drainage chute entrance (z between -128 and -136), allow player to walk left into the chute!
-            const isNearChute = (this.position.z <= -128 && this.position.z >= -136);
-            const minX = isNearChute ? (nextPathX - 4.2) : (nextPathX - 1.85);
-            const maxX = nextPathX + 1.85;
+            // Near the drainage chute entrance (z between -128 and -138)
+            // ONLY open the left chute path if the player has already attempted to breach and shattered the pickaxe!
+            const isNearChute = this.hasBrokenPickaxe && (this.position.z <= -128 && this.position.z >= -138);
+            const minX = isNearChute ? (nextPathX - 3.8) : (nextPathX - 1.25);
+            const maxX = nextPathX + 1.25;
             nextX = Math.max(minX, Math.min(maxX, nextX));
 
             let blockedByRubble = false;
+
+            // Low ceiling collapse crawlspace (z between -228 and -265)
+            // MUST CROUCH [C] TO PASS!
+            if (!this.isCrouching && !this.isSwimming && nextZ <= -228 && nextZ >= -265) {
+                blockedByRubble = true;
+                if (window.eventManager) {
+                    window.eventManager.showNotification("⚠ LOW CEILING COLLAPSE! PRESS [C] TO CROUCH AND CRAWL!");
+                }
+            }
 
             // Rubble Obstacle Collision
             world.rubbleObjects.forEach(r => {
                 if (!r.cleared) {
                     if (r.isBedrock) {
-                        // Monolithic Bedrock blocks the straight path forward, but leaves the left side open to the chute!
-                        if (nextX > r.x - 0.7 && nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
-                            blockedByRubble = true;
+                        if (!this.hasBrokenPickaxe) {
+                            // Monolithic Bedrock completely blocks the entire shaft until the pickaxe is struck & broken on it!
+                            if (nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
+                                blockedByRubble = true;
+                            }
+                        } else {
+                            // Once pickaxe is broken, bedrock blocks the straight forward path, forcing player to turn left into the chute!
+                            if (nextX > r.x - 0.7 && nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
+                                blockedByRubble = true;
+                            }
                         }
                     } else {
                         const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
@@ -627,13 +765,13 @@ class PlayerController {
                 }
             });
 
-            // Prevent walking past cliff edge at z = -180 if rope has NOT been climbed!
-            if (!this.hasClimbedRope && nextZ <= -180.2) {
+            // Prevent walking past cliff edge at z = -195 if rope has NOT been climbed!
+            if (!this.hasClimbedRope && nextZ <= -195.2) {
                 blockedByRubble = true;
             }
 
-            // Surface Hatch bunker collision at z = -262
-            if (nextZ <= -261.5) {
+            // Surface Hatch bunker collision at z = -340
+            if (nextZ <= -339.5) {
                 blockedByRubble = true;
             }
 
@@ -661,20 +799,32 @@ class PlayerController {
             this.velocity.set(0, 0, 0);
         }
 
+        // Smooth crouch eye-height transition
+        const targetEyeHeight = this.isCrouching ? this.crouchEyeHeight : this.standEyeHeight;
+        this.currentEyeHeight = THREE.MathUtils.lerp(this.currentEyeHeight, targetEyeHeight, delta * 12);
+
         // Height Calculation: swimming floats slightly higher
         const currentGroundY = world.getPathY(this.position.z);
         const swimBob = this.isSwimming ? Math.sin(this.bobCycle) * 0.15 : 0;
-        const walkBob = !this.isSwimming && this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
+        const walkBob = !this.isSwimming && this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : (this.isCrouching ? 0.025 : 0.04)) : 0;
 
-        this.cameraBaseY = currentGroundY + (this.isSwimming ? 1.15 + swimBob : 1.7 + walkBob);
+        this.cameraBaseY = currentGroundY + (this.isSwimming ? 1.15 + swimBob : this.currentEyeHeight + walkBob);
         this.position.y = currentGroundY;
 
         // Apply Camera Transformations
+        let staggerPitch = 0;
+        let staggerRoll = 0;
+        if (this.isStaggering) {
+            this.staggerBob += delta * (this.isMoving ? 4.8 : 1.6);
+            staggerPitch = Math.sin(this.staggerBob) * 0.045 - 0.04;
+            staggerRoll = Math.cos(this.staggerBob * 0.5) * 0.065;
+        }
+
         this.camera.position.set(this.position.x, this.cameraBaseY, this.position.z);
         this.camera.rotation.set(0, 0, 0);
         this.camera.rotation.y = this.yaw;
-        this.camera.rotation.x = this.pitch + this.stumblePitchOffset;
-        this.camera.rotation.z = 0;
+        this.camera.rotation.x = this.pitch + this.stumblePitchOffset + staggerPitch;
+        this.camera.rotation.z = staggerRoll;
 
         // Update Flashlight position & direction
         if (this.flashlight && this.flashlightTarget) {

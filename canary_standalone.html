@@ -124,6 +124,194 @@ body, html {
     100% { opacity: 0.22; filter: hue-rotate(-15deg); }
 }
 
+/* ==========================================================================
+   FINAL CLIMAX CAVE-IN & RECOVERY OVERLAYS
+   ========================================================================== */
+#climax-blackout-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 80;
+    opacity: 0;
+    transition: opacity 0.75s ease;
+}
+
+/* Intro Waking Prone & Eye Blink Overlay */
+#intro-wake-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 92;
+    background: #000000;
+    opacity: 0;
+    transition: opacity 1.8s cubic-bezier(0.2, 0.8, 0.2, 1), backdrop-filter 1.8s ease;
+}
+
+#intro-wake-overlay.active {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+}
+
+#intro-wake-overlay.awake {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+}
+
+/* Final Climax Catastrophic Cave-in Blackout Overlay */
+#climax-blackout-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 80;
+    opacity: 0;
+    transition: opacity 0.75s ease;
+}
+
+#climax-blackout-overlay.blackout {
+    opacity: 1;
+    background: #000000;
+}
+
+#climax-blackout-overlay.blurred-vision {
+    opacity: 0.75;
+    background: radial-gradient(circle at center, rgba(10, 8, 5, 0.45) 0%, rgba(25, 10, 5, 0.88) 75%, #050403 100%);
+    backdrop-filter: blur(6px);
+}
+
+/* Final Climax Unconscious Memory & Promise Sequence */
+#climax-memory-container {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 680px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 86;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    text-align: center;
+}
+
+#climax-memory-container.active {
+    display: flex;
+    opacity: 1;
+}
+
+.climax-memory-ambient-glow {
+    position: absolute;
+    width: 380px;
+    height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
+    pointer-events: none;
+    animation: goldenWillSurge 3.0s infinite alternate;
+}
+
+.climax-memory-speaker {
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    color: #ffb300;
+    margin-bottom: 14px;
+    text-shadow: 0 0 12px rgba(255, 179, 0, 0.7);
+}
+
+.climax-memory-text {
+    font-size: 19px;
+    font-style: italic;
+    line-height: 1.6;
+    color: #fff9c4;
+    text-shadow: 0 0 20px rgba(255, 249, 196, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+    min-height: 60px;
+    transition: opacity 0.5s ease;
+}
+
+#climax-polaroid-container {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -46%) scale(0.92);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 85;
+    opacity: 0;
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+#climax-polaroid-container.active {
+    display: flex;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.0);
+}
+
+.climax-polaroid-glow {
+    position: absolute;
+    width: 440px;
+    height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.35) 0%, rgba(255, 160, 0, 0.15) 50%, transparent 75%);
+    animation: goldenWillSurge 2.2s infinite alternate;
+}
+
+@keyframes goldenWillSurge {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    100% { transform: scale(1.15); opacity: 1.0; }
+}
+
+.climax-polaroid-frame {
+    position: relative;
+    background: #fbf9f4;
+    padding: 16px 16px 24px 16px;
+    border-radius: 6px;
+    box-shadow: 0 12px 45px rgba(0,0,0,0.85), 0 0 35px rgba(255, 215, 0, 0.45);
+    text-align: center;
+    transform: rotate(-1.5deg);
+}
+
+.climax-polaroid-caption {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    color: #4e342e;
+    font-size: 13px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.climax-resolve-title {
+    margin-top: 22px;
+    font-family: monospace;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #ffca28;
+    text-shadow: 0 0 16px rgba(255, 202, 40, 0.8);
+    text-align: center;
+}
+
+.climax-resolve-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #e0e0e0;
+    letter-spacing: 1.5px;
+    text-align: center;
+}
+
 #hypoxia-overlay.active {
     animation: hypoxiaPulse 2.2s infinite ease-in-out;
 }
@@ -542,21 +730,10 @@ body.earthquake-shake {
     position: absolute;
     top: 0;
     height: 100%;
-    background: rgba(0, 230, 118, 0.5);
-    border-left: 3px solid #00e676;
-    border-right: 3px solid #00e676;
-    box-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
-}
-
-.sweet-spot-center-line {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 3px;
-    height: 100%;
-    background: #ffd700;
-    box-shadow: 0 0 8px #ffd700;
-    transform: translateX(-50%);
+    background: rgba(0, 230, 118, 0.58);
+    border: 2px solid #00e676;
+    border-radius: 4px;
+    box-shadow: 0 0 24px rgba(0, 230, 118, 0.65);
 }
 
 .btn-strike {
@@ -954,6 +1131,30 @@ body.earthquake-shake {
     <!-- Tremor & Electrical Strobe Glitch Overlay -->
     <div id="glitch-overlay"></div>
 
+    <!-- Intro Waking Prone & Eye Blink Overlay -->
+    <div id="intro-wake-overlay"></div>
+
+    <!-- Final Climax Catastrophic Cave-in Blackout Overlay -->
+    <div id="climax-blackout-overlay"></div>
+
+    <!-- Final Climax Unconscious Memory & Promise Sequence -->
+    <div id="climax-memory-container">
+        <div class="climax-memory-ambient-glow"></div>
+        <div class="climax-memory-speaker" id="climax-memory-speaker">LILY'S VOICE (IN YOUR MIND)</div>
+        <div class="climax-memory-text" id="climax-memory-text"></div>
+    </div>
+
+    <!-- Final Climax Waking Polaroid Cinematic View -->
+    <div id="climax-polaroid-container">
+        <div class="climax-polaroid-glow"></div>
+        <div class="climax-polaroid-frame">
+            <canvas id="climax-polaroid-canvas" width="280" height="320"></canvas>
+            <div class="climax-polaroid-caption">LILY: "Please come home safe, Daddy!"</div>
+        </div>
+        <div class="climax-resolve-title">"I WILL NOT DIE IN THIS DARKNESS!"</div>
+        <div class="climax-resolve-subtitle">Looking at Lily's smile rekindles your will to survive!</div>
+    </div>
+
     <!-- Heads-Up Display (HUD) Layer -->
     <div id="hud-layer">
         <!-- Center Aim Crosshair -->
@@ -970,6 +1171,10 @@ body.earthquake-shake {
                 <span id="hud-depth-value" class="hud-top-value">780m</span>
             </div>
             <div class="hud-top-item">
+                <span class="hud-top-label">STANCE</span>
+                <span id="hud-stance-value" class="hud-top-value" style="color: #69f0ae;">STANDING [C]</span>
+            </div>
+            <div class="hud-top-item">
                 <span class="hud-top-label">OBJECTIVE</span>
                 <span class="hud-top-value" style="color: #69f0ae;">HATCH B-4</span>
             </div>
@@ -980,7 +1185,7 @@ body.earthquake-shake {
             <span class="compass-edge">◄ DEPTH 780m</span>
             <div class="compass-center">
                 <span class="compass-arrow">▲</span>
-                <span id="compass-target-text">CLIMBING TOWARDS SURFACE HATCH (<span id="hud-distance-to-hatch">262m</span>)</span>
+                <span id="compass-target-text">CLIMBING TOWARDS SURFACE HATCH (<span id="hud-distance-to-hatch">340m</span>)</span>
             </div>
             <span class="compass-edge">SURFACE 0m ►</span>
         </div>
@@ -1030,17 +1235,15 @@ body.earthquake-shake {
     <div id="rhythm-minigame-overlay">
         <div class="rhythm-card">
             <h2 id="rhythm-rubble-title" class="rhythm-title">Rubble Cave-in (Shaft 07)</h2>
-            <p class="rhythm-subtitle">Strike anywhere inside the wide green fracture zone to shatter the rock!</p>
+            <p class="rhythm-subtitle">Strike anywhere inside the green fracture zone to shatter the rock!</p>
             
             <div class="rhythm-meter-container">
-                <div id="rhythm-sweet-spot">
-                    <div class="sweet-spot-center-line" title="Bullseye Center Line"></div>
-                </div>
+                <div id="rhythm-sweet-spot"></div>
                 <div id="rhythm-needle"></div>
             </div>
 
-            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK BUTTON BELOW WHEN INSIDE GREEN ZONE!</div>
-            <div id="rhythm-health-text" style="color: #ffb74d; margin-bottom: 16px; font-weight: bold;">Structural Integrity: 2 Strikes Remaining (0% Fractured)</div>
+            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!</div>
+            <div id="rhythm-health-text" style="color: #69f0ae; margin-bottom: 16px; font-weight: bold;">Any hit in the green zone shatters the rock instantly!</div>
 
             <button id="btn-strike-pickaxe" class="btn-strike">⚡ STRIKE WITH PICKAXE [SPACE / CLICK] ⚡</button>
 
@@ -1105,6 +1308,7 @@ body.earthquake-shake {
 
             <div class="controls-grid">
                 <div><span class="control-key">W, A, S, D</span> Walk / Crawl</div>
+                <div><span class="control-key">C / CTRL</span> Crouch / Crawl (Low Ceilings)</div>
                 <div><span class="control-key">SHIFT</span> Sprint (O2 Drains 3x Faster!)</div>
                 <div><span class="control-key">MOUSE</span> Look / Aim Helmet Headlamp</div>
                 <div><span class="control-key">E</span> Interact / Loot O2 / Breach Rubble</div>
@@ -1770,9 +1974,135 @@ class SoundEngine {
         this.tinnitusGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.2);
     }
 
+    playHeavyCaveInThud() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Sub-bass impact thud
+        const osc = this.ctx.createOscillator();
+        const oGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(95, now);
+        osc.frequency.exponentialRampToValueAtTime(22, now + 0.65);
+        oGain.gain.setValueAtTime(0.85, now);
+        oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.connect(oGain);
+        oGain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.72);
+
+        // Crushing stone crunch noise
+        const dur = 0.55;
+        const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * dur), this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(450, now);
+        filter.frequency.exponentialRampToValueAtTime(80, now + dur);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.65, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        src.start(now);
+    }
+
+    playRockCollapse() {
+        this.playHeavyCaveInThud();
+    }
+
+    playHeavyHeartbeat() {
+        this.triggerHeartbeat(0.45);
+    }
+
+    playRaggedBreath() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const dur = 1.4;
+        const buffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * dur), this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1);
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(650, now);
+        filter.frequency.linearRampToValueAtTime(1100, now + 0.7);
+        filter.frequency.linearRampToValueAtTime(450, now + dur);
+        filter.Q.setValueAtTime(2.5, now);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.38, now + 0.6);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        src.start(now);
+    }
+
+    stopCaveAmbience() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (this.ambienceGain) {
+            try {
+                this.ambienceGain.gain.cancelScheduledValues(now);
+                this.ambienceGain.gain.setValueAtTime(this.ambienceGain.gain.value, now);
+                this.ambienceGain.gain.linearRampToValueAtTime(0.0001, now + 1.2);
+            } catch (e) {}
+        }
+        if (this.tinnitusGain) {
+            try {
+                this.tinnitusGain.gain.cancelScheduledValues(now);
+                this.tinnitusGain.gain.setValueAtTime(0.0001, now);
+            } catch (e) {}
+        }
+        if (this.breathingTimer) {
+            clearTimeout(this.breathingTimer);
+            this.breathingTimer = null;
+        }
+        if (this.heartbeatTimer) {
+            clearTimeout(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+
+    playMemoryMusicBox() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Tender, poignant music box motif (Lily's lullaby)
+        const notes = [523.25, 659.25, 783.99, 1046.50, 880.00, 783.99, 659.25];
+        notes.forEach((f, idx) => {
+            const time = now + idx * 0.75;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, time);
+
+            gain.gain.setValueAtTime(0.001, time);
+            gain.gain.linearRampToValueAtTime(0.08, time + 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.0001, time + 1.6);
+
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(time);
+            osc.stop(time + 1.7);
+        });
+    }
+
     playVictorySequence() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
+
+        // Fully mute and silence the underground cave drone, heavy breathing, and tinnitus!
+        this.stopCaveAmbience();
 
         const chords = [261.63, 329.63, 392.00, 523.25];
         chords.forEach(f => {
@@ -1782,9 +2112,12 @@ class SoundEngine {
             osc.frequency.setValueAtTime(f, now);
             g.gain.setValueAtTime(0.01, now);
             g.gain.linearRampToValueAtTime(0.14, now + 1.5);
+            g.gain.linearRampToValueAtTime(0.14, now + 6.0);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + 9.5);
             osc.connect(g);
             g.connect(this.masterGain);
             osc.start(now);
+            osc.stop(now + 9.8);
         });
 
         for (let b = 0; b < 6; b++) {
@@ -1838,12 +2171,16 @@ class PolaroidSystem {
     setupCanvases() {
         this.hudCanvas = document.getElementById('polaroid-hud-canvas');
         this.inspectCanvas = document.getElementById('inspect-polaroid-canvas');
+        this.climaxCanvas = document.getElementById('climax-polaroid-canvas');
 
         if (this.hudCanvas) {
             this.drawPolaroidToCanvas(this.hudCanvas, 240, 280);
         }
         if (this.inspectCanvas) {
             this.drawPolaroidToCanvas(this.inspectCanvas, 340, 400);
+        }
+        if (this.climaxCanvas) {
+            this.drawPolaroidToCanvas(this.climaxCanvas, 280, 320);
         }
     }
 
@@ -2086,7 +2423,7 @@ class MineWorld {
         this.gearCrate = null;
         this.puddles = [];
 
-        this.tunnelLength = 280;
+        this.tunnelLength = 345;
 
         this.initTextures();
         this.buildSeamlessCavern();
@@ -2099,87 +2436,101 @@ class MineWorld {
     }
 
     // -------------------------------------------------------------
-    // EXTREME CURVE & ELEVATION FORMULAS
+    // EXTREME CURVE & ELEVATION FORMULAS (Continuous & Extended to -345m)
     // -------------------------------------------------------------
     getPathX(z) {
         if (z > -134) {
-            return Math.sin(z * 0.045) * 5.8 + Math.sin(z * 0.02) * 3.4;
-        } else if (z > -178) {
-            // Curves through the detour bypass chute into flooded rift
-            const startX = Math.sin(-134 * 0.045) * 5.8 + Math.sin(-134 * 0.02) * 3.4;
-            const t = (z - (-134)) / (-44);
-            return startX - Math.sin(t * Math.PI) * 4.8;
-        } else {
-            // Ascending final canyon shaft towards surface
-            return Math.cos(z * 0.035) * 5.2 + Math.sin(z * 0.012) * 2.5;
+            return Math.sin(z * 0.045) * 3.8 + Math.sin(z * 0.02) * 1.8;
         }
+        const x0 = Math.sin(-134 * 0.045) * 3.8 + Math.sin(-134 * 0.02) * 1.8;
+        if (z > -190) {
+            // Detour chute & flooded swimming sump
+            const t = (-z - 134) / 56;
+            const x1 = x0 - 2.8;
+            return x0 - Math.sin(t * Math.PI) * 4.2 + t * (x1 - x0);
+        }
+        // Upper canyon shaft, low crawlspace & surface approach
+        const x1 = x0 - 2.8;
+        const t2 = -z - 190;
+        return x1 + (Math.cos(t2 * 0.035) - 1.0) * 3.2 + Math.sin(t2 * 0.015) * 1.6;
     }
 
     getPathY(z) {
         if (z > -134) {
-            const climb = (-z / 140) * 9.5;
-            const dips = Math.sin(z * 0.08) * 2.2 + Math.cos(z * 0.04) * 1.5;
-            return climb + dips;
-        } else if (z > -180) {
-            // Detour chute plunge into flooded swimming sump basin
-            const t = (-z - 134) / 46;
-            return 8.2 - (t * 6.5) - Math.sin(t * Math.PI) * 1.2;
-        } else {
-            // Upper cliff ledge after rope climb: ascends up to +28m at surface hatch
-            const t = (-z - 180) / 82;
-            const ascent = 9.8 + t * 18.0;
-            const ruggedness = Math.sin(z * 0.07) * 1.2;
-            return ascent + ruggedness;
+            return (-z / 140) * 8.0 + Math.sin(z * 0.08) * 1.5 + Math.cos(z * 0.04) * 1.0;
         }
+        const y0 = (134 / 140) * 8.0 + Math.sin(-134 * 0.08) * 1.5 + Math.cos(-134 * 0.04) * 1.0;
+        if (z > -160) {
+            // Steep rockslide chute plunge down into water
+            const t = (-z - 134) / 26;
+            return y0 + t * (2.4 - y0) - Math.sin(t * Math.PI) * 0.6;
+        }
+        if (z > -182) {
+            // Flooded swimming basin (water level is at y = 2.4)
+            return 2.4 + Math.sin(z * 0.05) * 0.12;
+        }
+        if (z > -195) {
+            // Shoreline gravel bank sloping smoothly up from water (y=2.4) to rescue rope base (y=3.6)
+            const t = (-z - 182) / 13;
+            return 2.4 + t * 1.2;
+        }
+        // Upper canyon ledge (climbed via rescue rope up to +10.5m)
+        const t2 = -z - 195;
+        const ascent = 10.5 + (t2 / 150) * 22.0;
+        const ruggedness = Math.sin(t2 * 0.06) * 1.1;
+        return ascent + ruggedness;
     }
 
     initTextures() {
         const rockCanvas = document.createElement('canvas');
-        rockCanvas.width = 512;
-        rockCanvas.height = 512;
+        rockCanvas.width = 1024;
+        rockCanvas.height = 1024;
         const rctx = rockCanvas.getContext('2d');
 
-        // Dark gritty charcoal slate base
-        rctx.fillStyle = '#171411';
-        rctx.fillRect(0, 0, 512, 512);
+        // Dark charcoal-slate base matching the collapse boulders
+        rctx.fillStyle = '#181512';
+        rctx.fillRect(0, 0, 1024, 1024);
 
-        for (let y = 0; y < 512; y += 3) {
-            const noise = Math.sin(y * 0.06) * 14 + Math.random() * 20;
-            const lum = 22 + Math.floor(noise * 0.7);
-            const r = lum + Math.floor(Math.random() * 8);
-            const g = lum + Math.floor(Math.random() * 5);
+        // Sedimentary strata bedding & mineral grain
+        for (let y = 0; y < 1024; y += 2) {
+            const noise = Math.sin(y * 0.04) * 22 + Math.random() * 26;
+            const lum = 24 + Math.floor(noise * 0.55);
+            const r = lum + Math.floor(Math.random() * 6);
+            const g = lum + Math.floor(Math.random() * 4);
             const b = lum - 3;
             rctx.fillStyle = `rgb(${r},${g},${b})`;
-            rctx.fillRect(0, y, 512, 2 + Math.random() * 3);
+            rctx.fillRect(0, y, 1024, 2 + Math.random() * 2);
         }
 
-        for (let i = 0; i < 30; i++) {
-            rctx.strokeStyle = i % 2 === 0 ? 'rgba(6, 5, 4, 0.95)' : 'rgba(70, 50, 35, 0.45)';
-            rctx.lineWidth = 2 + Math.random() * 4;
+        // Deep jagged fracture lines & chisel breaks
+        for (let i = 0; i < 65; i++) {
+            rctx.strokeStyle = i % 3 === 0 ? 'rgba(5, 4, 3, 0.98)' : 'rgba(55, 45, 36, 0.65)';
+            rctx.lineWidth = 2 + Math.random() * 4.5;
             rctx.beginPath();
             let curX = 0;
-            let curY = Math.random() * 512;
+            let curY = Math.random() * 1024;
             rctx.moveTo(curX, curY);
-            while (curX < 512) {
-                curX += 18 + Math.random() * 32;
-                curY += (Math.random() - 0.5) * 40;
+            while (curX < 1024) {
+                curX += 20 + Math.random() * 35;
+                curY += (Math.random() - 0.5) * 45;
                 rctx.lineTo(curX, curY);
             }
             rctx.stroke();
         }
 
-        for (let k = 0; k < 4500; k++) {
-            const px = Math.random() * 512;
-            const py = Math.random() * 512;
-            const lum = Math.floor(14 + Math.random() * 32);
-            rctx.fillStyle = `rgb(${lum + 8},${lum + 4},${lum})`;
-            rctx.fillRect(px, py, 2 + Math.random() * 2, 2 + Math.random() * 2);
+        // Chipped rock facets & micro-fissures
+        for (let k = 0; k < 12000; k++) {
+            const px = Math.random() * 1024;
+            const py = Math.random() * 1024;
+            const lum = Math.floor(16 + Math.random() * 36);
+            rctx.fillStyle = `rgb(${lum + 6},${lum + 3},${lum})`;
+            rctx.fillRect(px, py, 2 + Math.random() * 3, 2 + Math.random() * 3);
         }
 
         this.rockTexture = new THREE.CanvasTexture(rockCanvas);
         this.rockTexture.wrapS = THREE.RepeatWrapping;
         this.rockTexture.wrapT = THREE.RepeatWrapping;
-        this.rockTexture.repeat.set(5, 50);
+        this.rockTexture.repeat.set(6, 90);
 
         // Weathered Dark Timber
         const woodCanvas = document.createElement('canvas');
@@ -2214,34 +2565,58 @@ class MineWorld {
     buildSeamlessCavern() {
         const points = [];
         for (let z = 12; z >= -this.tunnelLength - 5; z -= 2.0) {
-            points.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 1.8, z));
+            points.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 1.5, z));
         }
 
         const curve = new THREE.CatmullRomCurve3(points);
         this.cavernCurve = curve;
 
-        const tubularSegments = 300;
-        const radius = 3.75;
+        const tubularSegments = 420;
+        const radius = 2.45; // Narrow, claustrophobic, authentic mine shaft!
         const radialSegments = 16;
         const tubeGeo = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
 
-        // Smooth natural rock bump (Zero spikes)
+        // Multi-octave faceted rock displacement matching the rubble cave-in boulders!
         const posAttr = tubeGeo.attributes.position;
         for (let i = 0; i < posAttr.count; i++) {
-            const vx = posAttr.getX(i);
-            const vy = posAttr.getY(i);
-            const vz = posAttr.getZ(i);
+            let vx = posAttr.getX(i);
+            let vy = posAttr.getY(i);
+            let vz = posAttr.getZ(i);
 
-            const bump = (Math.sin(vx * 1.8) * Math.cos(vy * 2.0) * Math.sin(vz * 1.4)) * 0.22;
+            // Chiseled, jagged stone facets
+            const bump = (
+                Math.sin(vx * 2.2 + vz * 0.8) * 0.22 +
+                Math.cos(vy * 2.8 + vx * 1.4) * 0.16 +
+                Math.sin(vz * 3.2) * 0.10
+            );
             posAttr.setX(i, vx + bump);
             posAttr.setY(i, vy + bump);
+
+            // Carve visible gaping crevice opening in left cavern wall for side drainage chute (z = -128 to -136)
+            if (vz <= -128 && vz >= -136) {
+                const pathX = this.getPathX(vz);
+                if (vx < pathX) {
+                    const t = Math.sin(((-vz - 128) / 8) * Math.PI);
+                    posAttr.setX(i, vx - t * 2.8); // Pulls left wall outward into a wide visible breach
+                }
+            }
+
+            // Low crawlspace constriction at z = -228 to -265 (MUST CROUCH [C] TO PASS!)
+            if (vz <= -228 && vz >= -265) {
+                const t = Math.sin(((-vz - 228) / 37) * Math.PI);
+                const groundY = this.getPathY(vz);
+                if (vy > groundY + 1.25) {
+                    posAttr.setY(i, vy - t * 1.15); // Compresses ceiling down to 1.25m!
+                }
+            }
         }
         tubeGeo.computeVertexNormals();
 
         const cavernMat = new THREE.MeshStandardMaterial({
             map: this.rockTexture,
-            roughness: 0.94,
-            metalness: 0.08,
+            color: new THREE.Color(0x3e3730), // Dark charcoal-stone tone matching rubble!
+            roughness: 0.90,
+            metalness: 0.12,
             side: THREE.DoubleSide
         });
 
@@ -2253,10 +2628,10 @@ class MineWorld {
         this.buildSubmergedWaterVolume();
     }
 
-    // Submerged Flooded Tunnel Stage (Swimming section: z=-160 to -178)
+    // Submerged Flooded Tunnel Stage (Swimming section: z = -160 to -182)
     buildSubmergedWaterVolume() {
-        // Deep murky water plane covering the swimming basin
-        const waterGeo = new THREE.PlaneGeometry(7.0, 22.0, 10, 20);
+        // Deep murky water plane covering the swimming basin (z = -160 to -182)
+        const waterGeo = new THREE.PlaneGeometry(6.2, 23.0, 10, 20);
         waterGeo.rotateX(-Math.PI / 2);
 
         const waterMat = new THREE.MeshStandardMaterial({
@@ -2268,9 +2643,8 @@ class MineWorld {
         });
 
         const waterMesh = new THREE.Mesh(waterGeo, waterMat);
-        // Positioned at swimming basin elevation
-        const midZ = -169;
-        waterMesh.position.set(this.getPathX(midZ), this.getPathY(midZ) + 1.25, midZ);
+        const midZ = -171;
+        waterMesh.position.set(this.getPathX(midZ), 2.45, midZ);
         this.scene.add(waterMesh);
 
         // Underwater bubble particles
@@ -2399,6 +2773,19 @@ class MineWorld {
         archGroup.rotation.y = Math.PI / 6; // Angled facing the approaching player
         this.scene.add(archGroup);
 
+        this.chuteArchGroup = archGroup;
+        this.chuteBeacon = beaconLight;
+
+        // Chute Interior Spotlight angled shining out through the fissure
+        const cSpot = new THREE.SpotLight(0xffb74d, 1.2, 18, Math.PI / 4, 0.5, 1.2);
+        cSpot.position.set(archX - 2.5, archY + 1.8, archZ - 3);
+        const cSpotTarget = new THREE.Object3D();
+        cSpotTarget.position.set(archX, archY + 1.2, archZ);
+        this.scene.add(cSpot);
+        this.scene.add(cSpotTarget);
+        cSpot.target = cSpotTarget;
+        this.chuteInteriorLight = cSpot;
+
         this.emergencyLights.push({
             group: archGroup,
             light: beaconLight,
@@ -2438,12 +2825,107 @@ class MineWorld {
         }
     }
 
-    // Vertical Rescue Climbing Rope at Cliff Ledge (z = -180)
+    // Visually illuminate and expose the left-wall fissure when pickaxe shatters
+    revealChuteOpening() {
+        if (this.chuteRevealed) return;
+        this.chuteRevealed = true;
+
+        if (this.chuteBeacon) {
+            this.chuteBeacon.intensity = 4.8;
+            this.chuteBeacon.color.setHex(0xffca28);
+        }
+        if (this.chuteInteriorLight) {
+            this.chuteInteriorLight.intensity = 5.5;
+            this.chuteInteriorLight.color.setHex(0xffd54f);
+        }
+
+        // Add prominent illuminated holographic chevron banner at the opening
+        if (this.chuteArchGroup) {
+            const flareCanvas = document.createElement('canvas');
+            flareCanvas.width = 512;
+            flareCanvas.height = 128;
+            const fctx = flareCanvas.getContext('2d');
+            fctx.fillStyle = '#ff9800';
+            fctx.fillRect(0, 0, 512, 128);
+            fctx.fillStyle = '#000';
+            fctx.font = 'bold 32px monospace';
+            fctx.textAlign = 'center';
+            fctx.fillText('◄◄ BYPASS OPEN // DRAINAGE CHUTE ◄◄', 256, 75);
+
+            const flareTex = new THREE.CanvasTexture(flareCanvas);
+            const flareBanner = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.6, 0.65),
+                new THREE.MeshBasicMaterial({ map: flareTex, transparent: true, opacity: 0.95 })
+            );
+            flareBanner.position.set(0, 0.95, 0.35);
+            this.chuteArchGroup.add(flareBanner);
+        }
+
+        // Shower of falling rock chips breaking from the left wall
+        const chipGeo = new THREE.DodecahedronGeometry(0.18, 0);
+        const chipMat = new THREE.MeshStandardMaterial({ map: this.rockTexture, color: 0x444444 });
+        for (let i = 0; i < 14; i++) {
+            const chip = new THREE.Mesh(chipGeo, chipMat);
+            const cx = this.getPathX(-131) - 1.2 - Math.random() * 1.5;
+            const cy = this.getPathY(-131) + 2.2 + Math.random() * 0.8;
+            const cz = -131 + (Math.random() - 0.5) * 2.5;
+            chip.position.set(cx, cy, cz);
+            this.scene.add(chip);
+
+            let vy = -(0.5 + Math.random() * 2.0);
+            const interval = setInterval(() => {
+                chip.position.y += vy * 0.03;
+                chip.rotation.x += 0.12;
+                chip.rotation.z += 0.15;
+                if (chip.position.y <= this.getPathY(cz) + 0.1) {
+                    clearInterval(interval);
+                }
+            }, 30);
+        }
+    }
+
+    // Spawn falling boulders crashing down during the final climax earthquake
+    spawnClimaxFallingBoulders(playerPos) {
+        if (!playerPos) return;
+        const boulderCount = 10;
+        const bMat = new THREE.MeshStandardMaterial({ map: this.rockTexture, roughness: 0.9, color: 0x3a3630 });
+
+        for (let i = 0; i < boulderCount; i++) {
+            const size = 0.5 + Math.random() * 0.6;
+            const bGeo = new THREE.DodecahedronGeometry(size, 0);
+            const bMesh = new THREE.Mesh(bGeo, bMat);
+
+            const ox = (Math.random() - 0.5) * 2.2;
+            const oz = (Math.random() - 0.5) * 3.5;
+            const startY = playerPos.y + 4.5 + i * 0.4;
+
+            bMesh.position.set(playerPos.x + ox, startY, playerPos.z + oz);
+            bMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            this.scene.add(bMesh);
+
+            let vy = 0;
+            const fallTimer = setInterval(() => {
+                vy -= 0.65;
+                bMesh.position.y += vy * 0.03;
+                bMesh.rotation.x += 0.1;
+                bMesh.rotation.y += 0.15;
+
+                const ground = this.getPathY(bMesh.position.z);
+                if (bMesh.position.y <= ground + size * 0.7) {
+                    clearInterval(fallTimer);
+                    bMesh.position.y = ground + size * 0.5;
+                }
+            }, 25);
+        }
+    }
+
+    // Vertical Rescue Climbing Rope at Cliff Ledge (z = -195)
     buildRescueRope() {
-        const ropeZ = -180;
+        const ropeZ = -195;
         const ropeX = this.getPathX(ropeZ);
-        const lowerY = this.getPathY(ropeZ);
-        const upperY = lowerY + 7.5; // 7.5 meters climb to upper ledge!
+        const lowerY = 3.6; // Dry gravel bank after swimming
+        const upperY = 10.5; // Upper canyon ledge!
+        const climbH = upperY - lowerY; // 6.9 meters vertical
 
         const ropeGroup = new THREE.Group();
 
@@ -2453,13 +2935,13 @@ class MineWorld {
             roughness: 0.9,
             metalness: 0.1
         });
-        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 7.8, 8), ropeMat);
-        rope.position.set(0, 3.9, 0);
+        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, climbH + 0.5, 8), ropeMat);
+        rope.position.set(0, climbH / 2, 0);
         ropeGroup.add(rope);
 
-        // Rope climbing knots / grip rungs every 0.8m
+        // Rope climbing knots / grip rungs every 0.75m
         const knotMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-        for (let y = 0.5; y < 7.5; y += 0.75) {
+        for (let y = 0.5; y < climbH; y += 0.75) {
             const knot = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 6, 12), knotMat);
             knot.rotation.x = Math.PI / 2;
             knot.position.set(0, y, 0);
@@ -2469,12 +2951,12 @@ class MineWorld {
         // Heavy steel anchor bolt & carabiner in ceiling
         const anchorMat = new THREE.MeshStandardMaterial({ color: 0xffd54f, metalness: 0.8 });
         const anchor = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.05, 8, 16), anchorMat);
-        anchor.position.set(0, 7.8, 0);
+        anchor.position.set(0, climbH + 0.1, 0);
         ropeGroup.add(anchor);
 
         // Emergency beacon pulsing at the top of the rope
-        const ropeBeacon = new THREE.PointLight(0xffb300, 1.2, 10, 2);
-        ropeBeacon.position.set(0, 7.6, 0.5);
+        const ropeBeacon = new THREE.PointLight(0xffb300, 1.4, 12, 2);
+        ropeBeacon.position.set(0, climbH - 0.2, 0.5);
         ropeGroup.add(ropeBeacon);
 
         // Warning sign at base of rope
@@ -2500,7 +2982,7 @@ class MineWorld {
             new THREE.PlaneGeometry(1.4, 0.7),
             new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(ropeSignCanvas) })
         );
-        signMesh.position.set(1.4, 2.0, 0);
+        signMesh.position.set(1.1, 1.2, 0);
         signMesh.rotation.y = -Math.PI / 4;
         ropeGroup.add(signMesh);
 
@@ -2587,9 +3069,9 @@ class MineWorld {
 
     buildTimberArch(x0, y0, z0, x1, y1, z1, woodMat) {
         const arch = new THREE.Group();
-        const beamW = 5.2;
-        const beamH = 3.3;
-        const th = 0.32;
+        const beamW = 3.6;
+        const beamH = 2.65;
+        const th = 0.28;
 
         const lp = new THREE.Mesh(new THREE.BoxGeometry(th, beamH, th), woodMat);
         lp.position.set(-beamW / 2, beamH / 2, 0);
@@ -2599,17 +3081,17 @@ class MineWorld {
         rp.position.set(beamW / 2, beamH / 2, 0);
         arch.add(rp);
 
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(beamW + 0.4, th, th), woodMat);
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(beamW + 0.3, th, th), woodMat);
         cap.position.set(0, beamH, 0);
         arch.add(cap);
 
-        const lb = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.9, 0.2), woodMat);
-        lb.position.set(-beamW / 2 + 0.35, beamH - 0.35, 0);
+        const lb = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.75, 0.18), woodMat);
+        lb.position.set(-beamW / 2 + 0.28, beamH - 0.28, 0);
         lb.rotation.z = Math.PI / 4;
         arch.add(lb);
 
-        const rb = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.9, 0.2), woodMat);
-        rb.position.set(beamW / 2 - 0.35, beamH - 0.35, 0);
+        const rb = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.75, 0.18), woodMat);
+        rb.position.set(beamW / 2 - 0.28, beamH - 0.28, 0);
         rb.rotation.z = -Math.PI / 4;
         arch.add(rb);
 
@@ -2624,46 +3106,68 @@ class MineWorld {
         const positions = new Float32Array(dustCount * 3);
 
         for (let i = 0; i < dustCount * 3; i += 3) {
-            positions[i] = (Math.random() - 0.5) * 8;
-            positions[i + 1] = Math.random() * 3.6;
-            positions[i + 2] = (Math.random() - 0.5) * 60;
+            positions[i] = (Math.random() - 0.5) * 5.5;
+            positions[i + 1] = 0.4 + Math.random() * 2.6;
+            // Spread dust along Z, keeping at least 1.5m away from player eye
+            const rz = (Math.random() - 0.5) * 50;
+            positions[i + 2] = Math.abs(rz) < 1.5 ? (rz < 0 ? -2.0 : 2.0) : rz;
         }
 
         dustGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
+        // Circular soft radial gradient texture to completely eliminate square point glitches!
+        const pCanvas = document.createElement('canvas');
+        pCanvas.width = 64;
+        pCanvas.height = 64;
+        const pctx = pCanvas.getContext('2d');
+        const grad = pctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, 'rgba(255, 225, 140, 1.0)');
+        grad.addColorStop(0.35, 'rgba(212, 175, 55, 0.55)');
+        grad.addColorStop(0.7, 'rgba(160, 125, 35, 0.18)');
+        grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+        pctx.fillStyle = grad;
+        pctx.fillRect(0, 0, 64, 64);
+        const dustTexture = new THREE.CanvasTexture(pCanvas);
+
         const dustMat = new THREE.PointsMaterial({
-            color: 0xd4af37,
-            size: 0.065,
+            map: dustTexture,
+            color: 0xffd54f,
+            size: 0.048,
             transparent: true,
-            opacity: 0.45,
-            blending: THREE.AdditiveBlending
+            opacity: 0.38,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
 
         this.dustParticles = new THREE.Points(dustGeo, dustMat);
         this.scene.add(this.dustParticles);
 
-        // Industrial utility lamps & Red Emergency Alarm Klaxons throughout the shaft
+        // Industrial utility lamps & Red Emergency Alarm Klaxons throughout the shaft (Extended to -345m)
         const lampConfigs = [
             { z: -2, type: 'amber' },       // Starting cavern entrance
             { z: -6, type: 'amber' },       // Starting drift illumination
-            { z: -12, type: 'amber' },
-            { z: -25, type: 'red_alarm' },
-            { z: -42, type: 'amber' },
-            { z: -60, type: 'red_alarm' },
-            { z: -78, type: 'amber' },
-            { z: -96, type: 'red_alarm' },
-            { z: -114, type: 'amber' },
+            { z: -14, type: 'amber' },
+            { z: -28, type: 'red_alarm' },
+            { z: -44, type: 'amber' },
+            { z: -62, type: 'red_alarm' },
+            { z: -80, type: 'amber' },
+            { z: -98, type: 'red_alarm' },
+            { z: -116, type: 'amber' },
             { z: -130, type: 'amber' },
             { z: -134, type: 'red_alarm' }, // Right at the monolithic bedrock wall
             { z: -138, type: 'amber' },     // Detour entrance chute
             { z: -152, type: 'red_alarm' }, // Lower drainage rift
-            { z: -165, type: 'amber' },
-            { z: -176, type: 'red_alarm' }, // Rescue rope zone
-            { z: -192, type: 'amber' },
-            { z: -208, type: 'red_alarm' },
-            { z: -224, type: 'amber' },
-            { z: -242, type: 'red_alarm' },
-            { z: -258, type: 'amber' }
+            { z: -168, type: 'amber' },     // Flooded sump basin
+            { z: -184, type: 'amber' },     // Gravel shoreline
+            { z: -195, type: 'red_alarm' }, // Rescue rope zone
+            { z: -208, type: 'amber' },     // Emergency gear locker
+            { z: -226, type: 'amber' },     // Crawlspace entrance
+            { z: -246, type: 'red_alarm' }, // Crawlspace constriction
+            { z: -266, type: 'amber' },     // Crawlspace exit
+            { z: -285, type: 'red_alarm' }, // Granite surface barrier
+            { z: -306, type: 'amber' },     // Hypoxia ascent
+            { z: -326, type: 'amber' },     // Final stretch
+            { z: -338, type: 'red_alarm' }  // Surface Hatch B-4
         ];
 
         const darkMetalMat = new THREE.MeshStandardMaterial({
@@ -2676,8 +3180,8 @@ class MineWorld {
             const lz = cfg.z;
             const isLeft = (idx % 2 === 0);
             const sideSign = isLeft ? 1 : -1;
-            const lx = this.getPathX(lz) + (sideSign * 1.95);
-            const ly = this.getPathY(lz) + 2.3;
+            const lx = this.getPathX(lz) + (sideSign * 1.55);
+            const ly = this.getPathY(lz) + 2.05;
 
             const lampGroup = new THREE.Group();
             const isRed = (cfg.type === 'red_alarm');
@@ -2782,9 +3286,9 @@ class MineWorld {
     }
 
     buildGearCrate() {
-        // Abandoned Foreman's Emergency Rescue Gear Locker at Upper Canyon Ledge (z = -190)
-        const z = -190;
-        const x = this.getPathX(z) + 1.6;
+        // Abandoned Foreman's Emergency Rescue Gear Locker at Upper Canyon Ledge (z = -208)
+        const z = -208;
+        const x = this.getPathX(z) + 1.2;
         const y = this.getPathY(z);
 
         const group = new THREE.Group();
@@ -2867,7 +3371,7 @@ class MineWorld {
         const rubbleConfigs = [
             { id: 1, z: -52, health: 2, name: "Schist Rock Cave-in (Upper Shaft)", isBedrock: false },
             { id: 2, z: -134, health: 999, name: "Monolithic Ironstone Intrusion (Shaft 07 Main Drift)", isBedrock: true },
-            { id: 3, z: -215, health: 2, name: "Granite Surface Gate Barrier", requiresCrowbar: true }
+            { id: 3, z: -285, health: 2, name: "Granite Surface Gate Barrier", requiresCrowbar: true }
         ];
 
         rubbleConfigs.forEach(cfg => {
@@ -2971,8 +3475,8 @@ class MineWorld {
             });
         });
 
-        // 3. FINAL ESCAPE HATCH (Surface Access Shaft B-4)
-        this.buildEscapeHatch(-262);
+        // 3. FINAL ESCAPE HATCH (Surface Access Shaft B-4 at z = -340)
+        this.buildEscapeHatch(-340);
     }
 
     buildEscapeHatch(z) {
@@ -2982,10 +3486,10 @@ class MineWorld {
 
         const wallMat = new THREE.MeshStandardMaterial({
             map: this.rockTexture,
-            roughness: 0.8,
-            color: 0x444444
+            roughness: 0.85,
+            color: 0x333333
         });
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 6, 1.2), wallMat);
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(16, 12, 1.8), wallMat);
         wall.position.set(0, 2.5, 0);
         hGroup.add(wall);
 
@@ -3006,9 +3510,32 @@ class MineWorld {
         wheel.position.set(0, 2.0, 0.85);
         hGroup.add(wheel);
 
-        const strobeLight = new THREE.PointLight(0x00e676, 1.8, 16, 2);
+        const strobeLight = new THREE.PointLight(0x00e676, 2.2, 18, 2);
         strobeLight.position.set(0, 3.8, 1.0);
         hGroup.add(strobeLight);
+
+        // Radiant morning sun rays streaming through surface hatch seams
+        const sunRayGeo = new THREE.CylinderGeometry(0.4, 2.4, 12, 16, 1, true);
+        sunRayGeo.rotateX(Math.PI / 2);
+        const sunRayMat = new THREE.MeshBasicMaterial({
+            color: 0xffe57f,
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const sunRay = new THREE.Mesh(sunRayGeo, sunRayMat);
+        sunRay.position.set(0, 2.0, 5.5);
+        hGroup.add(sunRay);
+
+        const sunLight = new THREE.SpotLight(0xfff8e1, 7.5, 35, Math.PI / 3.5, 0.5, 1.2);
+        sunLight.position.set(0, 2.2, 0.8);
+        const sunTarget = new THREE.Object3D();
+        sunTarget.position.set(0, 1.6, 15.0);
+        hGroup.add(sunLight);
+        hGroup.add(sunTarget);
+        sunLight.target = sunTarget;
 
         const ladderMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.7 });
         for (let y = 0.5; y < 4.4; y += 0.45) {
@@ -3062,20 +3589,44 @@ class MineWorld {
         arm.rotation.z = -Math.PI / 3;
         hGroup.add(arm);
 
-        const lilyLight = new THREE.PointLight(0xffea00, 0, 12, 2);
+        const lilyLight = new THREE.PointLight(0xffea00, 0, 16, 2);
         lilyLight.position.set(0, 1.2, 0);
         hGroup.add(lilyLight);
+
+        // Shimmering golden dust sparkles halo around Lily
+        const sparkGeo = new THREE.BufferGeometry();
+        const sparkPos = [];
+        for (let i = 0; i < 48; i++) {
+            sparkPos.push(
+                (Math.random() - 0.5) * 1.5,
+                Math.random() * 1.9,
+                (Math.random() - 0.5) * 1.5
+            );
+        }
+        sparkGeo.setAttribute('position', new THREE.Float32BufferAttribute(sparkPos, 3));
+        const sparkMat = new THREE.PointsMaterial({
+            color: 0xfff59d,
+            size: 0.14,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const sparks = new THREE.Points(sparkGeo, sparkMat);
+        hGroup.add(sparks);
 
         hGroup.position.set(0, 0, -40);
         this.scene.add(hGroup);
 
         this.hallucination = {
             group: hGroup,
-            materials: [goldMat],
+            materials: [goldMat, sparkMat],
             light: lilyLight,
             arm: arm,
             active: false,
             dissolving: false,
+            boostGiven: false,
+            cooldown: 0,
             time: 0
         };
     }
@@ -3084,10 +3635,16 @@ class MineWorld {
         if (this.dustParticles && playerPos) {
             this.dustParticles.position.set(playerPos.x, playerPos.y, playerPos.z);
             const posAttr = this.dustParticles.geometry.attributes.position;
-            for (let i = 1; i < posAttr.count * 3; i += 3) {
-                posAttr.array[i] += Math.sin(Date.now() * 0.0015 + i) * 0.003;
-                if (posAttr.array[i] > 3.6) posAttr.array[i] = 0.1;
-                if (posAttr.array[i] < 0) posAttr.array[i] = 3.5;
+            for (let i = 0; i < posAttr.count * 3; i += 3) {
+                posAttr.array[i + 1] += Math.sin(Date.now() * 0.0015 + i) * 0.003;
+                if (posAttr.array[i + 1] > 3.2) posAttr.array[i + 1] = 0.2;
+                if (posAttr.array[i + 1] < 0) posAttr.array[i + 1] = 3.0;
+
+                // Keep particles at least 1.5m away from player eye in Z so they NEVER expand into huge squares
+                const pz = posAttr.array[i + 2];
+                if (Math.abs(pz) < 1.5) {
+                    posAttr.array[i + 2] = (Math.random() < 0.5 ? -1 : 1) * (2.2 + Math.random() * 24.0);
+                }
             }
             posAttr.needsUpdate = true;
         }
@@ -3145,6 +3702,9 @@ class MineWorld {
         if (!this.hallucination || !playerPos) return;
         const h = this.hallucination;
         h.time += delta;
+        if (h.cooldown > 0) {
+            h.cooldown -= delta;
+        }
 
         if (h.arm) {
             h.arm.rotation.z = -Math.PI / 3 + Math.sin(h.time * 6) * 0.35;
@@ -3152,51 +3712,167 @@ class MineWorld {
 
         // Dedicated Waterlogged Golden Lily Scene in flooded cavern (Senter Mati Total)
         if (h.isWaterScene && h.active) {
-            h.materials[0].opacity = 0.95;
+            h.materials.forEach(m => m.opacity = 0.95);
             // Ethereal golden beacon illumination in pitch darkness
-            h.light.intensity = 3.2 + Math.sin(h.time * 3.2) * 0.45;
+            h.light.intensity = 3.4 + Math.sin(h.time * 3.2) * 0.45;
             const baseY = this.getPathY(h.group.position.z);
             h.group.position.y = baseY + 1.1 + Math.sin(h.time * 2.2) * 0.12;
 
-            const dist = playerPos.distanceTo(h.group.position);
-            if (dist < 4.8 || playerPos.z <= -176) {
-                this.dissolveHallucination();
+            const horizDist = Math.hypot(playerPos.x - h.group.position.x, playerPos.z - h.group.position.z);
+            // Touching / colliding with golden Lily in water boosts oxygen!
+            if (horizDist < 3.5) {
+                this.dissolveHallucination(true);
+            } else if (horizDist < 5.0 || playerPos.z <= -176) {
+                this.dissolveHallucination(false);
             }
             return;
         }
 
-        if (oxygen < 35 && !h.active && !h.dissolving) {
-            const spawnZ = playerPos.z - 22;
+        // Spawn golden Lily apparition:
+        // 1. In final desperate stretch (z between -275 and -324) to guide player and provide vital breath!
+        // 2. Or whenever oxygen drops critically low (< 38%)
+        const inFinalStretch = (playerPos.z <= -275 && playerPos.z >= -324);
+        const shouldSpawnLily = (inFinalStretch || oxygen < 38);
+
+        if (shouldSpawnLily && !h.active && !h.dissolving && (h.cooldown || 0) <= 0) {
+            const spawnOffset = inFinalStretch ? 16 : 22;
+            const spawnZ = Math.max(-324, playerPos.z - spawnOffset);
             const spawnX = this.getPathX(spawnZ);
-            const spawnY = this.getPathY(spawnZ);
+            const spawnY = this.getPathY(spawnZ) + 0.2;
             h.group.position.set(spawnX, spawnY, spawnZ);
             h.active = true;
+            h.boostGiven = false;
+            h.materials.forEach(m => m.opacity = 0.1);
+            h.light.intensity = 0.2;
+            h.time = 0;
             if (window.soundEngine) window.soundEngine.playLilyWhisper();
         }
 
         if (h.active) {
-            h.materials[0].opacity = Math.min(0.85, h.materials[0].opacity + delta * 1.2);
-            h.light.intensity = Math.min(1.8, h.light.intensity + delta * 2.5);
+            h.materials.forEach(m => {
+                m.opacity = Math.min(0.92, m.opacity + delta * 1.5);
+            });
+            h.light.intensity = Math.min(2.8, h.light.intensity + delta * 3.0);
 
             const baseY = this.getPathY(h.group.position.z);
-            h.group.position.y = baseY + Math.sin(h.time * 2.8) * 0.15;
+            h.group.position.y = baseY + 0.2 + Math.sin(h.time * 2.8) * 0.15;
 
-            const dist = playerPos.distanceTo(h.group.position);
-            if (dist < 7.5 || oxygen >= 35) {
-                this.dissolveHallucination();
+            const horizDist = Math.hypot(playerPos.x - h.group.position.x, playerPos.z - h.group.position.z);
+            // Player collides with / reaches Lily's golden apparition ("menabrak tanda mas anaknya")
+            if (horizDist < 3.5) {
+                this.dissolveHallucination(true);
+            } else if (playerPos.z < h.group.position.z - 4.0) {
+                this.dissolveHallucination(false);
             }
         } else if (h.dissolving) {
-            h.materials[0].opacity = Math.max(0, h.materials[0].opacity - delta * 2.5);
+            h.materials.forEach(m => {
+                m.opacity = Math.max(0, m.opacity - delta * 2.5);
+            });
             h.light.intensity = Math.max(0, h.light.intensity - delta * 4.0);
             h.group.position.y += delta * 1.2;
             if (h.materials[0].opacity <= 0) {
                 h.dissolving = false;
                 h.active = false;
                 h.isWaterScene = false;
+                h.cooldown = 16.0; // Cooldown before next apparition
             }
         } else {
-            h.materials[0].opacity = 0;
+            h.materials.forEach(m => m.opacity = 0);
             h.light.intensity = 0;
+        }
+    }
+
+    // Visually illuminate and expose the left-wall fissure when pickaxe shatters
+    revealChuteOpening() {
+        if (this.chuteRevealed) return;
+        this.chuteRevealed = true;
+
+        if (this.chuteBeacon) {
+            this.chuteBeacon.intensity = 4.8;
+            this.chuteBeacon.color.setHex(0xffca28);
+        }
+        if (this.chuteInteriorLight) {
+            this.chuteInteriorLight.intensity = 5.5;
+            this.chuteInteriorLight.color.setHex(0xffd54f);
+        }
+
+        // Add prominent illuminated holographic chevron banner at the opening
+        if (this.chuteArchGroup) {
+            const flareCanvas = document.createElement('canvas');
+            flareCanvas.width = 512;
+            flareCanvas.height = 128;
+            const fctx = flareCanvas.getContext('2d');
+            fctx.fillStyle = '#ff9800';
+            fctx.fillRect(0, 0, 512, 128);
+            fctx.fillStyle = '#000';
+            fctx.font = 'bold 32px monospace';
+            fctx.textAlign = 'center';
+            fctx.fillText('◄◄ BYPASS OPEN // DRAINAGE CHUTE ◄◄', 256, 75);
+
+            const flareTex = new THREE.CanvasTexture(flareCanvas);
+            const flareBanner = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.6, 0.65),
+                new THREE.MeshBasicMaterial({ map: flareTex, transparent: true, opacity: 0.95 })
+            );
+            flareBanner.position.set(0, 0.95, 0.35);
+            this.chuteArchGroup.add(flareBanner);
+        }
+
+        // Shower of falling rock chips breaking from the left wall
+        const chipGeo = new THREE.DodecahedronGeometry(0.18, 0);
+        const chipMat = new THREE.MeshStandardMaterial({ map: this.rockTexture, color: 0x444444 });
+        for (let i = 0; i < 14; i++) {
+            const chip = new THREE.Mesh(chipGeo, chipMat);
+            const cx = this.getPathX(-131) - 1.2 - Math.random() * 1.5;
+            const cy = this.getPathY(-131) + 2.2 + Math.random() * 0.8;
+            const cz = -131 + (Math.random() - 0.5) * 2.5;
+            chip.position.set(cx, cy, cz);
+            this.scene.add(chip);
+
+            let vy = -(0.5 + Math.random() * 2.0);
+            const interval = setInterval(() => {
+                chip.position.y += vy * 0.03;
+                chip.rotation.x += 0.12;
+                chip.rotation.z += 0.15;
+                if (chip.position.y <= this.getPathY(cz) + 0.1) {
+                    clearInterval(interval);
+                }
+            }, 30);
+        }
+    }
+
+    // Spawn falling boulders crashing down during the final climax earthquake
+    spawnClimaxFallingBoulders(playerPos) {
+        if (!playerPos) return;
+        const boulderCount = 10;
+        const bMat = new THREE.MeshStandardMaterial({ map: this.rockTexture, roughness: 0.9, color: 0x3a3630 });
+
+        for (let i = 0; i < boulderCount; i++) {
+            const size = 0.5 + Math.random() * 0.6;
+            const bGeo = new THREE.DodecahedronGeometry(size, 0);
+            const bMesh = new THREE.Mesh(bGeo, bMat);
+
+            const ox = (Math.random() - 0.5) * 2.2;
+            const oz = (Math.random() - 0.5) * 3.5;
+            const startY = playerPos.y + 4.5 + i * 0.4;
+
+            bMesh.position.set(playerPos.x + ox, startY, playerPos.z + oz);
+            bMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            this.scene.add(bMesh);
+
+            let vy = 0;
+            const fallTimer = setInterval(() => {
+                vy -= 0.65;
+                bMesh.position.y += vy * 0.03;
+                bMesh.rotation.x += 0.1;
+                bMesh.rotation.y += 0.15;
+
+                const ground = this.getPathY(bMesh.position.z);
+                if (bMesh.position.y <= ground + size * 0.7) {
+                    clearInterval(fallTimer);
+                    bMesh.position.y = ground + size * 0.5;
+                }
+            }, 25);
         }
     }
 
@@ -3211,8 +3887,9 @@ class MineWorld {
         h.active = true;
         h.isWaterScene = true;
         h.dissolving = false;
+        h.boostGiven = false;
         h.time = 0;
-        h.materials[0].opacity = 0.95;
+        h.materials.forEach(m => m.opacity = 0.95);
 
         // The ONLY light in the flooded cavern: Lily's warm golden aura
         h.light.color.setHex(0xffea00);
@@ -3222,11 +3899,27 @@ class MineWorld {
         if (window.soundEngine) window.soundEngine.playLilyWhisper();
     }
 
-    dissolveHallucination() {
+    dissolveHallucination(boostOxygen = false) {
         if (!this.hallucination) return;
-        this.hallucination.active = false;
-        this.hallucination.dissolving = true;
-        if (window.soundEngine) window.soundEngine.playLilyWhisper();
+        const h = this.hallucination;
+        if (!h.active) return;
+        h.active = false;
+        h.dissolving = true;
+
+        if (boostOxygen && !h.boostGiven && window.gamePlayer) {
+            h.boostGiven = true;
+            const boostAmount = 14.0; // Sedikit menaikkan oksigen tapi bermakna (+14%)
+            window.gamePlayer.oxygen = Math.min(100.0, window.gamePlayer.oxygen + boostAmount);
+            if (window.soundEngine) {
+                window.soundEngine.playRaggedBreath();
+                window.soundEngine.playLilyWhisper();
+            }
+            if (window.eventManager) {
+                window.eventManager.showNotification("✨ LILY'S GOLDEN PRESENCE RESTORES VITAL OXYGEN (+14% O₂)");
+            }
+        } else {
+            if (window.soundEngine) window.soundEngine.playLilyWhisper();
+        }
     }
 
     removeRubble(rubbleId) {
@@ -3254,6 +3947,100 @@ class MineWorld {
         }
         if (this.gearCrate.beacon) {
             this.gearCrate.beacon.intensity = 0.2;
+        }
+    }
+
+    // Visually illuminate and expose the left-wall fissure when pickaxe shatters
+    revealChuteOpening() {
+        if (this.chuteRevealed) return;
+        this.chuteRevealed = true;
+
+        if (this.chuteBeacon) {
+            this.chuteBeacon.intensity = 4.8;
+            this.chuteBeacon.color.setHex(0xffca28);
+        }
+        if (this.chuteInteriorLight) {
+            this.chuteInteriorLight.intensity = 5.5;
+            this.chuteInteriorLight.color.setHex(0xffd54f);
+        }
+
+        // Add prominent illuminated holographic chevron banner at the opening
+        if (this.chuteArchGroup) {
+            const flareCanvas = document.createElement('canvas');
+            flareCanvas.width = 512;
+            flareCanvas.height = 128;
+            const fctx = flareCanvas.getContext('2d');
+            fctx.fillStyle = '#ff9800';
+            fctx.fillRect(0, 0, 512, 128);
+            fctx.fillStyle = '#000';
+            fctx.font = 'bold 32px monospace';
+            fctx.textAlign = 'center';
+            fctx.fillText('◄◄ BYPASS OPEN // DRAINAGE CHUTE ◄◄', 256, 75);
+
+            const flareTex = new THREE.CanvasTexture(flareCanvas);
+            const flareBanner = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.6, 0.65),
+                new THREE.MeshBasicMaterial({ map: flareTex, transparent: true, opacity: 0.95 })
+            );
+            flareBanner.position.set(0, 0.95, 0.35);
+            this.chuteArchGroup.add(flareBanner);
+        }
+
+        // Shower of falling rock chips breaking from the left wall
+        const chipGeo = new THREE.DodecahedronGeometry(0.18, 0);
+        const chipMat = new THREE.MeshStandardMaterial({ map: this.rockTexture, color: 0x444444 });
+        for (let i = 0; i < 14; i++) {
+            const chip = new THREE.Mesh(chipGeo, chipMat);
+            const cx = this.getPathX(-131) - 1.2 - Math.random() * 1.5;
+            const cy = this.getPathY(-131) + 2.2 + Math.random() * 0.8;
+            const cz = -131 + (Math.random() - 0.5) * 2.5;
+            chip.position.set(cx, cy, cz);
+            this.scene.add(chip);
+
+            let vy = -(0.5 + Math.random() * 2.0);
+            const interval = setInterval(() => {
+                chip.position.y += vy * 0.03;
+                chip.rotation.x += 0.12;
+                chip.rotation.z += 0.15;
+                if (chip.position.y <= this.getPathY(cz) + 0.1) {
+                    clearInterval(interval);
+                }
+            }, 30);
+        }
+    }
+
+    // Spawn falling boulders crashing down during the final climax earthquake
+    spawnClimaxFallingBoulders(playerPos) {
+        if (!playerPos) return;
+        const boulderCount = 10;
+        const bMat = new THREE.MeshStandardMaterial({ map: this.rockTexture, roughness: 0.9, color: 0x3a3630 });
+
+        for (let i = 0; i < boulderCount; i++) {
+            const size = 0.5 + Math.random() * 0.6;
+            const bGeo = new THREE.DodecahedronGeometry(size, 0);
+            const bMesh = new THREE.Mesh(bGeo, bMat);
+
+            const ox = (Math.random() - 0.5) * 2.2;
+            const oz = (Math.random() - 0.5) * 3.5;
+            const startY = playerPos.y + 4.5 + i * 0.4;
+
+            bMesh.position.set(playerPos.x + ox, startY, playerPos.z + oz);
+            bMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            this.scene.add(bMesh);
+
+            let vy = 0;
+            const fallTimer = setInterval(() => {
+                vy -= 0.65;
+                bMesh.position.y += vy * 0.03;
+                bMesh.rotation.x += 0.1;
+                bMesh.rotation.y += 0.15;
+
+                const ground = this.getPathY(bMesh.position.z);
+                if (bMesh.position.y <= ground + size * 0.7) {
+                    clearInterval(fallTimer);
+                    bMesh.position.y = ground + size * 0.5;
+                }
+            }, 25);
         }
     }
 }
@@ -3338,9 +4125,25 @@ class PlayerController {
         this.stumblePitchOffset = 0;
         this.stumbleRecoveryTimer = 0;
 
+        // Climax Knockout & Wounded Staggering Finale
+        this.isClimaxKnockedOut = false;
+        this.isStaggering = false;
+        this.staggerBob = 0;
+
+        // Initial Game Intro: Waking Up Prone from Collapse Knockout
+        this.isWakingUp = false;
+        this.wakeUpTimer = 0;
+        this.wakeUpDuration = 3.6;
+
+        // Crouch / Crawl Mechanics
+        this.isCrouching = false;
+        this.standEyeHeight = 1.65;
+        this.crouchEyeHeight = 0.82;
+        this.currentEyeHeight = 1.65;
+
         // Head Bobbing & Elevation
         this.bobCycle = 0;
-        this.cameraBaseY = 1.7;
+        this.cameraBaseY = 1.65;
 
         this.keys = {
             forward: false,
@@ -3381,14 +4184,19 @@ class PlayerController {
         // Click anywhere on viewport to lock mouse in PLAYING mode
         window.addEventListener('click', (e) => {
             if (!this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
-                if (e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal')) {
+                if (e.target.closest('#title-screen') || e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal')) {
                     return;
                 }
                 if (this.domElement && document.pointerLockElement !== this.domElement) {
                     try {
-                        this.domElement.requestPointerLock();
+                        const lockPromise = this.domElement.requestPointerLock();
+                        if (lockPromise && lockPromise.catch) {
+                            lockPromise.catch(err => {
+                                console.warn("Pointer lock request warning:", err);
+                            });
+                        }
                     } catch (err) {
-                        console.warn("Pointer lock request warning:", err);
+                        console.warn("Pointer lock request error:", err);
                     }
                 }
             }
@@ -3444,6 +4252,11 @@ class PlayerController {
                 case 'ShiftRight':
                     this.keys.shift = true;
                     break;
+                case 'KeyC':
+                case 'ControlLeft':
+                case 'ControlRight':
+                    this.toggleCrouch();
+                    break;
                 case 'KeyF':
                     this.handleHelmetTap();
                     break;
@@ -3497,6 +4310,19 @@ class PlayerController {
                     break;
             }
         });
+    }
+
+    toggleCrouch() {
+        if (this.isDead || this.isTumbling || this.isClimbingRope || this.isSwimming) return;
+        this.isCrouching = !this.isCrouching;
+        const stanceVal = document.getElementById('hud-stance-value');
+        if (stanceVal) {
+            stanceVal.textContent = this.isCrouching ? "CROUCHING [C]" : "STANDING [C]";
+            stanceVal.style.color = this.isCrouching ? "#ffb300" : "#69f0ae";
+        }
+        if (window.soundEngine) {
+            window.soundEngine.playFootstep(false);
+        }
     }
 
     handleHelmetTap() {
@@ -3692,9 +4518,10 @@ class PlayerController {
             this.pitch = 0;
             this.roll = 0;
 
-            // Step onto the solid rock of upper ledge
-            this.position.z = -183;
+            // Step onto the solid rock of upper ledge (z = -197, y = 10.5)
+            this.position.z = -197;
             this.position.y = this.ropeEndY;
+            this.cameraBaseY = this.ropeEndY + this.currentEyeHeight;
 
             if (window.soundEngine) window.soundEngine.playFootstep(true);
             if (window.eventManager) window.eventManager.showNotification("SUCCESS! REACHED UPPER CANYON LEDGE!");
@@ -3716,8 +4543,78 @@ class PlayerController {
         this.oxygen = Math.max(0, this.oxygen - 3.0);
     }
 
+    startWakeUpIntro() {
+        this.isWakingUp = true;
+        this.wakeUpTimer = 0;
+        const overlay = document.getElementById('intro-wake-overlay');
+        if (overlay) {
+            overlay.classList.remove('awake');
+            overlay.classList.add('active');
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                overlay.classList.add('awake');
+            }, 600);
+        }
+        if (window.soundEngine) {
+            window.soundEngine.playRaggedBreath();
+        }
+    }
+
     update(delta, world) {
         if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
+
+        // Initial Game Intro: Waking up from unconsciousness on the shaft floor
+        if (this.isWakingUp) {
+            this.velocity.set(0, 0, 0);
+            this.wakeUpTimer += delta;
+            const t = Math.min(1.0, this.wakeUpTimer / this.wakeUpDuration);
+            const ease = t * t * (3 - 2 * t);
+
+            const currentGroundY = world.getPathY(this.position.z);
+            const proneY = currentGroundY + 0.32;
+            const standY = currentGroundY + this.standEyeHeight;
+            const currentY = THREE.MathUtils.lerp(proneY, standY, ease);
+
+            const currentRoll = (1.0 - ease) * 0.52; // Tilted head against rock floor
+            const currentPitch = (1.0 - ease) * -0.32; // Groggily looking down at rubble
+
+            this.camera.position.set(this.position.x, currentY, this.position.z);
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.rotation.y = this.yaw;
+            this.camera.rotation.x = this.pitch + currentPitch;
+            this.camera.rotation.z = currentRoll;
+
+            if (this.flashlight && this.flashlightTarget) {
+                this.flashlight.position.copy(this.camera.position);
+                const lookDir = new THREE.Vector3();
+                this.camera.getWorldDirection(lookDir);
+                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(5));
+                if (this.ambientBulb) this.ambientBulb.position.copy(this.camera.position);
+            }
+
+            if (t >= 1.0) {
+                this.isWakingUp = false;
+            }
+            return;
+        }
+
+        // Climax Catastrophic Cave-in Knockout (Prone on ground under rubble)
+        if (this.isClimaxKnockedOut) {
+            this.velocity.set(0, 0, 0);
+            const currentGroundY = world.getPathY(this.position.z);
+            this.camera.position.set(this.position.x, currentGroundY + 0.38, this.position.z);
+            this.camera.rotation.set(0, 0, 0);
+            this.camera.rotation.y = this.yaw;
+            this.camera.rotation.x = -0.42;
+            this.camera.rotation.z = 0.35;
+            if (this.flashlight && this.flashlightTarget) {
+                this.flashlight.position.copy(this.camera.position);
+                const lookDir = new THREE.Vector3();
+                this.camera.getWorldDirection(lookDir);
+                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(4));
+            }
+            return;
+        }
 
         // 1. Handle Active Tumble Event
         if (this.isTumbling) {
@@ -3761,10 +4658,13 @@ class PlayerController {
             this.pitch = (1.0 - t) * Math.sin(t * Math.PI * 3) * 0.14;
         }
 
-        // 3. Underwater Swimming Stage Detection (z between -161 and -178)
-        const inSwimmingZone = (this.position.z <= -161 && this.position.z >= -178);
+        // 3. Underwater Swimming Stage Detection (z between -160 and -182)
+        const inSwimmingZone = (this.position.z <= -160 && this.position.z >= -182);
         if (inSwimmingZone !== this.isSwimming) {
             this.isSwimming = inSwimmingZone;
+            if (this.isSwimming) {
+                this.isCrouching = false;
+            }
             if (window.soundEngine) window.soundEngine.setUnderwater(this.isSwimming);
 
             const underOverlay = document.getElementById('underwater-overlay');
@@ -3783,7 +4683,7 @@ class PlayerController {
 
         // 4. Oxygen Depletion & High-Tension Climax Calculation
         let drainRate = 0.48;
-        this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right);
+        this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right) && !this.isCrouching;
 
         if (this.isSprinting) {
             drainRate *= 3.0;
@@ -3793,13 +4693,17 @@ class PlayerController {
             drainRate += 0.45; // Struggling in deep water
         }
 
+        if (this.isCrouching) {
+            drainRate += 0.15; // Physical strain of crawling on hands and knees
+        }
+
         if (this.isRespiratorLeaking) {
             drainRate += 0.85;
         }
 
-        // Final desperate stretch (z < -215): tightly calibrated so player arrives with ~5% - 10% O2!
-        if (this.position.z < -215) {
-            drainRate += 1.15;
+        // Final desperate stretch (z < -280): intense climax tension balanced with golden Lily oxygen restores
+        if (this.position.z < -280) {
+            drainRate += 0.45;
         }
 
         this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
@@ -3808,11 +4712,11 @@ class PlayerController {
             return;
         }
 
-        // 5. Trigger Rockslide Tumble Check (in side bypass chute at z <= -131.2)
-        if (!this.hasTumbled && this.position.z <= -131.2 && this.position.z >= -144) {
+        // 5. Trigger Rockslide Tumble Check (ONLY AFTER pickaxe is broken and player walks left into the side drainage chute)
+        if (this.hasBrokenPickaxe && !this.hasTumbled && this.position.z <= -130.2 && this.position.z >= -142) {
             const currentPathX = world.getPathX(this.position.z);
-            // If player steps left towards/into the chute opening (x < currentPathX - 0.6) OR reaches z <= -133.0 OR pickaxe is broken and stepping towards chute:
-            if (this.position.x < currentPathX - 0.6 || this.position.z <= -133.0 || (this.hasBrokenPickaxe && this.position.z <= -132.0)) {
+            // Player must intentionally turn and walk into the side drainage chute opening on the left (x < currentPathX - 1.15)
+            if (this.position.x < currentPathX - 1.15) {
                 this.triggerRockslideTumble();
                 return;
             }
@@ -3841,8 +4745,12 @@ class PlayerController {
 
         // 7. Movement Calculation
         let speed = this.moveSpeed;
-        if (this.isSwimming) {
+        if (this.isStaggering) {
+            speed *= 0.52; // Injured staggering limp
+        } else if (this.isSwimming) {
             speed *= 0.75; // Slower viscous swimming speed
+        } else if (this.isCrouching) {
+            speed *= 0.52; // Authentic crawling / crouching speed
         } else if (this.isSprinting) {
             speed *= this.sprintMultiplier;
         }
@@ -3867,21 +4775,38 @@ class PlayerController {
             const nextPathX = world.getPathX(nextZ);
             let nextX = this.position.x + this.velocity.x;
 
-            // Near the drainage chute entrance (z between -128 and -136), allow player to walk left into the chute!
-            const isNearChute = (this.position.z <= -128 && this.position.z >= -136);
-            const minX = isNearChute ? (nextPathX - 4.2) : (nextPathX - 1.85);
-            const maxX = nextPathX + 1.85;
+            // Near the drainage chute entrance (z between -128 and -138)
+            // ONLY open the left chute path if the player has already attempted to breach and shattered the pickaxe!
+            const isNearChute = this.hasBrokenPickaxe && (this.position.z <= -128 && this.position.z >= -138);
+            const minX = isNearChute ? (nextPathX - 3.8) : (nextPathX - 1.25);
+            const maxX = nextPathX + 1.25;
             nextX = Math.max(minX, Math.min(maxX, nextX));
 
             let blockedByRubble = false;
+
+            // Low ceiling collapse crawlspace (z between -228 and -265)
+            // MUST CROUCH [C] TO PASS!
+            if (!this.isCrouching && !this.isSwimming && nextZ <= -228 && nextZ >= -265) {
+                blockedByRubble = true;
+                if (window.eventManager) {
+                    window.eventManager.showNotification("⚠ LOW CEILING COLLAPSE! PRESS [C] TO CROUCH AND CRAWL!");
+                }
+            }
 
             // Rubble Obstacle Collision
             world.rubbleObjects.forEach(r => {
                 if (!r.cleared) {
                     if (r.isBedrock) {
-                        // Monolithic Bedrock blocks the straight path forward, but leaves the left side open to the chute!
-                        if (nextX > r.x - 0.7 && nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
-                            blockedByRubble = true;
+                        if (!this.hasBrokenPickaxe) {
+                            // Monolithic Bedrock completely blocks the entire shaft until the pickaxe is struck & broken on it!
+                            if (nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
+                                blockedByRubble = true;
+                            }
+                        } else {
+                            // Once pickaxe is broken, bedrock blocks the straight forward path, forcing player to turn left into the chute!
+                            if (nextX > r.x - 0.7 && nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
+                                blockedByRubble = true;
+                            }
                         }
                     } else {
                         const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
@@ -3892,13 +4817,13 @@ class PlayerController {
                 }
             });
 
-            // Prevent walking past cliff edge at z = -180 if rope has NOT been climbed!
-            if (!this.hasClimbedRope && nextZ <= -180.2) {
+            // Prevent walking past cliff edge at z = -195 if rope has NOT been climbed!
+            if (!this.hasClimbedRope && nextZ <= -195.2) {
                 blockedByRubble = true;
             }
 
-            // Surface Hatch bunker collision at z = -262
-            if (nextZ <= -261.5) {
+            // Surface Hatch bunker collision at z = -340
+            if (nextZ <= -339.5) {
                 blockedByRubble = true;
             }
 
@@ -3926,20 +4851,32 @@ class PlayerController {
             this.velocity.set(0, 0, 0);
         }
 
+        // Smooth crouch eye-height transition
+        const targetEyeHeight = this.isCrouching ? this.crouchEyeHeight : this.standEyeHeight;
+        this.currentEyeHeight = THREE.MathUtils.lerp(this.currentEyeHeight, targetEyeHeight, delta * 12);
+
         // Height Calculation: swimming floats slightly higher
         const currentGroundY = world.getPathY(this.position.z);
         const swimBob = this.isSwimming ? Math.sin(this.bobCycle) * 0.15 : 0;
-        const walkBob = !this.isSwimming && this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : 0.04) : 0;
+        const walkBob = !this.isSwimming && this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : (this.isCrouching ? 0.025 : 0.04)) : 0;
 
-        this.cameraBaseY = currentGroundY + (this.isSwimming ? 1.15 + swimBob : 1.7 + walkBob);
+        this.cameraBaseY = currentGroundY + (this.isSwimming ? 1.15 + swimBob : this.currentEyeHeight + walkBob);
         this.position.y = currentGroundY;
 
         // Apply Camera Transformations
+        let staggerPitch = 0;
+        let staggerRoll = 0;
+        if (this.isStaggering) {
+            this.staggerBob += delta * (this.isMoving ? 4.8 : 1.6);
+            staggerPitch = Math.sin(this.staggerBob) * 0.045 - 0.04;
+            staggerRoll = Math.cos(this.staggerBob * 0.5) * 0.065;
+        }
+
         this.camera.position.set(this.position.x, this.cameraBaseY, this.position.z);
         this.camera.rotation.set(0, 0, 0);
         this.camera.rotation.y = this.yaw;
-        this.camera.rotation.x = this.pitch + this.stumblePitchOffset;
-        this.camera.rotation.z = 0;
+        this.camera.rotation.x = this.pitch + this.stumblePitchOffset + staggerPitch;
+        this.camera.rotation.z = staggerRoll;
 
         // Update Flashlight position & direction
         if (this.flashlight && this.flashlightTarget) {
@@ -4051,8 +4988,9 @@ class EventManager {
         let foundRubble = null;
         world.rubbleObjects.forEach(r => {
             if (!r.cleared) {
+                const distThresh = r.isBedrock ? 4.2 : 3.2;
                 const dist = Math.hypot(pPos.x - r.x, pPos.z - r.z);
-                if (dist < 3.2) {
+                if (dist < distThresh) {
                     foundRubble = r;
                 }
             }
@@ -4101,14 +5039,14 @@ class EventManager {
             }
         }
 
-        // 3. Check Rescue Rope at Cliff Ledge (z = -180)
+        // 3. Check Rescue Rope at Cliff Ledge (z = -195)
         let foundRope = null;
         if (!foundRubble && !foundCorpse && world.rescueRope && !player.hasClimbedRope) {
             const distToRope = Math.hypot(pPos.x - world.rescueRope.x, pPos.z - world.rescueRope.z);
-            if (distToRope < 3.2) {
+            if (distToRope < 4.8) {
                 foundRope = world.rescueRope;
                 this.isNearRope = true;
-                promptText = `[E] CLIMB RESCUE ROPE TO UPPER CANYON (7.5m VERTICAL ASCENT)`;
+                promptText = `[E] CLIMB RESCUE ROPE TO UPPER CANYON (6.9m VERTICAL ASCENT)`;
             } else {
                 this.isNearRope = false;
             }
@@ -4116,10 +5054,10 @@ class EventManager {
             this.isNearRope = false;
         }
 
-        // 4. Check Emergency Gear Crate (z = -190)
+        // 4. Check Emergency Gear Crate (z = -208)
         if (!foundRubble && !foundCorpse && !this.isNearRope && world.gearCrate && !world.gearCrate.retrieved) {
             const distToCrate = Math.hypot(pPos.x - world.gearCrate.x, pPos.z - world.gearCrate.z);
-            if (distToCrate < 2.8) {
+            if (distToCrate < 3.8) {
                 this.isNearCrate = true;
                 promptText = "[E] RETRIEVE HEAVY CARBIDE CROWBAR FROM RESCUE GEAR CRATE";
             } else {
@@ -4129,12 +5067,12 @@ class EventManager {
             this.isNearCrate = false;
         }
 
-        // 5. Check Escape Hatch at Surface Shaft Head
+        // 5. Check Escape Hatch at Surface Shaft Head (z = -340)
         if (!foundRubble && !foundCorpse && !this.isNearRope && !this.isNearCrate && world.escapeHatch) {
             const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
-            if (distToHatch < 3.6) {
+            if (distToHatch < 4.8) {
                 this.isNearHatch = true;
-                promptText = `[E] TURN EMERGENCY SURFACE VALVE WHEEL (780m ➔ 0m)`;
+                promptText = `[E] HEAVE OPEN EMERGENCY SURFACE HATCH (ESCAPE TO SUNLIGHT)`;
             } else {
                 this.isNearHatch = false;
             }
@@ -4160,8 +5098,11 @@ class EventManager {
                 // Break pickaxe sequence!
                 if (window.soundEngine) window.soundEngine.playPickaxeBreak();
                 if (window.gamePlayer) window.gamePlayer.hasBrokenPickaxe = true;
+                if (window.gameWorld && typeof window.gameWorld.revealChuteOpening === 'function') {
+                    window.gameWorld.revealChuteOpening();
+                }
                 this.triggerScreenShake(1.2, 14);
-                this.showNotification("CLANG! PICKAXE SHATTERED ON MONOLITHIC BEDROCK! Main drift blocked — take the EMERGENCY DRAINAGE CHUTE on the left ◄");
+                this.showNotification("CLANG! PICKAXE SHATTERED ON MONOLITHIC BEDROCK! A gaping fissure cracked open on the left wall ◄");
                 const objEl = document.querySelector('.hud-top-value[style*="69f0ae"]');
                 if (objEl) objEl.textContent = "CHUTE ◄";
                 if (window.gameState) {
@@ -4180,10 +5121,16 @@ class EventManager {
             window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
         } else if (this.isNearCrate && window.gameWorld && window.gameWorld.gearCrate) {
             window.gameWorld.retrieveCrowbar();
-            if (window.gamePlayer) window.gamePlayer.hasCrowbar = true;
+            if (window.gamePlayer) {
+                window.gamePlayer.hasCrowbar = true;
+                window.gamePlayer.oxygen = Math.min(100.0, window.gamePlayer.oxygen + 15.0);
+            }
             this.isNearCrate = false;
-            if (window.soundEngine) window.soundEngine.playFootstep(true);
-            this.showNotification("EQUIPPED: HEAVY CARBIDE CROWBAR! Can now pry loose massive rock barricades!");
+            if (window.soundEngine) {
+                window.soundEngine.playFootstep(true);
+                window.soundEngine.playOxygenRefill();
+            }
+            this.showNotification("EQUIPPED: HEAVY CARBIDE CROWBAR (+15% O₂)! Found emergency respirator cartridge in gear crate!");
             if (window.gameState) window.gameState.triggerMonologue("crowbarRetrieved");
         } else if (this.isNearHatch) {
             this.triggerEscapeSequence();
@@ -4198,13 +5145,15 @@ class EventManager {
         this.currentRubble = rubble;
         this.needlePos = 8;
         this.needleDir = 1;
-        this.needleSpeed = 62; // Smooth, easy-to-read rhythm oscillation
-        this.hitsNeeded = rubble.maxHealth;
-        this.hitsDone = rubble.maxHealth - rubble.currentHealth;
+        this.needleSpeed = 50; // Smooth, relaxed rhythm oscillation
 
-        // Wide, generous 30% sweet spot area
-        this.sweetSpotMin = 32 + Math.random() * 12;
-        this.sweetSpotMax = this.sweetSpotMin + 30; // 30% width!
+        // Runtuhan akhir pas mau keluar (Granite Barrier at z = -285) harus 3x hijau!
+        this.hitsNeeded = (rubble.requiresCrowbar || rubble.id === 3) ? 3 : 1;
+        this.hitsDone = 0;
+
+        // Wide, generous 38% sweet spot area
+        this.sweetSpotMin = 26 + Math.random() * 16;
+        this.sweetSpotMax = this.sweetSpotMin + 38; // Generous green zone
         this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
 
         const overlay = document.getElementById('rhythm-minigame-overlay');
@@ -4214,7 +5163,9 @@ class EventManager {
 
         if (titleEl) titleEl.textContent = rubble.name;
         if (feedbackEl) {
-            feedbackEl.textContent = "PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!";
+            feedbackEl.textContent = this.hitsNeeded > 1 
+                ? "STRIKE INSIDE GREEN ZONE 3 TIMES TO PRY OPEN THE MASSIVE GRANITE BARRICADE!" 
+                : "PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!";
             feedbackEl.className = "";
         }
         this.updateRhythmHealthDisplay();
@@ -4235,9 +5186,12 @@ class EventManager {
     updateRhythmHealthDisplay() {
         const healthEl = document.getElementById('rhythm-health-text');
         if (!healthEl || !this.currentRubble) return;
-        const remaining = Math.max(0, this.currentRubble.currentHealth);
-        const pct = Math.round((this.hitsDone / this.hitsNeeded) * 100);
-        healthEl.textContent = `Structural Integrity: ${remaining} Strikes Remaining (${pct}% Fractured)`;
+        if (this.hitsNeeded > 1) {
+            const left = this.hitsNeeded - this.hitsDone;
+            healthEl.textContent = `Massive granite barricade: Land 3 green strikes with crowbar (${left} strike${left > 1 ? 's' : ''} remaining)!`;
+        } else {
+            healthEl.textContent = "Fracture line exposed: Any strike in the green zone shatters the rock!";
+        }
     }
 
     updateRhythm(delta) {
@@ -4263,69 +5217,83 @@ class EventManager {
 
         const feedbackEl = document.getElementById('rhythm-feedback');
 
-        // Generous Hit Detection: ANYWHERE inside the entire green zone (+4% edge padding) counts as a successful hit!
-        const tolerance = 4.0;
+        // Generous Hit Detection: ANYWHERE inside the green zone (+5% edge padding)
+        const tolerance = 5.0;
         const isInsideGreenZone = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
 
         if (isInsideGreenZone) {
-            // Check if bullseye critical hit (near the center line)
-            const isCritical = Math.abs(this.needlePos - this.sweetSpotCenter) < 5.5;
-
             if (window.soundEngine) window.soundEngine.playPickaxeHit(true);
 
-            const damage = isCritical ? 2 : 1;
-            this.currentRubble.currentHealth -= damage;
-            this.hitsDone = Math.min(this.hitsNeeded, this.hitsDone + damage);
+            this.hitsDone++;
+            this.triggerScreenShake(0.45, 12);
+            const remaining = this.hitsNeeded - this.hitsDone;
 
-            this.triggerScreenShake(0.35, 9);
-            this.updateRhythmHealthDisplay();
-
-            if (this.currentRubble.currentHealth <= 0) {
-                // Completely breached!
-                if (feedbackEl) {
-                    feedbackEl.textContent = isCritical ? "CRITICAL BULLSEYE! BOULDERS SHATTERED TO DUST!" : "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
-                    feedbackEl.className = "hit-perfect";
-                }
-
-                // Instantly remove collision & clear obstacle
-                if (window.gameWorld) window.gameWorld.removeRubble(this.currentRubble.id);
-
-                setTimeout(() => {
-                    this.showNotification("Cave-in rubble destroyed! Keep moving forward!");
-                    this.closeRhythmMinigame();
-                }, 400);
-            } else {
-                if (feedbackEl) {
-                    feedbackEl.textContent = isCritical ? "CRITICAL HIT! DEEP STRUCTURAL FRACTURE! (1 MORE TO SHATTER)" : `SUCCESSFUL STRIKE! FRACTURE EXPANDING! (${this.currentRubble.currentHealth} MORE TO SHATTER)`;
-                    feedbackEl.className = "hit-perfect";
-                }
-
-                // Move sweet spot slightly for next strike
-                this.sweetSpotMin = 24 + Math.random() * 32;
-                this.sweetSpotMax = this.sweetSpotMin + 30;
+            if (remaining > 0) {
+                // Relocate sweet spot for next strike
+                this.sweetSpotMin = 20 + Math.random() * 26;
+                this.sweetSpotMax = this.sweetSpotMin + 36;
                 this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
-
                 const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
                 if (sweetSpotEl) {
                     sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
                     sweetSpotEl.style.width = `${this.sweetSpotMax - this.sweetSpotMin}%`;
                 }
+
+                if (feedbackEl) {
+                    feedbackEl.textContent = `SOLID GREEN HIT! (${this.hitsDone}/3) — ${remaining} MORE GREEN STRIKE${remaining > 1 ? 'S' : ''}!`;
+                    feedbackEl.className = "hit-perfect";
+                }
+                this.updateRhythmHealthDisplay();
+            } else {
+                // All required green hits completed!
+                this.currentRubble.currentHealth = 0;
+                this.updateRhythmHealthDisplay();
+
+                const isGranite = (this.hitsNeeded > 1 || this.currentRubble.requiresCrowbar);
+                if (feedbackEl) {
+                    feedbackEl.textContent = isGranite 
+                        ? "FINAL GREEN STRIKE! GRANITE SHATTERED! PATH CLEARED!" 
+                        : "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
+                    feedbackEl.className = "hit-perfect";
+                }
+
+                try {
+                    if (window.soundEngine && typeof window.soundEngine.playRockCollapse === 'function') {
+                        window.soundEngine.playRockCollapse();
+                    } else if (window.soundEngine && typeof window.soundEngine.playHeavyCaveInThud === 'function') {
+                        window.soundEngine.playHeavyCaveInThud();
+                    }
+                } catch (e) {
+                    console.warn("Audio error ignored:", e);
+                }
+
+                const rubbleId = this.currentRubble.id;
+                if (window.gameWorld && typeof window.gameWorld.removeRubble === 'function') {
+                    window.gameWorld.removeRubble(rubbleId);
+                }
+
+                setTimeout(() => {
+                    this.showNotification(isGranite 
+                        ? "Final granite barricade pried open! The surface hatch is ahead!" 
+                        : "Cave-in rubble destroyed! Keep moving forward!");
+                    this.closeRhythmMinigame();
+                }, 350);
             }
         } else {
             // Missed outside green zone
             if (window.soundEngine) {
                 window.soundEngine.playPickaxeHit(false);
-                window.soundEngine.playEarthquake(1.8);
+                window.soundEngine.playEarthquake(1.2);
             }
             if (feedbackEl) {
-                feedbackEl.textContent = "MISSED GREEN ZONE! GLANCING BLOW CAUSED VIBRATION!";
+                feedbackEl.textContent = "MISSED! PRESS [SPACE] OR CLICK WHEN NEEDLE IS IN GREEN AREA!";
                 feedbackEl.className = "hit-miss";
             }
 
             if (window.gamePlayer) {
-                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 3.5);
+                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 2.0);
             }
-            this.triggerScreenShake(0.6, 11);
+            this.triggerScreenShake(0.35, 7);
         }
     }
 
@@ -4337,7 +5305,10 @@ class EventManager {
         if (window.gameState && window.gameState.state === 'MINIGAME') {
             window.gameState.state = 'PLAYING';
             if (window.gamePlayer && window.gamePlayer.domElement) {
-                window.gamePlayer.domElement.requestPointerLock();
+                try {
+                    const p = window.gamePlayer.domElement.requestPointerLock();
+                    if (p && p.catch) p.catch(() => {});
+                } catch (e) {}
             }
         }
     }
@@ -4504,11 +5475,16 @@ class GameState {
             tumbleLanded: false,
             swimming: false,
             ropeClimbed: false,
+            crawlspace: false,
             midway: false,
             hypoxia: false,
             finalDesperation: false,
-            nearExit: false
+            nearExit: false,
+            climaxCaveIn: false,
+            climaxWaking: false,
+            climaxStagger: false
         };
+        this.climaxTriggered = false;
         this.monologueTimer = null;
 
         this.lastTime = performance.now();
@@ -4634,6 +5610,13 @@ class GameState {
     }
 
     startGame() {
+        if (this.state === 'PLAYING') return;
+
+        if (!this.isInitialized) {
+            this.isInitialized = true;
+            this.init();
+        }
+
         try {
             if (window.soundEngine) {
                 window.soundEngine.init();
@@ -4646,25 +5629,34 @@ class GameState {
         const titleScreen = document.getElementById('title-screen');
         const hud = document.getElementById('hud-layer');
 
-        if (titleScreen) titleScreen.style.display = 'none';
+        if (titleScreen) {
+            titleScreen.style.display = 'none';
+            titleScreen.style.pointerEvents = 'none';
+        }
         if (hud) hud.style.display = 'block';
 
         this.state = 'PLAYING';
         this.oxygen = 100.0;
         if (this.player) {
             this.player.oxygen = 100.0;
+            this.player.startWakeUpIntro();
             try {
                 if (this.player.domElement) {
-                    this.player.domElement.requestPointerLock();
+                    const lockPromise = this.player.domElement.requestPointerLock();
+                    if (lockPromise && lockPromise.catch) {
+                        lockPromise.catch(e => {
+                            console.warn("Pointer lock deferred (click viewport to lock):", e);
+                        });
+                    }
                 }
             } catch (e) {
-                console.warn("Pointer lock deferred:", e);
+                console.warn("Pointer lock error deferred:", e);
             }
         }
 
         setTimeout(() => {
             this.triggerMonologue("start");
-        }, 1200);
+        }, 3600);
     }
 
     // Monologue Subtitle System
@@ -4706,7 +5698,11 @@ class GameState {
                 this.monologueFlags.ropeClimbed = true;
                 break;
             case "crowbarRetrieved":
-                line = "A heavy carbide crowbar! Sturdy and solid steel. If there are more cave-ins near the surface, I can pry them open now.";
+                line = "A heavy carbide crowbar and a spare O2 canister! Restored some air (+15%). If there are more cave-ins near the surface, I can pry them open now.";
+                break;
+            case "crawlspace":
+                line = "The cavern ceiling collapsed into a razor-thin fissure... I have to drop down on my knees [C] and crawl under the crushing weight.";
+                this.monologueFlags.crawlspace = true;
                 break;
             case "midway":
                 line = "Air is burning my throat... lungs feel like lead. Keep moving, Henry. Think of Lily's smile. Just keep moving.";
@@ -4726,6 +5722,18 @@ class GameState {
             case "nearExit":
                 line = "I see the green beacon of Emergency Hatch B-4! I can smell fresh mountain air! Almost there!";
                 this.monologueFlags.nearExit = true;
+                break;
+            case "climaxCaveIn":
+                line = "WHAT'S HAPPENING?! THE WHOLE CEILING IS CRACKING OPEN—! LOOK OUT!!";
+                this.monologueFlags.climaxCaveIn = true;
+                break;
+            case "climaxWaking":
+                line = "Ugh... god... my ribs... pinned under the stones... I can't move... vision fading...";
+                this.monologueFlags.climaxWaking = true;
+                break;
+            case "climaxStagger":
+                line = "Lily... I promised on the porch. I will NOT die in this darkness! GET UP, HENRY! PUSH FOR THE LIGHT!";
+                this.monologueFlags.climaxStagger = true;
                 break;
         }
 
@@ -4776,26 +5784,30 @@ class GameState {
 
             // Real-time Climbing Depth Tracking & Compass Distance
             if (this.player) {
-                const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 262));
+                const progressRatio = Math.max(0, Math.min(1.0, (-this.player.position.z) / 340));
                 this.depth = Math.round(780 * (1.0 - progressRatio));
 
-                const distToHatch = Math.max(0, Math.round(Math.abs(-262 - this.player.position.z)));
+                const distToHatch = Math.max(0, Math.round(Math.abs(-340 - this.player.position.z)));
                 const distEl = document.getElementById('hud-distance-to-hatch');
                 if (distEl) distEl.textContent = `${distToHatch}m`;
 
                 // Check Story Monologue Triggers along the winding path
                 const pz = this.player.position.z;
-                if (!this.monologueFlags.firstCorpse && pz < -18 && pz > -32) {
+                if (!this.climaxTriggered && pz <= -326) {
+                    this.triggerClimaxCaveIn();
+                } else if (!this.monologueFlags.firstCorpse && pz < -18 && pz > -32) {
                     this.triggerMonologue("firstCorpse");
                 } else if (!this.monologueFlags.firstRubble && pz < -42 && pz > -55) {
                     this.triggerMonologue("firstRubble");
                 } else if (!this.monologueFlags.midway && pz < -115 && pz > -130) {
                     this.triggerMonologue("midway");
+                } else if (!this.monologueFlags.crawlspace && pz < -226 && pz > -235) {
+                    this.triggerMonologue("crawlspace");
                 } else if (!this.monologueFlags.hypoxia && this.oxygen < 35 && this.oxygen > 15) {
                     this.triggerMonologue("hypoxia");
-                } else if (!this.monologueFlags.finalDesperation && this.oxygen < 12 && pz < -210) {
+                } else if (!this.monologueFlags.finalDesperation && this.oxygen < 12 && pz < -280) {
                     this.triggerMonologue("finalDesperation");
-                } else if (!this.monologueFlags.nearExit && pz < -245) {
+                } else if (!this.monologueFlags.nearExit && pz < -320) {
                     this.triggerMonologue("nearExit");
                 }
             }
@@ -4806,6 +5818,124 @@ class GameState {
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
         }
+    }
+
+    triggerClimaxCaveIn() {
+        this.climaxTriggered = true;
+        this.triggerMonologue("climaxCaveIn");
+
+        // 1. Catastrophic violent earthquake tremor & boulder shower from ceiling
+        if (this.events) {
+            this.events.triggerScreenShake(2.5, 26);
+        }
+        if (window.soundEngine) {
+            window.soundEngine.playHeavyCaveInThud();
+        }
+        if (this.world && this.player) {
+            this.world.spawnClimaxFallingBoulders(this.player.position);
+        }
+
+        // 2. Heavy crushing stone impact & blackout (knocked unconscious)
+        setTimeout(() => {
+            const blackout = document.getElementById('climax-blackout-overlay');
+            if (blackout) blackout.classList.add('blackout');
+
+            if (this.player) {
+                this.player.isClimaxKnockedOut = true;
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.playHeavyCaveInThud();
+                window.soundEngine.setTinnitus(0.35);
+            }
+        }, 1500);
+
+        // 3. Narrative Unconscious Memory Sequence: Promises to Lily in the darkness
+        const memContainer = document.getElementById('climax-memory-container');
+        const memSpeaker = document.getElementById('climax-memory-speaker');
+        const memText = document.getElementById('climax-memory-text');
+
+        // First Memory (2.8s)
+        setTimeout(() => {
+            if (memContainer) memContainer.classList.add('active');
+            if (memSpeaker) memSpeaker.textContent = "LILY'S VOICE (IN YOUR FADING MIND)";
+            if (memText) memText.textContent = "“Daddy, don't forget your promise... You said we'd plant sunflowers by the porch this spring.”";
+            if (window.soundEngine) window.soundEngine.playMemoryMusicBox();
+        }, 2800);
+
+        // Second Memory (7.8s)
+        setTimeout(() => {
+            if (memSpeaker) memSpeaker.textContent = "MEMORY OF HOME";
+            if (memText) memText.textContent = "Her tiny laugh... Her warm little hand clutching my miner coat before the morning horn blew.";
+            if (window.soundEngine) window.soundEngine.playHeavyHeartbeat();
+        }, 7800);
+
+        // Third Memory (12.8s)
+        setTimeout(() => {
+            if (memSpeaker) memSpeaker.textContent = "YOUR SACRED VOW";
+            if (memText) memText.textContent = "“I promised on Sarah's grave... I will NOT leave my little girl alone in this world. I'M COMING HOME!”";
+            if (window.soundEngine) window.soundEngine.playHeavyHeartbeat();
+        }, 12800);
+
+        // 4. Regaining consciousness (siuman): blurred vision & ragged gasping breath (17.5s)
+        setTimeout(() => {
+            if (memContainer) memContainer.classList.remove('active');
+
+            const blackout = document.getElementById('climax-blackout-overlay');
+            if (blackout) {
+                blackout.classList.remove('blackout');
+                blackout.classList.add('blurred-vision');
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.playRaggedBreath();
+                window.soundEngine.setTinnitus(0.12);
+            }
+
+            this.triggerMonologue("climaxWaking");
+        }, 17500);
+
+        // 5. Focus on Lily's Photo clutched tightly in hand (Restoring Resolve & Adrenaline) (20.5s)
+        setTimeout(() => {
+            const polaroidContainer = document.getElementById('climax-polaroid-container');
+            if (polaroidContainer) polaroidContainer.classList.add('active');
+
+            if (window.polaroidSystem && typeof window.polaroidSystem.setupCanvases === 'function') {
+                window.polaroidSystem.setupCanvases();
+            }
+
+            // Adrenaline surge: restore emergency breath & willpower
+            if (this.player) {
+                this.player.oxygen = Math.max(this.player.oxygen, 28);
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.playHeavyHeartbeat();
+            }
+        }, 20500);
+
+        // 6. Stand up and stagger toward the dawn light at the exit hatch (25.0s)
+        setTimeout(() => {
+            const polaroidContainer = document.getElementById('climax-polaroid-container');
+            if (polaroidContainer) polaroidContainer.classList.remove('active');
+
+            const blackout = document.getElementById('climax-blackout-overlay');
+            if (blackout) blackout.classList.remove('blurred-vision');
+
+            if (this.player) {
+                this.player.isClimaxKnockedOut = false;
+                this.player.isStaggering = true;
+            }
+
+            if (window.soundEngine) {
+                window.soundEngine.setTinnitus(0.0001);
+            }
+
+            this.triggerMonologue("climaxStagger");
+            if (this.events) {
+                this.events.showNotification("SURGE OF ADRENALINE! STAGGER TOWARDS THE DAWN LIGHT AT EMERGENCY HATCH B-4!");
+            }
+        }, 25000);
     }
 
     updateHUDAndHypoxia() {
@@ -4893,6 +6023,7 @@ class GameState {
         document.exitPointerLock();
 
         if (window.soundEngine) {
+            window.soundEngine.stopCaveAmbience();
             window.soundEngine.playVictorySequence();
         }
 

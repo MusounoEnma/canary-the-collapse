@@ -34,6 +34,30 @@
     <!-- Tremor & Electrical Strobe Glitch Overlay -->
     <div id="glitch-overlay"></div>
 
+    <!-- Intro Waking Prone & Eye Blink Overlay -->
+    <div id="intro-wake-overlay"></div>
+
+    <!-- Final Climax Catastrophic Cave-in Blackout Overlay -->
+    <div id="climax-blackout-overlay"></div>
+
+    <!-- Final Climax Unconscious Memory & Promise Sequence -->
+    <div id="climax-memory-container">
+        <div class="climax-memory-ambient-glow"></div>
+        <div class="climax-memory-speaker" id="climax-memory-speaker">LILY'S VOICE (IN YOUR MIND)</div>
+        <div class="climax-memory-text" id="climax-memory-text"></div>
+    </div>
+
+    <!-- Final Climax Waking Polaroid Cinematic View -->
+    <div id="climax-polaroid-container">
+        <div class="climax-polaroid-glow"></div>
+        <div class="climax-polaroid-frame">
+            <canvas id="climax-polaroid-canvas" width="280" height="320"></canvas>
+            <div class="climax-polaroid-caption">LILY: "Please come home safe, Daddy!"</div>
+        </div>
+        <div class="climax-resolve-title">"I WILL NOT DIE IN THIS DARKNESS!"</div>
+        <div class="climax-resolve-subtitle">Looking at Lily's smile rekindles your will to survive!</div>
+    </div>
+
     <!-- Heads-Up Display (HUD) Layer -->
     <div id="hud-layer">
         <!-- Center Aim Crosshair -->
@@ -50,6 +74,10 @@
                 <span id="hud-depth-value" class="hud-top-value">780m</span>
             </div>
             <div class="hud-top-item">
+                <span class="hud-top-label">STANCE</span>
+                <span id="hud-stance-value" class="hud-top-value" style="color: #69f0ae;">STANDING [C]</span>
+            </div>
+            <div class="hud-top-item">
                 <span class="hud-top-label">OBJECTIVE</span>
                 <span class="hud-top-value" style="color: #69f0ae;">HATCH B-4</span>
             </div>
@@ -60,7 +88,7 @@
             <span class="compass-edge">◄ DEPTH 780m</span>
             <div class="compass-center">
                 <span class="compass-arrow">▲</span>
-                <span id="compass-target-text">CLIMBING TOWARDS SURFACE HATCH (<span id="hud-distance-to-hatch">262m</span>)</span>
+                <span id="compass-target-text">CLIMBING TOWARDS SURFACE HATCH (<span id="hud-distance-to-hatch">340m</span>)</span>
             </div>
             <span class="compass-edge">SURFACE 0m ►</span>
         </div>
@@ -110,17 +138,15 @@
     <div id="rhythm-minigame-overlay">
         <div class="rhythm-card">
             <h2 id="rhythm-rubble-title" class="rhythm-title">Rubble Cave-in (Shaft 07)</h2>
-            <p class="rhythm-subtitle">Strike anywhere inside the wide green fracture zone to shatter the rock!</p>
+            <p class="rhythm-subtitle">Strike anywhere inside the green fracture zone to shatter the rock!</p>
             
             <div class="rhythm-meter-container">
-                <div id="rhythm-sweet-spot">
-                    <div class="sweet-spot-center-line" title="Bullseye Center Line"></div>
-                </div>
+                <div id="rhythm-sweet-spot"></div>
                 <div id="rhythm-needle"></div>
             </div>
 
-            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK BUTTON BELOW WHEN INSIDE GREEN ZONE!</div>
-            <div id="rhythm-health-text" style="color: #ffb74d; margin-bottom: 16px; font-weight: bold;">Structural Integrity: 2 Strikes Remaining (0% Fractured)</div>
+            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!</div>
+            <div id="rhythm-health-text" style="color: #69f0ae; margin-bottom: 16px; font-weight: bold;">Any hit in the green zone shatters the rock instantly!</div>
 
             <button id="btn-strike-pickaxe" class="btn-strike">⚡ STRIKE WITH PICKAXE [SPACE / CLICK] ⚡</button>
 
@@ -185,6 +211,7 @@
 
             <div class="controls-grid">
                 <div><span class="control-key">W, A, S, D</span> Walk / Crawl</div>
+                <div><span class="control-key">C / CTRL</span> Crouch / Crawl (Low Ceilings)</div>
                 <div><span class="control-key">SHIFT</span> Sprint (O2 Drains 3x Faster!)</div>
                 <div><span class="control-key">MOUSE</span> Look / Aim Helmet Headlamp</div>
                 <div><span class="control-key">E</span> Interact / Loot O2 / Breach Rubble</div>

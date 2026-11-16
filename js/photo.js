@@ -23,12 +23,16 @@ class PolaroidSystem {
     setupCanvases() {
         this.hudCanvas = document.getElementById('polaroid-hud-canvas');
         this.inspectCanvas = document.getElementById('inspect-polaroid-canvas');
+        this.climaxCanvas = document.getElementById('climax-polaroid-canvas');
 
         if (this.hudCanvas) {
             this.drawPolaroidToCanvas(this.hudCanvas, 240, 280);
         }
         if (this.inspectCanvas) {
             this.drawPolaroidToCanvas(this.inspectCanvas, 340, 400);
+        }
+        if (this.climaxCanvas) {
+            this.drawPolaroidToCanvas(this.climaxCanvas, 280, 320);
         }
     }
 
