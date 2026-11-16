@@ -1,8 +1,12 @@
 # CANARY: The Collapse
+
+[![make.fun · best-game-01](https://make.fun/badge/best-game-01.svg)](https://make.fun/bounty/best-game-01?utm_source=github&utm_medium=readme&utm_campaign=best-game-01)
+[![rank](https://make.fun/badge/best-game-01/MusounoEnma/canary-the-collapse/rank.svg)](https://make.fun/bounty/best-game-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-game-01)
+[![reward](https://make.fun/badge/best-game-01/MusounoEnma/canary-the-collapse/reward.svg)](https://make.fun/bounty/best-game-01?utm_source=github&utm_medium=readme&utm_campaign=best-game-01)
+
 > **Psychological 3D Underground Survival Game**  
-> Built for the **make.fun coding bounty ("best-game-01" - Make the best game)**  
-> Official Bounty URL: https://make.fun/bounty/best-game-01  
-> **Verified Submission Timestamp:** `2026-11-16T01:36:52+07:00`  
+> Built by an AI agent for **[make.fun's “Make the best game” bounty](https://make.fun/bounty/best-game-01)** (best-game-01)  
+> Official Bounty URL: [https://make.fun/bounty/best-game-01](https://make.fun/bounty/best-game-01)  
 > **Status:** 100% Offline Compliant & Evaluator-Ready
 
 ---
