@@ -1,0 +1,1095 @@
+/* ==========================================================================
+   CANARY: The Collapse - Visual Stylesheet
+   Industrial Retro-Atmospheric Survival Aesthetic (Standard English)
+   ========================================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #030304;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    color: #e0e0e0;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* ==========================================================================
+   CAMERA & POST PROCESSING OVERLAYS
+   ========================================================================== */
+
+#hypoxia-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    transition: background 0.4s ease;
+}
+
+#underwater-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 12;
+    background: radial-gradient(circle at center, rgba(16, 92, 107, 0.42) 0%, rgba(8, 48, 64, 0.78) 60%, rgba(2, 20, 30, 0.95) 100%);
+    box-shadow: inset 0 0 100px rgba(0, 255, 230, 0.25);
+}
+
+#underwater-overlay.active {
+    display: block;
+}
+
+#water-splash-vignette {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 14;
+    background: radial-gradient(circle at center, transparent 35%, rgba(120, 220, 255, 0.45) 70%, rgba(0, 100, 160, 0.85) 100%);
+}
+
+#water-splash-vignette.active {
+    display: block;
+    animation: waterSplashBurst 0.9s cubic-bezier(0.1, 0.8, 0.3, 1.0) forwards;
+}
+
+@keyframes waterSplashBurst {
+    0% { opacity: 0.9; transform: scale(1.05); filter: blur(0px); }
+    50% { opacity: 0.6; transform: scale(1.0); filter: blur(1px); }
+    100% { opacity: 0; transform: scale(0.96); filter: blur(2px); }
+}
+
+#glitch-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 15;
+    background: rgba(255, 23, 68, 0.14);
+}
+
+#glitch-overlay.active {
+    display: block;
+    animation: tremorGlitchStrobe 0.18s infinite;
+}
+
+@keyframes tremorGlitchStrobe {
+    0% { opacity: 0.28; filter: hue-rotate(0deg) contrast(1.3); }
+    30% { opacity: 0.05; }
+    50% { opacity: 0.38; filter: hue-rotate(15deg) contrast(1.5); }
+    70% { opacity: 0.08; }
+    100% { opacity: 0.22; filter: hue-rotate(-15deg); }
+}
+
+/* ==========================================================================
+   FINAL CLIMAX CAVE-IN & RECOVERY OVERLAYS
+   ========================================================================== */
+#climax-blackout-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 80;
+    opacity: 0;
+    transition: opacity 0.75s ease;
+}
+
+/* Intro Waking Prone & Eye Blink Overlay */
+#intro-wake-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 92;
+    background: #000000;
+    opacity: 0;
+    transition: opacity 1.8s cubic-bezier(0.2, 0.8, 0.2, 1), backdrop-filter 1.8s ease;
+}
+
+#intro-wake-overlay.active {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+}
+
+#intro-wake-overlay.awake {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+}
+
+/* Final Climax Catastrophic Cave-in Blackout Overlay */
+#climax-blackout-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 80;
+    opacity: 0;
+    transition: opacity 0.75s ease;
+}
+
+#climax-blackout-overlay.blackout {
+    opacity: 1;
+    background: #000000;
+}
+
+#climax-blackout-overlay.blurred-vision {
+    opacity: 0.75;
+    background: radial-gradient(circle at center, rgba(10, 8, 5, 0.45) 0%, rgba(25, 10, 5, 0.88) 75%, #050403 100%);
+    backdrop-filter: blur(6px);
+}
+
+/* Final Climax Unconscious Memory & Promise Sequence */
+#climax-memory-container {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 680px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 86;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    text-align: center;
+}
+
+#climax-memory-container.active {
+    display: flex;
+    opacity: 1;
+}
+
+.climax-memory-ambient-glow {
+    position: absolute;
+    width: 380px;
+    height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
+    pointer-events: none;
+    animation: goldenWillSurge 3.0s infinite alternate;
+}
+
+.climax-memory-speaker {
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    color: #ffb300;
+    margin-bottom: 14px;
+    text-shadow: 0 0 12px rgba(255, 179, 0, 0.7);
+}
+
+.climax-memory-text {
+    font-size: 19px;
+    font-style: italic;
+    line-height: 1.6;
+    color: #fff9c4;
+    text-shadow: 0 0 20px rgba(255, 249, 196, 0.6), 0 2px 8px rgba(0,0,0,0.9);
+    min-height: 60px;
+    transition: opacity 0.5s ease;
+}
+
+#climax-polaroid-container {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -46%) scale(0.92);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 85;
+    opacity: 0;
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+#climax-polaroid-container.active {
+    display: flex;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.0);
+}
+
+.climax-polaroid-glow {
+    position: absolute;
+    width: 440px;
+    height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.35) 0%, rgba(255, 160, 0, 0.15) 50%, transparent 75%);
+    animation: goldenWillSurge 2.2s infinite alternate;
+}
+
+@keyframes goldenWillSurge {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    100% { transform: scale(1.15); opacity: 1.0; }
+}
+
+.climax-polaroid-frame {
+    position: relative;
+    background: #fbf9f4;
+    padding: 16px 16px 24px 16px;
+    border-radius: 6px;
+    box-shadow: 0 12px 45px rgba(0,0,0,0.85), 0 0 35px rgba(255, 215, 0, 0.45);
+    text-align: center;
+    transform: rotate(-1.5deg);
+}
+
+.climax-polaroid-caption {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    color: #4e342e;
+    font-size: 13px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.climax-resolve-title {
+    margin-top: 22px;
+    font-family: monospace;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #ffca28;
+    text-shadow: 0 0 16px rgba(255, 202, 40, 0.8);
+    text-align: center;
+}
+
+.climax-resolve-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #e0e0e0;
+    letter-spacing: 1.5px;
+    text-align: center;
+}
+
+#hypoxia-overlay.active {
+    animation: hypoxiaPulse 2.2s infinite ease-in-out;
+}
+
+@keyframes hypoxiaPulse {
+    0% { filter: blur(0px) contrast(1.1); transform: scale(1.0); }
+    50% { filter: blur(2.5px) contrast(1.4); transform: scale(1.02); }
+    100% { filter: blur(0px) contrast(1.1); transform: scale(1.0); }
+}
+
+body.earthquake-shake {
+    animation: earthquakeGfx 0.12s infinite;
+}
+
+@keyframes earthquakeGfx {
+    0% { transform: translate(3px, -2px) rotate(0.15deg); }
+    50% { transform: translate(-3px, 3px) rotate(-0.15deg); }
+    100% { transform: translate(2px, 1px) rotate(0.05deg); }
+}
+
+/* ==========================================================================
+   HEADS-UP DISPLAY (HUD)
+   ========================================================================== */
+
+#hud-layer {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+/* Crosshair dot */
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    background-color: rgba(255, 255, 255, 0.55);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+/* Top Depth & Sector Banner */
+.hud-top-bar {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 30px;
+    background: rgba(12, 14, 18, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 24px;
+    border-radius: 4px;
+    backdrop-filter: blur(6px);
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 1.5px;
+}
+
+.hud-top-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hud-top-label {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.hud-top-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffb300;
+}
+
+/* Mini Directional Compass HUD */
+.hud-compass-bar {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(8, 10, 14, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px 18px;
+    border-radius: 20px;
+    font-family: monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #aaa;
+    backdrop-filter: blur(4px);
+}
+
+.compass-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #69f0ae;
+    font-weight: bold;
+}
+
+.compass-arrow {
+    font-size: 12px;
+    color: #00e676;
+    animation: arrowPulse 1.2s infinite alternate;
+}
+
+@keyframes arrowPulse {
+    0% { transform: translateY(0); opacity: 0.6; }
+    100% { transform: translateY(-2px); opacity: 1; }
+}
+
+.compass-edge {
+    font-size: 10px;
+    color: #666;
+}
+
+/* Cinematic Monologue Subtitle Box */
+#monologue-box {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 680px;
+    background: rgba(10, 12, 16, 0.88);
+    border-left: 3px solid #ffca28;
+    border-right: 3px solid #ffca28;
+    padding: 12px 24px;
+    border-radius: 4px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+#monologue-box.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.monologue-speaker {
+    display: block;
+    font-size: 10px;
+    font-weight: bold;
+    color: #ffca28;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+    font-family: monospace;
+}
+
+#monologue-text {
+    font-size: 14px;
+    color: #eceff1;
+    font-style: italic;
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+}
+
+/* Bottom Left: Native Canvas Polaroid */
+#polaroid-container {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    width: 140px;
+    height: 170px;
+    background: #f4efe6;
+    padding: 8px 8px 24px 8px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.85);
+    transform: rotate(-3deg);
+    transition: transform 0.3s ease, filter 0.4s ease;
+    pointer-events: auto;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+#polaroid-container:hover {
+    transform: rotate(0deg) scale(1.05);
+}
+
+#polaroid-hud-canvas {
+    width: 100%;
+    height: 125px;
+    display: block;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 1px;
+}
+
+.polaroid-tape {
+    position: absolute;
+    top: -12px;
+    left: 35px;
+    width: 70px;
+    height: 20px;
+    background: rgba(220, 210, 180, 0.7);
+    transform: rotate(3deg);
+    border-left: 2px dashed rgba(0,0,0,0.1);
+    border-right: 2px dashed rgba(0,0,0,0.1);
+}
+
+.polaroid-hint {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 9px;
+    color: #444;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+#polaroid-container.critical-fade {
+    animation: polaroidTremble 0.2s infinite alternate;
+}
+
+@keyframes polaroidTremble {
+    0% { transform: rotate(-3deg) translate(-1px, 1px); }
+    100% { transform: rotate(-3deg) translate(1px, -1px); }
+}
+
+/* Bottom Right: Oxygen & Respirator Tank Gauges */
+.hud-o2-panel {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 250px;
+    background: rgba(10, 12, 16, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 14px 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+}
+
+.hud-panel-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #999;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+#hud-o2-value {
+    font-size: 22px;
+    font-weight: 800;
+    font-family: 'Courier New', Courier, monospace;
+    color: #00e676;
+}
+
+.hud-bar-bg {
+    width: 100%;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+#hud-o2-fill {
+    width: 100%;
+    height: 100%;
+    background-color: #00e676;
+    transition: width 0.3s ease, background-color 0.4s ease;
+}
+
+.hud-sub-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #aaa;
+}
+
+#hud-sprint-status {
+    color: #ff9100;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+/* Center Prompts & Notifications */
+#interaction-prompt {
+    display: none;
+    position: absolute;
+    top: 58%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(20, 24, 30, 0.92);
+    border: 1px solid #ffb300;
+    color: #ffb300;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 10px 22px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(255, 179, 0, 0.3);
+}
+
+#helmet-tap-alert {
+    display: none;
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(183, 28, 28, 0.9);
+    color: #fff;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    border: 2px solid #ff5252;
+    animation: blinkAlert 0.4s infinite alternate;
+}
+
+#helmet-tap-alert.active {
+    display: block;
+}
+
+@keyframes blinkAlert {
+    0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.98); }
+    100% { opacity: 1.0; transform: translate(-50%, -50%) scale(1.02); }
+}
+
+#notification-banner {
+    position: absolute;
+    top: 105px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 18, 24, 0.92);
+    border-left: 4px solid #ffb300;
+    padding: 10px 24px;
+    font-size: 13px;
+    color: #eee;
+    letter-spacing: 0.5px;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    border-radius: 0 4px 4px 0;
+}
+
+#notification-banner.active {
+    opacity: 1;
+    transform: translateX(-50%) translateY(5px);
+}
+
+/* ==========================================================================
+   PRECISION RHYTHM PICKAXE BREACH MINI-GAME OVERLAY
+   ========================================================================== */
+
+#rhythm-minigame-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(8, 9, 12, 0.88);
+    backdrop-filter: blur(10px);
+    z-index: 50;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.rhythm-card {
+    width: 600px;
+    background: #14171d;
+    border: 2px solid #333a44;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+}
+
+.rhythm-title {
+    font-size: 20px;
+    color: #ffca28;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.rhythm-subtitle {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 24px;
+}
+
+.rhythm-meter-container {
+    position: relative;
+    width: 100%;
+    height: 48px;
+    background: #20242c;
+    border: 2px solid #444c59;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+#rhythm-sweet-spot {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(0, 230, 118, 0.58);
+    border: 2px solid #00e676;
+    border-radius: 4px;
+    box-shadow: 0 0 24px rgba(0, 230, 118, 0.65);
+}
+
+.btn-strike {
+    background: linear-gradient(180deg, #ff9100 0%, #e65100 100%);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 12px 28px;
+    border: 2px solid #ffb300;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(230, 81, 0, 0.45);
+    transition: transform 0.1s, filter 0.1s;
+    width: 100%;
+    max-width: 440px;
+    margin: 8px auto 0 auto;
+    display: block;
+}
+
+.btn-strike:hover {
+    filter: brightness(1.1);
+}
+
+.btn-strike:active {
+    transform: scale(0.97);
+    filter: brightness(1.25);
+}
+
+#rhythm-needle {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 6px;
+    height: 100%;
+    background: #ff1744;
+    box-shadow: 0 0 10px #ff1744;
+    transform: translateX(-50%);
+}
+
+#rhythm-feedback {
+    font-size: 15px;
+    font-weight: bold;
+    min-height: 24px;
+    margin-bottom: 18px;
+    letter-spacing: 1px;
+}
+
+.hit-perfect {
+    color: #00e676;
+    text-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
+}
+
+.hit-miss {
+    color: #ff1744;
+    text-shadow: 0 0 8px rgba(255, 23, 68, 0.6);
+}
+
+.rhythm-controls-hint {
+    font-size: 13px;
+    color: #888;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 16px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* ==========================================================================
+   POLAROID INSPECT MODAL [T]
+   ========================================================================== */
+
+#polaroid-inspect-modal {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(4, 5, 8, 0.92);
+    backdrop-filter: blur(12px);
+    z-index: 60;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#polaroid-inspect-modal.visible {
+    display: flex;
+}
+
+.polaroid-card-3d {
+    width: 360px;
+    height: 440px;
+    perspective: 1200px;
+    cursor: pointer;
+    margin-bottom: 24px;
+}
+
+#polaroid-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-style: preserve-3d;
+}
+
+#polaroid-card-inner.is-flipped {
+    transform: rotateY(180deg);
+}
+
+.polaroid-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 4px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+    background: #f2efe9;
+    padding: 16px 16px 36px 16px;
+}
+
+#inspect-polaroid-canvas {
+    width: 100%;
+    height: 340px;
+    display: block;
+    border: 1px solid rgba(0,0,0,0.15);
+}
+
+.polaroid-face-back {
+    transform: rotateY(180deg);
+    background: #eae5dc;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    text-align: center;
+    border: 1px solid #d4cdbf;
+}
+
+.handwriting-note {
+    font-family: 'Brush Script MT', 'Comic Sans MS', cursive;
+    font-size: 21px;
+    color: #1a237e;
+    line-height: 1.5;
+    transform: rotate(-2deg);
+}
+
+.handwriting-doodle {
+    margin-top: 25px;
+    font-size: 30px;
+    color: #d32f2f;
+}
+
+.inspect-buttons-row {
+    display: flex;
+    gap: 16px;
+}
+
+.btn-polaroid {
+    background: #2a313d;
+    color: #fff;
+    border: 1px solid #4a5468;
+    padding: 10px 20px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-polaroid:hover {
+    background: #3c4657;
+}
+
+/* ==========================================================================
+   STORY NOTE MODAL (CORPSE LOOT)
+   ========================================================================== */
+
+#story-note-modal {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(6, 7, 10, 0.9);
+    backdrop-filter: blur(8px);
+    z-index: 55;
+    justify-content: center;
+    align-items: center;
+}
+
+.story-note-box {
+    width: 520px;
+    background: #181c22;
+    border: 2px solid #546e7a;
+    border-radius: 6px;
+    padding: 28px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.85);
+}
+
+#note-miner-name {
+    font-size: 18px;
+    color: #ffb74d;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+}
+
+.handwriting-text {
+    font-style: italic;
+    color: #cfd8dc;
+    margin: 12px 0 20px 0;
+    line-height: 1.6;
+    font-size: 14px;
+    background: rgba(0,0,0,0.25);
+    padding: 12px;
+    border-left: 3px solid #ffb74d;
+}
+
+.note-loot-info {
+    font-size: 13px;
+    color: #69f0ae;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   TITLE, GAMEOVER & VICTORY SCREENS
+   ========================================================================== */
+
+.screen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #080a0e;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 40px;
+    text-align: center;
+    pointer-events: auto !important;
+}
+
+.game-title {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: #ffc107;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+}
+
+.game-subtitle {
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: #8892a0;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+}
+
+.story-intro-card {
+    max-width: 680px;
+    background: rgba(20, 24, 32, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px 30px;
+    border-radius: 6px;
+    margin-bottom: 28px;
+    line-height: 1.7;
+    font-size: 14px;
+    color: #b0bec5;
+    text-align: left;
+}
+
+.story-intro-card strong {
+    color: #ffca28;
+}
+
+.controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px;
+}
+
+.control-key {
+    background: #37474f;
+    padding: 2px 7px;
+    border-radius: 3px;
+    color: #fff;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.btn-primary {
+    background: #ff8f00;
+    color: #0a0c10;
+    border: none;
+    padding: 14px 36px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 6px 20px rgba(255, 143, 0, 0.35);
+}
+
+.btn-primary:hover {
+    background: #ffa000;
+    transform: translateY(-2px);
+}
+
+/* Game Over Screen */
+#gameover-screen {
+    display: none;
+    background: radial-gradient(circle, #1a0808 0%, #050202 100%);
+}
+
+.gameover-title {
+    font-size: 42px;
+    color: #ff1744;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+}
+
+/* Victory Screen */
+#victory-screen {
+    display: none;
+    background: radial-gradient(circle, #fff9c4 0%, #ffe082 30%, #546e7a 100%);
+    color: #1a1a1a;
+}
+
+.victory-title {
+    font-size: 48px;
+    font-weight: 900;
+    color: #e65100;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+}
+
+.victory-story {
+    max-width: 620px;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #37474f;
+    margin: 20px 0 30px 0;
+}
+
+/* Lock Pointer Prompt */
+#lock-prompt {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 16px 28px;
+    border-radius: 6px;
+    color: #ffca28;
+    font-size: 14px;
+    letter-spacing: 1px;
+    z-index: 40;
+    pointer-events: none;
+}

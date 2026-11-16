@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CANARY: The Collapse - Psychological 3D Survival (make.fun bounty: best-game-01)</title>
+    <!-- make.fun Bounty Submission Metadata -->
+    <meta name="bounty-id" content="best-game-01">
+    <meta name="bounty-name" content="Make the best game">
+    <meta name="bounty-url" content="https://make.fun/bounty/best-game-01">
+    <meta name="bounty-platform" content="make.fun">
+    <meta name="submission-timestamp" content="2026-11-16T01:36:52+07:00">
+    <meta name="author" content="Antigravity Participant">
+    <meta name="offline-compliant" content="true">
+
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Local Three.js r128 (100% Offline Compatible) -->
+    <script src="libs/three.min.js"></script>
+</head>
+<body>
+
+    <!-- 3D WebGL Canvas Viewport -->
+    <div id="game-container"></div>
+
+    <!-- Hypoxia & Tunnel Vision Screen Post-Processing Overlay -->
+    <div id="hypoxia-overlay"></div>
+
+    <!-- Underwater Submersion Screen Post-Processing Overlay -->
+    <div id="underwater-overlay"></div>
+
+    <!-- Water Splash Entry Vignette Burst -->
+    <div id="water-splash-vignette"></div>
+
+    <!-- Tremor & Electrical Strobe Glitch Overlay -->
+    <div id="glitch-overlay"></div>
+
+    <!-- Intro Waking Prone & Eye Blink Overlay -->
+    <div id="intro-wake-overlay"></div>
+
+    <!-- Final Climax Catastrophic Cave-in Blackout Overlay -->
+    <div id="climax-blackout-overlay"></div>
+
+    <!-- Final Climax Unconscious Memory & Promise Sequence -->
+    <div id="climax-memory-container">
+        <div class="climax-memory-ambient-glow"></div>
+        <div class="climax-memory-speaker" id="climax-memory-speaker">LILY'S VOICE (IN YOUR MIND)</div>
+        <div class="climax-memory-text" id="climax-memory-text"></div>
+    </div>
+
+    <!-- Final Climax Waking Polaroid Cinematic View -->
+    <div id="climax-polaroid-container">
+        <div class="climax-polaroid-glow"></div>
+        <div class="climax-polaroid-frame">
+            <canvas id="climax-polaroid-canvas" width="280" height="320"></canvas>
+            <div class="climax-polaroid-caption">LILY: "Please come home safe, Daddy!"</div>
+        </div>
+        <div class="climax-resolve-title">"I WILL NOT DIE IN THIS DARKNESS!"</div>
+        <div class="climax-resolve-subtitle">Looking at Lily's smile rekindles your will to survive!</div>
+    </div>
+
+    <!-- Heads-Up Display (HUD) Layer -->
+    <div id="hud-layer">
+        <!-- Center Aim Crosshair -->
+        <div class="crosshair"></div>
+
+        <!-- Top Status Bar: Depth & Location -->
+        <div class="hud-top-bar">
+            <div class="hud-top-item">
+                <span class="hud-top-label">LOCATION</span>
+                <span class="hud-top-value">SHAFT 07</span>
+            </div>
+            <div class="hud-top-item">
+                <span class="hud-top-label">MINE DEPTH</span>
+                <span id="hud-depth-value" class="hud-top-value">780m</span>
+            </div>
+            <div class="hud-top-item">
+                <span class="hud-top-label">STANCE</span>
+                <span id="hud-stance-value" class="hud-top-value" style="color: #69f0ae;">STANDING [C]</span>
+            </div>
+            <div class="hud-top-item">
+                <span class="hud-top-label">OBJECTIVE</span>
+                <span class="hud-top-value" style="color: #69f0ae;">HATCH B-4</span>
+            </div>
+        </div>
+
+        <!-- Mini Directional Compass HUD -->
+        <div class="hud-compass-bar">
+            <span class="compass-edge">◄ DEPTH 780m</span>
+            <div class="compass-center">
+                <span class="compass-arrow">▲</span>
+                <span id="compass-target-text">CLIMBING TOWARDS SURFACE HATCH (<span id="hud-distance-to-hatch">340m</span>)</span>
+            </div>
+            <span class="compass-edge">SURFACE 0m ►</span>
+        </div>
+
+        <!-- Cinematic Character Monologue Box -->
+        <div id="monologue-box">
+            <span class="monologue-speaker">HENRY (YOU)</span>
+            <p id="monologue-text">"God... the whole shaft collapsed. I have to crawl upward... Lily is waiting for me."</p>
+        </div>
+
+        <!-- Center Notification Banner -->
+        <div id="notification-banner">Shaft 07 has collapsed! Climb upward to the emergency hatch!</div>
+
+        <!-- Helmet Headlamp Malfunction Alert -->
+        <div id="helmet-tap-alert">⚠ HEADLAMP FAILED! PRESS [F] TO TAP HELMET!</div>
+
+        <!-- Contextual Interaction Prompt -->
+        <div id="interaction-prompt">[E] INTERACT</div>
+
+        <!-- Pointer Lock Center Prompt -->
+        <div id="lock-prompt">CLICK TO LOCK MOUSE LOOK</div>
+
+        <!-- Bottom Left: Direct Native Canvas Polaroid (100% Reliable, Never Breaks) -->
+        <div id="polaroid-container" title="Click or press [T] to inspect Lily's polaroid">
+            <div class="polaroid-tape"></div>
+            <canvas id="polaroid-hud-canvas" width="240" height="280"></canvas>
+            <div class="polaroid-hint">[T] INSPECT PHOTO</div>
+        </div>
+
+        <!-- Bottom Right: Oxygen & Vitals Gauge Panel -->
+        <div class="hud-o2-panel">
+            <div class="hud-panel-title">
+                <span>RESPIRATOR O2</span>
+                <span id="hud-o2-value">100%</span>
+            </div>
+            <div class="hud-bar-bg">
+                <div id="hud-o2-fill"></div>
+            </div>
+            <div class="hud-sub-info">
+                <span id="hud-pressure-status">PRESSURE: NOMINAL</span>
+                <span id="hud-sprint-status">SPRINT [SHIFT] (O2 x3)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Precision Rhythm Pickaxe Breach Mini-game Modal -->
+    <div id="rhythm-minigame-overlay">
+        <div class="rhythm-card">
+            <h2 id="rhythm-rubble-title" class="rhythm-title">Rubble Cave-in (Shaft 07)</h2>
+            <p class="rhythm-subtitle">Strike anywhere inside the green fracture zone to shatter the rock!</p>
+            
+            <div class="rhythm-meter-container">
+                <div id="rhythm-sweet-spot"></div>
+                <div id="rhythm-needle"></div>
+            </div>
+
+            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!</div>
+            <div id="rhythm-health-text" style="color: #69f0ae; margin-bottom: 16px; font-weight: bold;">Any hit in the green zone shatters the rock instantly!</div>
+
+            <button id="btn-strike-pickaxe" class="btn-strike">⚡ STRIKE WITH PICKAXE [SPACE / CLICK] ⚡</button>
+
+            <div style="margin-top: 15px;">
+                <span class="rhythm-controls-hint"><strong>[SPACE] / CLICK</strong> Strike &nbsp;|&nbsp; <strong>[ESC]</strong> Step Back</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Polaroid Full Inspect Modal [T] -->
+    <div id="polaroid-inspect-modal">
+        <div class="polaroid-card-3d">
+            <div id="polaroid-card-inner">
+                <!-- Front Side: Native Canvas of Lily -->
+                <div class="polaroid-face polaroid-face-front">
+                    <canvas id="inspect-polaroid-canvas" width="340" height="400"></canvas>
+                </div>
+                <!-- Back Side: Handwritten note -->
+                <div class="polaroid-face polaroid-face-back">
+                    <p class="handwriting-note">
+                        "To my Superhero Dad!<br><br>
+                        Please come home safe, Daddy! I'm waiting on the front porch with sweet apple pie. I picked fresh yellow canary flowers for your helmet!<br><br>
+                        I love you to the stars and back!"
+                    </p>
+                    <div class="handwriting-doodle">❤ 🌼</div>
+                    <p style="font-size: 11px; color: #777; margin-top: 15px;">— Lily (Age 6)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="inspect-buttons-row">
+            <button id="btn-flip-polaroid" class="btn-polaroid">FLIP PHOTO</button>
+            <button id="btn-close-inspect" class="btn-polaroid">[T / ESC] PUT AWAY</button>
+        </div>
+    </div>
+
+    <!-- Story Note Modal (Corpse Looting) -->
+    <div id="story-note-modal">
+        <div class="story-note-box">
+            <h3 id="note-miner-name">Fallen Miner ID Badge</h3>
+            <div id="note-miner-body"></div>
+            <button class="btn-polaroid" onclick="window.eventManager.closeNoteModal()">[E] TAKE SUPPLIES & CONTINUE</button>
+        </div>
+    </div>
+
+    <!-- Title / Main Menu Screen -->
+    <div id="title-screen" class="screen-overlay">
+        <div style="font-family: monospace; font-size: 11px; color: #ffb300; background: rgba(255, 179, 0, 0.15); border: 1px solid rgba(255, 179, 0, 0.4); padding: 4px 14px; border-radius: 20px; margin-bottom: 14px; letter-spacing: 1.5px;">
+            MAKE.FUN BOUNTY SUBMISSION // [ID: best-game-01] // VERIFIED TIMESTAMP: 2026-11-16T01:36:52+07:00
+        </div>
+        <h1 class="game-title">CANARY // THE COLLAPSE</h1>
+        <h2 class="game-subtitle">780 Meters Underground — Psychological 3D Survival</h2>
+
+        <div class="story-intro-card">
+            <p>
+                <strong>A massive 6.8 magnitude seismic earthquake</strong> has flattened the primary support beams of <strong>Shaft 07</strong>. 
+                Your mining crew is buried under crushing rock strata at 780 meters below ground. Your respirator seal is cracked and oxygen is rapidly draining.
+            </p>
+            <p style="margin-top: 10px;">
+                The only thing keeping your mind tethered to sanity is a <strong>worn polaroid of your 6-year-old daughter, Lily</strong>, waiting for you on the front porch. Crawl through the ascending, winding cave-in, shatter rock barriers with your pickaxe, and reach the surface escape hatch before your lungs fail!
+            </p>
+
+            <div class="controls-grid">
+                <div><span class="control-key">W, A, S, D</span> Walk / Crawl</div>
+                <div><span class="control-key">C / CTRL</span> Crouch / Crawl (Low Ceilings)</div>
+                <div><span class="control-key">SHIFT</span> Sprint (O2 Drains 3x Faster!)</div>
+                <div><span class="control-key">MOUSE</span> Look / Aim Helmet Headlamp</div>
+                <div><span class="control-key">E</span> Interact / Loot O2 / Breach Rubble</div>
+                <div><span class="control-key">F</span> Tap Helmet (Fix Malfunctioning Headlamp)</div>
+                <div><span class="control-key">T</span> Inspect Lily's Polaroid (Flip & Restore Willpower)</div>
+                <div><span class="control-key">SPACE / CLICK</span> Precision Pickaxe Rhythm Strike</div>
+                <div><span class="control-key">ESC</span> Release Mouse Cursor</div>
+            </div>
+        </div>
+
+        <button id="btn-start-game" class="btn-primary" onclick="if(window.gameState){window.gameState.startGame();}">BEGIN ASCENT TO SURFACE</button>
+    </div>
+
+    <!-- Game Over Screen (Hypoxia Death) -->
+    <div id="gameover-screen" class="screen-overlay">
+        <h1 class="gameover-title">YOUR CONSCIOUSNESS FADES INTO DARKNESS</h1>
+        <p id="gameover-reason" style="font-size: 16px; color: #e57373; margin-bottom: 16px;">Oxygen depleted in the subterranean abyss.</p>
+        <p id="gameover-stats" style="color: #9e9e9e; font-size: 14px; margin-bottom: 28px;"></p>
+        <p style="font-style: italic; color: #ffca28; margin-bottom: 30px;">"Lily still sits on the front porch waiting for your return... which never comes."</p>
+        <button id="btn-restart-game" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">TRY AGAIN FROM THE BOTTOM</button>
+    </div>
+
+    <!-- Victory Screen (Surface Reached) -->
+    <div id="victory-screen" class="screen-overlay">
+        <h1 class="victory-title">SURFACE REACHED</h1>
+        <h2 style="font-size: 20px; color: #f57f17; letter-spacing: 2px;">DEPTH: 0 METERS // MORNING SUNLIGHT</h2>
+
+        <div class="victory-story">
+            <p>
+                With the very last ounce of strength in your trembling hands, you heave the heavy steel emergency valve open. The blast hatch groans, showering stone dust downward as you climb the final iron rungs into the open air.
+            </p>
+            <p style="margin-top: 14px;">
+                Blinding dawn sunlight washes over your eyes. Crisp morning mountain air rushes into your burning lungs. In the distance, wild canary birds sing in the lush green valley.
+            </p>
+            <p style="margin-top: 14px; font-weight: bold; color: #bf360c;">
+                You survived. You kept your promise to Lily.
+            </p>
+        </div>
+
+        <p id="victory-time" style="font-size: 15px; color: #555; margin-bottom: 25px;"></p>
+        <button id="btn-win-restart" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">PLAY AGAIN</button>
+    </div>
+
+    <!-- Game Scripts in strict dependency order -->
+    <script src="js/audio.js"></script>
+    <script src="js/photo.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
