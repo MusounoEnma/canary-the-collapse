@@ -1,0 +1,7 @@
+{
+  "name": "canary-the-collapse",
+  "version": "1.0.0",
+  "description": "Psychological 3D survival game in Three.js for make.fun best-game-01 bounty",
+  "type": "module",
+  "license": "MIT"
+}
