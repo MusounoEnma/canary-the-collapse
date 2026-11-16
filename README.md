@@ -112,8 +112,8 @@ canary/
 
 ## 🚀 5. How to Run (100% Offline in Google Chrome)
 1. Open Google Chrome.
-2. Open either entry point:
-   - Modular: `file:///c:/porto/11MYPORTO/mak fun/canary/index.html`
-   - Single-File: `file:///c:/porto/11MYPORTO/mak fun/canary/canary_standalone.html`
+2. Drag and drop either entry point directly into Chrome:
+   - Single-File: `canary_standalone.html` (100% self-contained, recommended)
+   - Modular: `index.html`
 3. Click **"BEGIN ASCENT TO SURFACE"**.
 4. The game will run smoothly at 60 FPS offline with procedural audio engaged instantly!
