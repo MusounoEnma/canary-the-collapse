@@ -298,104 +298,85 @@ class Stage1Vein {
         this.group.add(arch);
     }
 
-    createRotatingBeacon(x, y, z, isRed = true, rotSpeed = 4.5) {
+    createRotatingBeacon(x, y, z, isRed = true) {
         const beaconGroup = new THREE.Group();
         beaconGroup.position.set(x, y, z);
 
         const mainColor = isRed ? 0xff1744 : 0xffb300;
-        const beamColor = isRed ? 0xff2a45 : 0xffc107;
+        const glowColor = isRed ? 0xff5252 : 0xffd54f;
 
-        // 1. Heavy industrial mounting base bracket
-        const baseGeo = new THREE.CylinderGeometry(0.16, 0.20, 0.12, 12);
-        const baseMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, metalness: 0.85, roughness: 0.25 });
+        // 1. Heavy industrial cast-iron mounting base
+        const baseGeo = new THREE.CylinderGeometry(0.15, 0.18, 0.10, 12);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x212121, metalness: 0.85, roughness: 0.3 });
         const base = new THREE.Mesh(baseGeo, baseMat);
-        base.position.set(0, 0.06, 0);
+        base.position.set(0, 0.05, 0);
         beaconGroup.add(base);
 
-        // 2. High-contrast translucent colored dome
-        const domeGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.24, 12);
+        // 2. Protective metal cage bars around glass dome
+        const cageGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.28, 8, 1, true);
+        const cageMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.9, roughness: 0.2, wireframe: true });
+        const cage = new THREE.Mesh(cageGeo, cageMat);
+        cage.position.set(0, 0.20, 0);
+        beaconGroup.add(cage);
+
+        // 3. Smooth, translucent colored glass dome
+        const domeGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.22, 12);
         const domeMat = new THREE.MeshStandardMaterial({
             color: mainColor,
             transparent: true,
-            opacity: 0.55,
-            roughness: 0.15,
-            metalness: 0.2
+            opacity: 0.65,
+            roughness: 0.2,
+            metalness: 0.15
         });
         const dome = new THREE.Mesh(domeGeo, domeMat);
-        dome.position.set(0, 0.22, 0);
+        dome.position.set(0, 0.20, 0);
         beaconGroup.add(dome);
 
-        // Top cap of dome
-        const capGeo = new THREE.SphereGeometry(0.14, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+        // Rounded top of dome
+        const capGeo = new THREE.SphereGeometry(0.12, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
         const cap = new THREE.Mesh(capGeo, domeMat);
-        cap.position.set(0, 0.34, 0);
+        cap.position.set(0, 0.31, 0);
         beaconGroup.add(cap);
 
-        // 3. Central high-intensity glowing bulb
-        const bulbGeo = new THREE.SphereGeometry(0.065, 8, 8);
-        const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        // 4. Smooth, radiant incandescent inner bulb
+        const bulbGeo = new THREE.SphereGeometry(0.07, 10, 10);
+        const bulbMat = new THREE.MeshBasicMaterial({ color: mainColor });
         const bulb = new THREE.Mesh(bulbGeo, bulbMat);
-        bulb.position.set(0, 0.22, 0);
+        bulb.position.set(0, 0.20, 0);
         beaconGroup.add(bulb);
 
-        // 4. Rotating Rotor Assembly (spinning continuously)
-        const rotor = new THREE.Group();
-        rotor.position.set(0, 0.22, 0);
-
-        // Metallic parabolic curved reflector shield behind the bulb
-        const reflectorGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.15, 10, 1, true, -Math.PI / 2, Math.PI);
-        const reflectorMat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 0.95, roughness: 0.05 });
-        const reflector = new THREE.Mesh(reflectorGeo, reflectorMat);
-        reflector.rotation.y = Math.PI / 2;
-        rotor.add(reflector);
-
-        // 5. Physically visible sweeping light beam / volumetric cone of light projecting directly from lamp!
-        const coneHeight = 4.2;
-        const coneRadius = 1.1;
-        const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 16, 1, true);
-        coneGeo.rotateX(Math.PI / 2);
-        coneGeo.translate(0, 0, coneHeight / 2);
-        const beamMat = new THREE.MeshBasicMaterial({
-            color: beamColor,
+        // 5. Soft glowing aura sphere inside dome (smooth spherical glow without any corong!)
+        const auraGeo = new THREE.SphereGeometry(0.16, 10, 10);
+        const auraMat = new THREE.MeshBasicMaterial({
+            color: glowColor,
             transparent: true,
-            opacity: 0.45,
-            blending: THREE.AdditiveBlending,
-            side: THREE.DoubleSide,
-            depthWrite: false
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending
         });
-        const beamCone = new THREE.Mesh(coneGeo, beamMat);
-        rotor.add(beamCone);
+        const aura = new THREE.Mesh(auraGeo, auraMat);
+        aura.position.set(0, 0.20, 0);
+        beaconGroup.add(aura);
 
-        // 6. Rotating Directional Spotlight locked to the rotor direction
-        const spotLight = new THREE.SpotLight(mainColor, 3.4, 28, Math.PI / 4.6, 0.45, 1.2);
-        spotLight.position.set(0, 0, 0);
-        const spotTarget = new THREE.Object3D();
-        spotTarget.position.set(0, 0, 8);
-        rotor.add(spotTarget);
-        spotLight.target = spotTarget;
-        rotor.add(spotLight);
-
-        beaconGroup.add(rotor);
-
-        // 7. Core Strobe / Flare Light directly at the lamp head
-        const strobeLight = new THREE.PointLight(mainColor, 2.4, 12, 1.2);
-        strobeLight.position.set(0, 0.22, 0);
-        beaconGroup.add(strobeLight);
+        // 6. Smooth industrial point light radiating from bulb
+        const light = new THREE.PointLight(mainColor, 3.2, 28, 1.25);
+        light.position.set(0, 0.20, 0);
+        beaconGroup.add(light);
 
         this.group.add(beaconGroup);
 
         return {
             group: beaconGroup,
-            rotor: rotor,
+            dome: dome,
+            domeMat: domeMat,
             bulb: bulb,
             bulbMat: bulbMat,
-            beamMat: beamMat,
-            strobeLight: strobeLight,
-            spotLight: spotLight,
+            aura: aura,
+            auraMat: auraMat,
+            light: light,
             isRed: isRed,
             baseColor: mainColor,
-            rotSpeed: rotSpeed,
-            baseIntensity: 2.4
+            glowColor: glowColor,
+            baseIntensity: 3.2
         };
     }
 
@@ -720,34 +701,25 @@ class Stage1Vein {
             l.light.intensity = THREE.MathUtils.clamp(l.baseIntensity + flicker, 1.2, 2.2);
         });
 
-        // Update all revolving industrial hazard beacons & emergency sirens
+        // Smooth industrial beacon blinking and breathing directly at the lamps (no spinning, no cone)
         const t = performance.now() * 0.001;
         this.rotatingBeacons.forEach((b, i) => {
-            // 1. Physically spin the rotor assembly (reflector + volumetric cone of light + spotlight)
-            b.rotor.rotation.y += delta * b.rotSpeed;
-
-            // 2. High-intensity blink / strobe on the light source itself
             let flash = 1.0;
             if (b.isRed) {
-                // Dual-pulse industrial emergency strobe flash
-                const cycle = (t * 3.4 + i * 0.45) % 1.0;
-                flash = (cycle < 0.20 || (cycle > 0.35 && cycle < 0.52)) ? 1.0 : 0.12;
+                // Smooth red emergency alarm blink: gentle rhythmic pulse
+                const cycle = (t * 1.8 + i * 0.35) % 1.0;
+                flash = Math.pow(Math.sin(cycle * Math.PI), 2.5);
             } else {
-                // Rotating amber beacon pulse
-                const cycle = (t * 2.4 + i * 0.6) % 1.0;
-                flash = 0.35 + 0.65 * Math.pow(Math.sin(cycle * Math.PI), 2);
+                // Smooth warm amber breathing rhythm
+                flash = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2.2 + i * 0.8));
             }
 
-            // Animate core bulb scale and color directly at the light source
-            b.bulb.scale.setScalar(0.85 + flash * 0.45);
-            b.bulbMat.color.setHex(flash > 0.6 ? 0xffffff : b.baseColor);
-
-            // Animate sweeping volumetric light cone opacity directly projecting from the lamp
-            b.beamMat.opacity = 0.15 + flash * 0.35;
-
-            // Animate strobe and spot lights
-            b.strobeLight.intensity = b.baseIntensity * flash;
-            b.spotLight.intensity = (b.baseIntensity * 1.5) * (0.6 + flash * 0.4);
+            // Smoothly pulse the inner bulb, spherical aura, and outer dome
+            b.bulb.scale.setScalar(0.85 + flash * 0.35);
+            b.aura.scale.setScalar(0.80 + flash * 0.40);
+            b.auraMat.opacity = 0.15 + flash * 0.45;
+            b.domeMat.opacity = 0.45 + flash * 0.35;
+            b.light.intensity = b.baseIntensity * (0.25 + flash * 0.85);
         });
     }
 }

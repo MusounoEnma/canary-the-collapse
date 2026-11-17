@@ -137,7 +137,7 @@ class Stage3AscentAndBreach {
     }
 
     buildAlarmBeacons() {
-        // Revolving red emergency alarm sirens every 25m along Stage 3
+        // Smooth pulsing red emergency alarm sirens every 25m along Stage 3 (no corong, no wobble)
         for (let z = -645; z >= -850; z -= 25) {
             const x = this.getPathX(z) + 1.3;
             const y = this.getPathY(z) + 2.4;
@@ -145,67 +145,68 @@ class Stage3AscentAndBreach {
             const beaconGroup = new THREE.Group();
             beaconGroup.position.set(x, y, z);
 
-            const housingGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.22, 10);
-            const housingMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, metalness: 0.85 });
+            const housingGeo = new THREE.CylinderGeometry(0.14, 0.18, 0.12, 10);
+            const housingMat = new THREE.MeshStandardMaterial({ color: 0x212121, metalness: 0.85, roughness: 0.3 });
             const housing = new THREE.Mesh(housingGeo, housingMat);
             beaconGroup.add(housing);
+
+            // Metal cage protective bars
+            const cageGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.28, 8, 1, true);
+            const cageMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.9, roughness: 0.2, wireframe: true });
+            const cage = new THREE.Mesh(cageGeo, cageMat);
+            cage.position.set(0, 0.20, 0);
+            beaconGroup.add(cage);
 
             const domeGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.22, 12);
             const domeMat = new THREE.MeshStandardMaterial({
                 color: 0xff1744,
                 transparent: true,
-                opacity: 0.55,
-                roughness: 0.15
+                opacity: 0.65,
+                roughness: 0.2,
+                metalness: 0.15
             });
             const dome = new THREE.Mesh(domeGeo, domeMat);
             dome.position.set(0, 0.20, 0);
             beaconGroup.add(dome);
 
-            const bulbGeo = new THREE.SphereGeometry(0.06, 8, 8);
-            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const capGeo = new THREE.SphereGeometry(0.12, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cap = new THREE.Mesh(capGeo, domeMat);
+            cap.position.set(0, 0.31, 0);
+            beaconGroup.add(cap);
+
+            const bulbGeo = new THREE.SphereGeometry(0.07, 10, 10);
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
             const bulb = new THREE.Mesh(bulbGeo, bulbMat);
             bulb.position.set(0, 0.20, 0);
             beaconGroup.add(bulb);
 
-            // Rotating rotor with parabolic reflector and volumetric light cone
-            const rotor = new THREE.Group();
-            rotor.position.set(0, 0.20, 0);
-
-            const reflectorGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.14, 8, 1, true, -Math.PI / 2, Math.PI);
-            const reflectorMat = new THREE.MeshStandardMaterial({ color: 0xd0d0d0, metalness: 0.95 });
-            const reflector = new THREE.Mesh(reflectorGeo, reflectorMat);
-            reflector.rotation.y = Math.PI / 2;
-            rotor.add(reflector);
-
-            const coneGeo = new THREE.ConeGeometry(0.9, 3.8, 14, 1, true);
-            coneGeo.rotateX(Math.PI / 2);
-            coneGeo.translate(0, 0, 1.9);
-            const beamMat = new THREE.MeshBasicMaterial({
-                color: 0xff2244,
+            // Soft glowing aura sphere inside dome (spherical glow, no corong!)
+            const auraGeo = new THREE.SphereGeometry(0.16, 10, 10);
+            const auraMat = new THREE.MeshBasicMaterial({
+                color: 0xff5252,
                 transparent: true,
-                opacity: 0.40,
-                blending: THREE.AdditiveBlending,
-                side: THREE.DoubleSide,
-                depthWrite: false
+                opacity: 0.35,
+                blending: THREE.AdditiveBlending
             });
-            const beam = new THREE.Mesh(coneGeo, beamMat);
-            rotor.add(beam);
+            const aura = new THREE.Mesh(auraGeo, auraMat);
+            aura.position.set(0, 0.20, 0);
+            beaconGroup.add(aura);
 
-            beaconGroup.add(rotor);
-
-            const light = new THREE.PointLight(0xff1744, 2.4, 14, 1.2);
+            const light = new THREE.PointLight(0xff1744, 3.0, 22, 1.25);
             light.position.set(0, 0.20, 0);
             beaconGroup.add(light);
 
             this.group.add(beaconGroup);
 
             this.alarmBeacons.push({
-                rotor: rotor,
+                dome: dome,
+                domeMat: domeMat,
                 bulb: bulb,
                 bulbMat: bulbMat,
-                beamMat: beamMat,
+                aura: aura,
+                auraMat: auraMat,
                 light: light,
-                rotSpeed: 5.4 + Math.random() * 0.8
+                baseIntensity: 3.0
             });
         }
 
@@ -350,17 +351,17 @@ class Stage3AscentAndBreach {
     }
 
     update(delta, playerPos) {
-        // Update revolving emergency alarm sirens
+        // Smooth industrial emergency alarm blinking directly at the lamps (no spinning, no cone)
         const time = performance.now() * 0.001;
         this.alarmBeacons.forEach((b, i) => {
-            b.rotor.rotation.y += delta * b.rotSpeed;
-            const cycle = (time * 3.4 + i * 0.4) % 1.0;
-            const flash = (cycle < 0.20 || (cycle > 0.35 && cycle < 0.52)) ? 1.0 : 0.12;
+            const cycle = (time * 1.8 + i * 0.35) % 1.0;
+            const flash = Math.pow(Math.sin(cycle * Math.PI), 2.5);
 
-            b.bulb.scale.setScalar(0.85 + flash * 0.4);
-            b.bulbMat.color.setHex(flash > 0.6 ? 0xffffff : 0xff1744);
-            b.beamMat.opacity = 0.12 + flash * 0.35;
-            b.light.intensity = 2.4 * flash;
+            b.bulb.scale.setScalar(0.85 + flash * 0.35);
+            b.aura.scale.setScalar(0.80 + flash * 0.40);
+            b.auraMat.opacity = 0.15 + flash * 0.45;
+            b.domeMat.opacity = 0.45 + flash * 0.35;
+            b.light.intensity = b.baseIntensity * (0.25 + flash * 0.85);
         });
 
         // Update active falling boulders
