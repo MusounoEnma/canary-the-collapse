@@ -44,7 +44,8 @@ class Stage2SlideAndGrotto {
         const chuteMat = new THREE.MeshStandardMaterial({
             color: 0x37474f,
             roughness: 0.15,
-            metalness: 0.85
+            metalness: 0.85,
+            side: THREE.DoubleSide
         });
         const chuteMesh = new THREE.Mesh(tubeGeo, chuteMat);
         this.group.add(chuteMesh);
@@ -70,24 +71,35 @@ class Stage2SlideAndGrotto {
     }
 
     buildGrottoCavern() {
-        // Expansive grotto cavern from z = -395 down to z = -620
-        const step = 8.0;
-        for (let z = -395; z >= -620; z -= step) {
-            const y = -14.0;
-            const x = Math.sin(z * 0.02) * 3.5;
-
-            // Huge vaulted cavern arch
-            const cavernGeo = new THREE.CylinderGeometry(8.5, 9.2, step, 12, 1, true);
-            cavernGeo.rotateX(Math.PI / 2);
-            const cavernMat = this.materials.rock.clone();
-            cavernMat.color.setHex(0x1a2930); // Dark teal-slate rock
-            cavernMat.roughness = 0.85;
-
-            const cavern = new THREE.Mesh(cavernGeo, cavernMat);
-            cavern.position.set(x, y + 4.5, z - step / 2);
-            cavern.scale.set(1.4, 1.0, 1.0);
-            this.group.add(cavern);
+        // Continuous, huge vaulted subterranean cavern arch from z = -395 down to z = -625
+        const points = [];
+        for (let z = -394; z >= -626; z -= 4.0) {
+            points.push(new THREE.Vector3(Math.sin(z * 0.02) * 3.5, -7.5, z));
         }
+
+        const curve = new THREE.CatmullRomCurve3(points);
+        const cavernGeo = new THREE.TubeGeometry(curve, 90, 8.5, 16, false);
+
+        const posAttr = cavernGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            let vx = posAttr.getX(i);
+            let vy = posAttr.getY(i);
+            let vz = posAttr.getZ(i);
+
+            const bump = Math.sin(vx * 1.5 + vz * 0.6) * 0.45 + Math.cos(vy * 1.8 + vz * 0.9) * 0.35;
+            posAttr.setX(i, vx + bump);
+            posAttr.setY(i, vy + bump);
+        }
+        cavernGeo.computeVertexNormals();
+
+        const cavernMat = this.materials.rock.clone();
+        cavernMat.color.setHex(0x223640); // Dark teal-slate rock
+        cavernMat.roughness = 0.85;
+        cavernMat.side = THREE.DoubleSide;
+
+        const cavern = new THREE.Mesh(cavernGeo, cavernMat);
+        cavern.scale.set(1.3, 1.0, 1.0);
+        this.group.add(cavern);
     }
 
     buildBioluminescentCrystals() {

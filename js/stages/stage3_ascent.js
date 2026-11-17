@@ -30,6 +30,7 @@ class Stage3AscentAndBreach {
         const shaftGeo = new THREE.CylinderGeometry(3.2, 3.2, 28, 14, 1, true);
         const shaftMat = this.materials.rock.clone();
         shaftMat.roughness = 0.95;
+        shaftMat.side = THREE.DoubleSide;
         const shaft = new THREE.Mesh(shaftGeo, shaftMat);
         shaft.position.set(0, -1.0, -625);
         this.group.add(shaft);
@@ -88,26 +89,41 @@ class Stage3AscentAndBreach {
     }
 
     buildSeismicTunnel() {
-        // Upper escape tunnel from z = -630 down to z = -865
-        const step = 4.0;
-        for (let z = -630; z >= -865; z -= step) {
-            const y = this.getPathY(z);
-            const x = this.getPathX(z);
-
-            // Strained, fractured tunnel arch
-            const ringGeo = new THREE.CylinderGeometry(2.5, 2.5, step, 10, 1, true);
-            ringGeo.rotateX(Math.PI / 2);
-            const ring = new THREE.Mesh(ringGeo, this.materials.rock);
-            ring.position.set(x, y + 1.3, z - step / 2);
-            this.group.add(ring);
-
-            // Rock floor
-            const floorGeo = new THREE.PlaneGeometry(3.6, step);
-            floorGeo.rotateX(-Math.PI / 2);
-            const floor = new THREE.Mesh(floorGeo, this.materials.rock);
-            floor.position.set(x, y + 0.02, z - step / 2);
-            this.group.add(floor);
+        // Continuous upper escape tunnel from z = -630 down to z = -868
+        const points = [];
+        for (let z = -629; z >= -868; z -= 3.0) {
+            points.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 1.4, z));
         }
+
+        const curve = new THREE.CatmullRomCurve3(points);
+        const tubeGeo = new THREE.TubeGeometry(curve, 110, 2.6, 16, false);
+
+        const posAttr = tubeGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            let vx = posAttr.getX(i);
+            let vy = posAttr.getY(i);
+            let vz = posAttr.getZ(i);
+
+            const bump = Math.sin(vx * 2.0 + vz * 0.8) * 0.22 + Math.cos(vy * 2.4) * 0.18;
+            posAttr.setX(i, vx + bump);
+            posAttr.setY(i, vy + bump);
+        }
+        tubeGeo.computeVertexNormals();
+
+        const tunnelMesh = new THREE.Mesh(tubeGeo, this.materials.rock);
+        tunnelMesh.receiveShadow = true;
+        this.group.add(tunnelMesh);
+
+        // Smooth floor pathway
+        const floorPoints = [];
+        for (let z = -629; z >= -868; z -= 4.0) {
+            floorPoints.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 0.05, z));
+        }
+        const floorCurve = new THREE.CatmullRomCurve3(floorPoints);
+        const floorGeo = new THREE.TubeGeometry(floorCurve, 80, 1.8, 6, false);
+        floorGeo.scale(1.0, 0.08, 1.0);
+        const floorMesh = new THREE.Mesh(floorGeo, this.materials.rock);
+        this.group.add(floorMesh);
     }
 
     getPathX(z) {

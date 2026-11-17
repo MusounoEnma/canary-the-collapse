@@ -24,27 +24,49 @@ class Stage1Vein {
     }
 
     buildCorridor() {
-        // Build cavern segments from z = +15 down to z = -285
-        const step = 4.0;
-        for (let z = 15; z >= -285; z -= step) {
-            const y = this.getPathY(z);
-            const x = this.getPathX(z);
-
-            // Cavern shell arch rings
-            const ringGeo = new THREE.CylinderGeometry(2.4, 2.5, step, 10, 1, true);
-            ringGeo.rotateX(Math.PI / 2);
-            const ring = new THREE.Mesh(ringGeo, this.materials.rock);
-            ring.position.set(x, y + 1.2, z - step / 2);
-            ring.scale.set(1.0 + Math.sin(z * 0.1) * 0.08, 0.9, 1.0);
-            this.group.add(ring);
-
-            // Rock floor
-            const floorGeo = new THREE.PlaneGeometry(3.6, step);
-            floorGeo.rotateX(-Math.PI / 2);
-            const floor = new THREE.Mesh(floorGeo, this.materials.rock);
-            floor.position.set(x, y + 0.02, z - step / 2);
-            this.group.add(floor);
+        // Continuous, seamless 3D cavern tube enclosing the entire 300m shaft
+        const points = [];
+        for (let z = 16; z >= -286; z -= 2.0) {
+            points.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 1.4, z));
         }
+
+        const curve = new THREE.CatmullRomCurve3(points);
+        const tubularSegments = 160;
+        const radius = 2.65; // Authentic, spacious mining drift
+        const radialSegments = 16;
+        const tubeGeo = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
+
+        // Multi-octave faceted rock displacement for organic jagged stone walls
+        const posAttr = tubeGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            let vx = posAttr.getX(i);
+            let vy = posAttr.getY(i);
+            let vz = posAttr.getZ(i);
+
+            const bump = (
+                Math.sin(vx * 2.2 + vz * 0.8) * 0.22 +
+                Math.cos(vy * 2.8 + vx * 1.4) * 0.16 +
+                Math.sin(vz * 3.2) * 0.10
+            );
+            posAttr.setX(i, vx + bump);
+            posAttr.setY(i, vy + bump);
+        }
+        tubeGeo.computeVertexNormals();
+
+        const cavernMesh = new THREE.Mesh(tubeGeo, this.materials.rock);
+        cavernMesh.receiveShadow = true;
+        this.group.add(cavernMesh);
+
+        // Smooth ground walking bed with gravel ballast
+        const floorPoints = [];
+        for (let z = 16; z >= -286; z -= 3.0) {
+            floorPoints.push(new THREE.Vector3(this.getPathX(z), this.getPathY(z) + 0.05, z));
+        }
+        const floorCurve = new THREE.CatmullRomCurve3(floorPoints);
+        const floorGeo = new THREE.TubeGeometry(floorCurve, 100, 1.8, 6, false);
+        floorGeo.scale(1.0, 0.08, 1.0); // Flatten into walking track
+        const floorMesh = new THREE.Mesh(floorGeo, this.materials.rock);
+        this.group.add(floorMesh);
     }
 
     getPathX(z) {

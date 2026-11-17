@@ -105,17 +105,20 @@ class MineWorld {
             rock: new THREE.MeshStandardMaterial({
                 map: this.rockTexture,
                 roughness: 0.88,
-                metalness: 0.12
+                metalness: 0.12,
+                side: THREE.DoubleSide
             }),
             wood: new THREE.MeshStandardMaterial({
                 map: this.woodTexture,
                 roughness: 0.85,
-                metalness: 0.05
+                metalness: 0.05,
+                side: THREE.DoubleSide
             }),
             metal: new THREE.MeshStandardMaterial({
                 map: this.metalTexture,
                 roughness: 0.45,
-                metalness: 0.82
+                metalness: 0.82,
+                side: THREE.DoubleSide
             })
         };
     }
