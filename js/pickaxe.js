@@ -11,83 +11,86 @@ class PickaxeSystem {
         this.pickaxeGroup = new THREE.Group();
         this.isSwinging = false;
         this.swingProgress = 0;
-        this.swingDuration = 0.36; // Fast, impactful strike
-        // Held in front of player's right hand, pointing up and glistening clearly in view!
-        this.basePosition = new THREE.Vector3(0.24, -0.14, -0.44);
-        this.baseRotation = new THREE.Euler(-0.42, -0.40, 0.28);
+        this.swingDuration = 0.35; // Fast, punchy, visceral strike
+        
+        // Held prominently in front of player's right hand, gleaming in the light
+        this.basePosition = new THREE.Vector3(0.22, -0.12, -0.36);
+        this.baseRotation = new THREE.Euler(-0.30, -0.45, 0.35);
+        
         this.targetStrikeCallback = null;
         this.sparksEmitters = [];
+        this.debrisEmitters = [];
 
         this.buildPickaxeMesh();
         this.camera.add(this.pickaxeGroup);
         this.pickaxeGroup.position.copy(this.basePosition);
         this.pickaxeGroup.rotation.copy(this.baseRotation);
-        this.pickaxeGroup.visible = false; // Hidden until near rubble or swinging
+        this.pickaxeGroup.visible = true; // Always proudly visible in view!
     }
 
     buildPickaxeMesh() {
         // High-durability ash-wood handle
-        const handleGeo = new THREE.CylinderGeometry(0.022, 0.026, 0.72, 8);
+        const handleGeo = new THREE.CylinderGeometry(0.024, 0.028, 0.78, 12);
         const handleCanvas = document.createElement('canvas');
         handleCanvas.width = 64; handleCanvas.height = 256;
         const hctx = handleCanvas.getContext('2d');
-        hctx.fillStyle = '#4e342e';
+        hctx.fillStyle = '#5d4037';
         hctx.fillRect(0, 0, 64, 256);
-        hctx.fillStyle = '#3e2723';
-        for (let i = 0; i < 20; i++) {
+        hctx.fillStyle = '#4e342e';
+        for (let i = 0; i < 24; i++) {
             hctx.fillRect(Math.random() * 64, 0, 3 + Math.random() * 6, 256);
         }
         const handleTex = new THREE.CanvasTexture(handleCanvas);
         const handleMat = new THREE.MeshStandardMaterial({
             map: handleTex,
-            roughness: 0.75,
+            roughness: 0.65,
             metalness: 0.1
         });
         const handle = new THREE.Mesh(handleGeo, handleMat);
         handle.position.set(0, 0, 0);
 
         // Grip wrap at bottom
-        const gripGeo = new THREE.CylinderGeometry(0.027, 0.027, 0.22, 8);
-        const gripMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 });
+        const gripGeo = new THREE.CylinderGeometry(0.029, 0.029, 0.22, 12);
+        const gripMat = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.9 });
         const grip = new THREE.Mesh(gripGeo, gripMat);
-        grip.position.set(0, -0.24, 0);
+        grip.position.set(0, -0.28, 0);
         this.pickaxeGroup.add(grip);
 
         // Heavy forged steel pick head (curved dual-pointed pickaxe)
         const headGroup = new THREE.Group();
-        headGroup.position.set(0, 0.32, 0);
+        headGroup.position.set(0, 0.36, 0);
 
         // Metal collar clamp
-        const collarGeo = new THREE.BoxGeometry(0.065, 0.08, 0.065);
+        const collarGeo = new THREE.BoxGeometry(0.075, 0.09, 0.075);
         const steelMat = new THREE.MeshStandardMaterial({
-            color: 0x90a4ae,
-            roughness: 0.22,
-            metalness: 0.92
+            color: 0xe0e6ed, // Bright polished steel sheen
+            roughness: 0.15,
+            metalness: 0.95
         });
         const collar = new THREE.Mesh(collarGeo, steelMat);
         headGroup.add(collar);
 
         // Front pointed beak (sharp, curved pick)
-        const beakGeo = new THREE.ConeGeometry(0.042, 0.42, 8);
+        const beakGeo = new THREE.ConeGeometry(0.048, 0.46, 10);
         beakGeo.rotateZ(Math.PI / 2);
         const beak = new THREE.Mesh(beakGeo, steelMat);
-        beak.position.set(0.20, 0, 0);
+        beak.position.set(0.24, 0, 0);
         beak.scale.set(1.0, 0.75, 0.65);
         headGroup.add(beak);
 
         // Back chisel / claw flat
-        const clawGeo = new THREE.BoxGeometry(0.28, 0.045, 0.05);
+        const clawGeo = new THREE.BoxGeometry(0.26, 0.05, 0.06);
         const claw = new THREE.Mesh(clawGeo, steelMat);
         claw.position.set(-0.14, 0, 0);
         headGroup.add(claw);
 
-        headGroup.scale.set(1.35, 1.35, 1.35); // Enlarge head so it is proudly visible in view!
+        headGroup.scale.set(1.5, 1.5, 1.5); // Large heroic head!
 
         this.pickaxeGroup.add(handle);
         this.pickaxeGroup.add(headGroup);
 
         // Scale to realistic first-person perspective
-        this.pickaxeGroup.scale.set(0.9, 0.9, 0.9);
+        this.pickaxeGroup.scale.set(0.95, 0.95, 0.95);
     }
 
     setVisible(visible) {
@@ -117,8 +120,16 @@ class PickaxeSystem {
             window.soundEngine.playPickaxeClang(true);
         }
 
+        // Camera recoil / screen shake
+        if (window.gamePlayer) {
+            window.gamePlayer.pitch += (Math.random() - 0.5) * 0.035;
+            window.gamePlayer.yaw += (Math.random() - 0.5) * 0.025;
+        }
+
         // Spawn explosive physical spark particles
-        this.spawnStrikeSparks(impactPos || this.getFrontStrikePoint());
+        const hitPoint = impactPos || this.getFrontStrikePoint();
+        this.spawnStrikeSparks(hitPoint);
+        this.spawnRockShatterDebris(hitPoint, 0x8a9ba8);
     }
 
     getFrontStrikePoint() {
@@ -128,7 +139,7 @@ class PickaxeSystem {
     }
 
     spawnStrikeSparks(pos) {
-        const particleCount = 28;
+        const particleCount = 36;
         const geo = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
         const velocities = [];
@@ -139,16 +150,16 @@ class PickaxeSystem {
             positions[i * 3 + 2] = pos.z + (Math.random() - 0.5) * 0.15;
 
             velocities.push(new THREE.Vector3(
-                (Math.random() - 0.5) * 3.5,
-                Math.random() * 3.2 + 0.8,
-                (Math.random() - 0.5) * 3.5
+                (Math.random() - 0.5) * 4.5,
+                Math.random() * 4.0 + 1.2,
+                (Math.random() - 0.5) * 4.5
             ));
         }
 
         geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         const mat = new THREE.PointsMaterial({
             color: 0xffd54f,
-            size: 0.08,
+            size: 0.10,
             transparent: true,
             opacity: 1.0,
             blending: THREE.AdditiveBlending
@@ -166,15 +177,15 @@ class PickaxeSystem {
     }
 
     spawnRockShatterDebris(pos, rubbleColor) {
-        const fragmentCount = 18;
+        const fragmentCount = 24;
         const fragments = new THREE.Group();
 
         for (let i = 0; i < fragmentCount; i++) {
-            const size = 0.08 + Math.random() * 0.16;
+            const size = 0.08 + Math.random() * 0.18;
             const rockGeo = new THREE.DodecahedronGeometry(size, 0);
             const rockMat = new THREE.MeshStandardMaterial({
-                color: rubbleColor || 0x4a443c,
-                roughness: 0.95
+                color: rubbleColor || 0x8a9ba8,
+                roughness: 0.85
             });
             const rock = new THREE.Mesh(rockGeo, rockMat);
             rock.position.copy(pos);
@@ -183,11 +194,14 @@ class PickaxeSystem {
             rock.position.z += (Math.random() - 0.5) * 0.6;
 
             const vel = new THREE.Vector3(
-                (Math.random() - 0.5) * 4.5,
-                Math.random() * 3.5 + 1.2,
-                (Math.random() - 0.5) * 4.5
+                (Math.random() - 0.5) * 5.0,
+                Math.random() * 4.0 + 1.2,
+                (Math.random() - 0.5) * 5.0
             );
-            rock.userData = { velocity: vel, rotSpeed: new THREE.Vector3(Math.random() * 5, Math.random() * 5, Math.random() * 5) };
+            rock.userData = {
+                velocity: vel,
+                rotSpeed: new THREE.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6)
+            };
             fragments.add(rock);
         }
 
@@ -240,55 +254,55 @@ class PickaxeSystem {
             this.swingProgress += delta / this.swingDuration;
             const p = this.swingProgress;
 
-            if (p < 0.28) {
-                // Windup: raise pickaxe up and back
-                const t = p / 0.28;
+            if (p < 0.25) {
+                // Windup: raise pickaxe up high and back
+                const t = p / 0.25;
                 this.pickaxeGroup.position.set(
-                    this.basePosition.x + 0.06 * t,
-                    this.basePosition.y + 0.22 * t,
-                    this.basePosition.z + 0.08 * t
+                    this.basePosition.x + 0.08 * t,
+                    this.basePosition.y + 0.28 * t,
+                    this.basePosition.z + 0.10 * t
                 );
                 this.pickaxeGroup.rotation.set(
-                    this.baseRotation.x - 0.55 * t,
-                    this.baseRotation.y + 0.25 * t,
-                    this.baseRotation.z + 0.20 * t
+                    this.baseRotation.x - 0.85 * t,
+                    this.baseRotation.y + 0.45 * t,
+                    this.baseRotation.z + 0.30 * t
                 );
-            } else if (p < 0.62) {
-                // Violent chopping strike forward toward the crosshair
-                const t = (p - 0.28) / 0.34;
+            } else if (p < 0.60) {
+                // Powerful chopping arc down-left slicing across crosshair
+                const t = (p - 0.25) / 0.35;
+                const easeT = t * t;
                 this.pickaxeGroup.position.set(
-                    THREE.MathUtils.lerp(this.basePosition.x + 0.06, 0.04, t),
-                    THREE.MathUtils.lerp(this.basePosition.y + 0.22, -0.20, t),
-                    THREE.MathUtils.lerp(this.basePosition.z + 0.08, -0.56, t)
+                    THREE.MathUtils.lerp(this.basePosition.x + 0.08, 0.02, easeT),
+                    THREE.MathUtils.lerp(this.basePosition.y + 0.28, -0.16, easeT),
+                    THREE.MathUtils.lerp(this.basePosition.z + 0.10, -0.52, easeT)
                 );
                 this.pickaxeGroup.rotation.set(
-                    THREE.MathUtils.lerp(this.baseRotation.x - 0.55, 0.75, t),
-                    THREE.MathUtils.lerp(this.baseRotation.y + 0.25, -0.55, t),
-                    THREE.MathUtils.lerp(this.baseRotation.z + 0.20, -0.15, t)
+                    THREE.MathUtils.lerp(this.baseRotation.x - 0.85, 0.95, easeT),
+                    THREE.MathUtils.lerp(this.baseRotation.y + 0.45, -0.75, easeT),
+                    THREE.MathUtils.lerp(this.baseRotation.z + 0.30, -0.25, easeT)
                 );
 
-                // Trigger impact at apex of swing (p around 0.50)
-                if (p >= 0.48 && this.targetStrikeCallback) {
+                if (p >= 0.45 && this.targetStrikeCallback) {
                     this.triggerImpact();
                 }
             } else if (p < 1.0) {
-                // Recovery back to idle ready position
-                const t = (p - 0.62) / 0.38;
+                // Smooth return to ready stance
+                const t = (p - 0.60) / 0.40;
                 this.pickaxeGroup.position.lerpVectors(
-                    new THREE.Vector3(0.04, -0.20, -0.56),
+                    new THREE.Vector3(0.02, -0.16, -0.52),
                     this.basePosition,
                     t
                 );
-                this.pickaxeGroup.rotation.x = THREE.MathUtils.lerp(0.75, this.baseRotation.x, t);
-                this.pickaxeGroup.rotation.y = THREE.MathUtils.lerp(-0.55, this.baseRotation.y, t);
-                this.pickaxeGroup.rotation.z = THREE.MathUtils.lerp(-0.15, this.baseRotation.z, t);
+                this.pickaxeGroup.rotation.x = THREE.MathUtils.lerp(0.95, this.baseRotation.x, t);
+                this.pickaxeGroup.rotation.y = THREE.MathUtils.lerp(-0.75, this.baseRotation.y, t);
+                this.pickaxeGroup.rotation.z = THREE.MathUtils.lerp(-0.25, this.baseRotation.z, t);
             } else {
                 this.isSwinging = false;
                 this.pickaxeGroup.position.copy(this.basePosition);
                 this.pickaxeGroup.rotation.copy(this.baseRotation);
             }
         } else if (this.pickaxeGroup.visible) {
-            // Natural first-person breathing bob
+            // Natural first-person breathing & footsteps bob
             const time = performance.now() * 0.003;
             const bobMult = isSprinting ? 2.5 : (isWalking ? 1.4 : 0.6);
             this.pickaxeGroup.position.x = this.basePosition.x + Math.sin(time) * 0.015 * bobMult;

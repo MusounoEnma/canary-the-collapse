@@ -32,25 +32,26 @@ class GameState {
         // Three.js Scene Setup
         this.scene = new THREE.Scene();
         window.gameScene = this.scene;
-        this.scene.fog = new THREE.FogExp2(0x14171a, 0.012);
+        this.scene.fog = new THREE.FogExp2(0x1a222a, 0.005);
 
-        // Balanced Global Ambient Lighting (Crisp contrast, clear cave visibility)
-        const hemiLight = new THREE.HemisphereLight(0xb0bec5, 0x37474f, 0.65);
+        // Rich, Full Industrial Mine Illumination (Bright, readable, high contrast)
+        const hemiLight = new THREE.HemisphereLight(0xfff3e0, 0x455a64, 1.35);
         this.scene.add(hemiLight);
 
-        const ambLight = new THREE.AmbientLight(0xffeedd, 0.55);
+        const ambLight = new THREE.AmbientLight(0xffeedd, 1.20);
         this.scene.add(ambLight);
 
         // Camera Setup
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 160);
         this.camera.position.set(0, 1.7, 0);
+        this.scene.add(this.camera); // Critical: ensures camera children (3D pickaxe viewmodel & headlamp) are rendered!
 
         // WebGL Renderer Setup (Smooth 60 FPS, optimized performance)
         this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25)); // 1.25 pixel ratio for maximum smoothness
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.15;
+        this.renderer.toneMappingExposure = 1.30;
         this.renderer.shadowMap.enabled = false; // Disable heavy shadow maps to eliminate GPU lag!
         container.appendChild(this.renderer.domElement);
 
@@ -333,6 +334,15 @@ class GameState {
             if (window.polaroidSystem && this.player) {
                 window.polaroidSystem.updateHUD(this.player.oxygen);
             }
+        }
+
+        // Always update pickaxe viewmodel animations, swings and sparks
+        if (this.pickaxe) {
+            this.pickaxe.update(
+                delta,
+                this.player ? this.player.isMoving : false,
+                this.player ? this.player.isSprinting : false
+            );
         }
 
         if (this.renderer && this.scene && this.camera) {

@@ -38,48 +38,47 @@ class MineWorld {
     initTextures() {
         // High-contrast, authentic chiseled dark slate & granite rock texture
         const rockCanvas = document.createElement('canvas');
-        rockCanvas.width = 1024; rockCanvas.height = 1024;
+        rockCanvas.width = 512; rockCanvas.height = 512;
         const rctx = rockCanvas.getContext('2d');
-        rctx.fillStyle = '#1c2024'; // Dark slate-granite base
-        rctx.fillRect(0, 0, 1024, 1024);
+        rctx.fillStyle = '#37424d'; // Rich, warm, bright granite slate base
+        rctx.fillRect(0, 0, 512, 512);
 
         // Sedimentary strata bedding & rough jagged granite facets
-        for (let y = 0; y < 1024; y += 2) {
-            const noise = Math.sin(y * 0.05) * 35 + Math.random() * 40;
-            const lum = 32 + Math.floor(noise * 0.55);
-            // Cool gray stone tones (granite/slate), not muddy brown sand!
-            rctx.fillStyle = `rgb(${lum + 2},${lum + 5},${lum + 8})`;
-            rctx.fillRect(0, y, 1024, 2 + Math.random() * 2);
+        for (let y = 0; y < 512; y += 2) {
+            const noise = Math.sin(y * 0.05) * 20 + Math.random() * 25;
+            const lum = 55 + Math.floor(noise * 0.5);
+            rctx.fillStyle = `rgb(${lum},${lum + 4},${lum + 8})`;
+            rctx.fillRect(0, y, 512, 2 + Math.random() * 2);
         }
 
         // Chiseled rock fracture facets & sharp micro-shadows
-        for (let i = 0; i < 90; i++) {
-            rctx.strokeStyle = i % 5 === 0 ? 'rgba(5, 7, 9, 0.96)' : 'rgba(75, 85, 96, 0.7)';
-            rctx.lineWidth = 1.5 + Math.random() * 3.5;
+        for (let i = 0; i < 45; i++) {
+            rctx.strokeStyle = i % 4 === 0 ? 'rgba(20, 24, 28, 0.85)' : 'rgba(95, 108, 122, 0.65)';
+            rctx.lineWidth = 1.0 + Math.random() * 2.5;
             rctx.beginPath();
             let curX = 0;
-            let curY = Math.random() * 1024;
+            let curY = Math.random() * 512;
             rctx.moveTo(curX, curY);
-            while (curX < 1024) {
-                curX += 15 + Math.random() * 30;
-                curY += (Math.random() - 0.5) * 40;
+            while (curX < 512) {
+                curX += 12 + Math.random() * 24;
+                curY += (Math.random() - 0.5) * 30;
                 rctx.lineTo(curX, curY);
             }
             rctx.stroke();
         }
 
         // Quartz mineral flecks and reflective crystalline sparkles
-        for (let k = 0; k < 15000; k++) {
-            const px = Math.random() * 1024;
-            const py = Math.random() * 1024;
+        for (let k = 0; k < 3500; k++) {
+            const px = Math.random() * 512;
+            const py = Math.random() * 512;
             const isQuartz = Math.random() < 0.15;
             if (isQuartz) {
-                rctx.fillStyle = 'rgba(220, 235, 245, 0.85)';
+                rctx.fillStyle = 'rgba(235, 245, 255, 0.95)';
             } else {
-                const lum = Math.floor(22 + Math.random() * 45);
+                const lum = Math.floor(45 + Math.random() * 35);
                 rctx.fillStyle = `rgb(${lum},${lum + 3},${lum + 6})`;
             }
-            rctx.fillRect(px, py, 2 + Math.random() * 2, 2 + Math.random() * 2);
+            rctx.fillRect(px, py, 2, 2);
         }
 
         this.rockTexture = new THREE.CanvasTexture(rockCanvas);
@@ -119,31 +118,31 @@ class MineWorld {
         this.materials = {
             rock: new THREE.MeshStandardMaterial({
                 map: this.rockTexture,
-                color: new THREE.Color(0x5c6773), // Bright, readable chiseled slate-granite tone
-                roughness: 0.88,
-                metalness: 0.08,
+                color: new THREE.Color(0x8a9ba8), // Clear, bright, readable granite stone
+                roughness: 0.80,
+                metalness: 0.10,
                 side: THREE.DoubleSide
             }),
             wood: new THREE.MeshStandardMaterial({
                 map: this.woodTexture,
-                color: new THREE.Color(0x422c1d),
-                roughness: 0.88,
-                metalness: 0.04,
+                color: new THREE.Color(0x6d4c41), // Warm brown timber
+                roughness: 0.82,
+                metalness: 0.05,
                 side: THREE.DoubleSide
             }),
             metal: new THREE.MeshStandardMaterial({
                 map: this.metalTexture,
-                color: new THREE.Color(0x546e7a),
-                roughness: 0.42,
-                metalness: 0.85,
+                color: new THREE.Color(0x90a4ae),
+                roughness: 0.38,
+                metalness: 0.88,
                 side: THREE.DoubleSide
             })
         };
     }
 
     setupAtmosphericLighting() {
-        // Soft ambient illumination matching subterranean mine environment
-        const ambientLight = new THREE.AmbientLight(0xffeedd, 0.55);
+        // Bright ambient illumination matching active industrial mine environment
+        const ambientLight = new THREE.AmbientLight(0xffeedd, 0.85);
         this.scene.add(ambientLight);
     }
 

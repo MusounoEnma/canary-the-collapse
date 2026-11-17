@@ -323,14 +323,13 @@ class Stage1Vein {
             this.group.add(lanternGroup);
         }
 
-        // Only 2 strategic area lights in Stage 1 for maximum 60 FPS performance
-        const zoneLight1 = new THREE.PointLight(0xffa726, 1.4, 25, 2.0);
-        zoneLight1.position.set(0, 3.0, -75);
-        this.group.add(zoneLight1);
-
-        const zoneLight2 = new THREE.PointLight(0xffa726, 1.4, 25, 2.0);
-        zoneLight2.position.set(0, 3.0, -195);
-        this.group.add(zoneLight2);
+        // 5 strategic warm amber floodlights along Stage 1 for full radiant illumination
+        const lightPositions = [5, -60, -120, -180, -240];
+        for (const lz of lightPositions) {
+            const zLight = new THREE.PointLight(0xffb74d, 2.2, 35, 1.2);
+            zLight.position.set(this.getPathX(lz), this.getPathY(lz) + 2.5, lz);
+            this.group.add(zLight);
+        }
     }
 
     buildObstacles() {
