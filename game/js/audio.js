@@ -681,6 +681,49 @@ class SoundEngine {
         src.start(now);
     }
 
+    playWhoosh() {
+        if (!this.ctx) return;
+        const bufSize = Math.floor(this.ctx.sampleRate * 0.35);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / bufSize);
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(600, this.ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.35);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        src.start();
+    }
+
+    playPickaxeClang(isPerfect = true) {
+        this.playPickaxeHit(isPerfect);
+    }
+
+    playSwimStroke() {
+        this.playWaterStroke();
+    }
+
+    playBreathGasp() {
+        this.playRaggedBreath();
+    }
+
+    playDeepInhale() {
+        this.playOxygenRefill();
+    }
+
+    playTremorRumble() {
+        this.playEarthquake(2.5);
+    }
+
     stopCaveAmbience() {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;

@@ -1,41 +1,37 @@
 /**
  * CANARY: The Collapse - Dynamic Event Manager
- * Features:
- * - Precision Rhythm Pickaxe Breach: Generous 30% green sweet spot, 60 speed, dual strike button & critical hit.
- * - Fallen miner looting with Sub-Shaft 07-C secret corpse (Arthur).
- * - Earthquakes and surface escape hatch.
+ * Coordinates interactive world objects across all 3 stages:
+ * - Pickaxe rhythm mini-game & first-person 3D strike swings.
+ * - Derailed minecart pushing interaction.
+ * - Fallen miner ID badges & lore collectibles with O2 refills.
+ * - Manual 24m rope climbing trigger.
+ * - Escape Hatch B-4 breach and victory sequence.
  */
 
 class EventManager {
     constructor() {
         this.currentRubble = null;
         this.currentCorpse = null;
+        this.isNearCart = false;
         this.isNearRope = false;
-        this.isNearCrate = false;
         this.isNearHatch = false;
-        
-        // Rhythm Mini-game state
+
+        // Rhythm Pickaxe Mini-Game State
         this.isRhythmActive = false;
         this.needlePos = 10;
-        this.needleSpeed = 60; // Gentle, predictable, rhythm tempo (no hyper-speed skip)
+        this.needleSpeed = 55;
         this.needleDir = 1;
-        this.sweetSpotMin = 35;
-        this.sweetSpotMax = 65; // Wide 30% area
-        this.sweetSpotCenter = 50;
+        this.sweetSpotMin = 32;
+        this.sweetSpotMax = 68; // Generous 36% sweet spot
         this.hitsDone = 0;
-        this.hitsNeeded = 2;
-
-        // Earthquake aftershock timer
-        this.nextAftershockTimer = 38.0;
-        this.isEarthquakeShaking = false;
-        this.earthquakeDuration = 0;
+        this.hitsNeeded = 3;
 
         this.isNoteModalOpen = false;
 
-        this.initRhythmListeners();
+        this.initListeners();
     }
 
-    initRhythmListeners() {
+    initListeners() {
         window.addEventListener('keydown', (e) => {
             if (this.isRhythmActive) {
                 if (e.code === 'Space') {
@@ -51,23 +47,11 @@ class EventManager {
             }
         });
 
-        // Click on Strike button or overlay
         const strikeBtn = document.getElementById('btn-strike-pickaxe');
         if (strikeBtn) {
             strikeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (this.isRhythmActive) {
-                    this.strikePickaxe();
-                }
-            });
-        }
-
-        const rhythmOverlay = document.getElementById('rhythm-minigame-overlay');
-        if (rhythmOverlay) {
-            rhythmOverlay.addEventListener('mousedown', (e) => {
-                if (this.isRhythmActive && e.target.tagName !== 'BUTTON') {
-                    this.strikePickaxe();
-                }
+                if (this.isRhythmActive) this.strikePickaxe();
             });
         }
     }
@@ -79,48 +63,46 @@ class EventManager {
         const promptEl = document.getElementById('interaction-prompt');
         let promptText = '';
 
-        // 1. Check Rubbles
+        // 1. Check Rubbles in Stage 1
         let foundRubble = null;
-        world.rubbleObjects.forEach(r => {
-            if (!r.cleared) {
-                const distThresh = r.isBedrock ? 4.2 : 3.2;
-                const dist = Math.hypot(pPos.x - r.x, pPos.z - r.z);
-                if (dist < distThresh) {
-                    foundRubble = r;
+        if (world.rubbles) {
+            world.rubbles.forEach(r => {
+                if (!r.cleared) {
+                    const dist = pPos.distanceTo(r.position);
+                    if (dist < 3.8) {
+                        foundRubble = r;
+                    }
                 }
-            }
-        });
+            });
+        }
 
         if (foundRubble) {
             this.currentRubble = foundRubble;
-            if (foundRubble.isBedrock) {
-                if (player.hasBrokenPickaxe) {
-                    promptText = "[IMPASSABLE] MONOLITHIC BEDROCK - PICKAXE BROKEN! TAKE BYPASS DETOUR ◄";
-                } else {
-                    promptText = "[E] ATTEMPT TO BREACH SOLID BEDROCK WITH PICKAXE";
-                }
-            } else if (foundRubble.requiresCrowbar) {
-                if (!player.hasCrowbar) {
-                    promptText = "[BLOCKED] REQUIRES HEAVY CROWBAR (Find gear crate at Upper Ledge)";
-                } else {
-                    const remaining = foundRubble.currentHealth;
-                    promptText = `[E] PRY BOULDER BARRIER WITH CARBIDE CROWBAR (${remaining} PRY STRIKE${remaining > 1 ? 'S' : ''})`;
-                }
-            } else {
-                const remaining = foundRubble.currentHealth;
-                promptText = `[E] BREACH BOULDER RUBBLE WITH PICKAXE (${remaining} STRIKE${remaining > 1 ? 'S' : ''} NEEDED)`;
-            }
+            promptText = `[E] BREACH ROCK BARRIER WITH PICKAXE (${foundRubble.hitsRemaining} STRIKE${foundRubble.hitsRemaining > 1 ? 'S' : ''} NEEDED)`;
         } else {
             this.currentRubble = null;
         }
 
-        // 2. Check Fallen Corpses (including secret Arthur in dead-end branch)
+        // 2. Check Derailed Minecart (z = -145)
+        if (!foundRubble && world.mineCart && !world.mineCart.isPushed) {
+            const dist = pPos.distanceTo(world.mineCart.position);
+            if (dist < 3.6) {
+                this.isNearCart = true;
+                promptText = "[E] PUSH DERAILED MINECART OUT OF THE TRACK";
+            } else {
+                this.isNearCart = false;
+            }
+        } else {
+            this.isNearCart = false;
+        }
+
+        // 3. Check Fallen Miner Corpses
         let foundCorpse = null;
-        if (!foundRubble) {
-            world.corpseObjects.forEach(c => {
-                if (!c.looted) {
-                    const dist = pPos.distanceTo(c.pos);
-                    if (dist < 2.5) {
+        if (!foundRubble && !this.isNearCart && world.corpses) {
+            world.corpses.forEach(c => {
+                if (c && !c.looted) {
+                    const dist = pPos.distanceTo(c.position);
+                    if (dist < 3.2) {
                         foundCorpse = c;
                     }
                 }
@@ -128,20 +110,18 @@ class EventManager {
 
             if (foundCorpse) {
                 this.currentCorpse = foundCorpse;
-                promptText = `[E] SEARCH FALLEN MINER (${foundCorpse.name} - ${foundCorpse.role})`;
+                promptText = `[E] SEARCH FALLEN MINER (${foundCorpse.name})`;
             } else {
                 this.currentCorpse = null;
             }
         }
 
-        // 3. Check Rescue Rope at Cliff Ledge (z = -195)
-        let foundRope = null;
-        if (!foundRubble && !foundCorpse && world.rescueRope && !player.hasClimbedRope) {
-            const distToRope = Math.hypot(pPos.x - world.rescueRope.x, pPos.z - world.rescueRope.z);
-            if (distToRope < 4.8) {
-                foundRope = world.rescueRope;
+        // 4. Check Rescue Rope at z = -625
+        if (!foundRubble && !this.isNearCart && !foundCorpse && world.rescueRope && !player.hasClimbedRope) {
+            const dist = Math.hypot(pPos.x - world.rescueRope.position.x, pPos.z - world.rescueRope.position.z);
+            if (dist < 4.5 && pPos.y < 0) {
                 this.isNearRope = true;
-                promptText = `[E] CLIMB RESCUE ROPE TO UPPER CANYON (6.9m VERTICAL ASCENT)`;
+                promptText = "[E] CLIMB RESCUE ROPE (24 METERS VERTICAL ASCENT)";
             } else {
                 this.isNearRope = false;
             }
@@ -149,28 +129,17 @@ class EventManager {
             this.isNearRope = false;
         }
 
-        // 4. Check Emergency Gear Crate (z = -208)
-        if (!foundRubble && !foundCorpse && !this.isNearRope && world.gearCrate && !world.gearCrate.retrieved) {
-            const distToCrate = Math.hypot(pPos.x - world.gearCrate.x, pPos.z - world.gearCrate.z);
-            if (distToCrate < 3.8) {
-                this.isNearCrate = true;
-                promptText = "[E] RETRIEVE HEAVY CARBIDE CROWBAR FROM RESCUE GEAR CRATE";
-            } else {
-                this.isNearCrate = false;
-            }
-        } else {
-            this.isNearCrate = false;
-        }
-
-        // 5. Check Escape Hatch at Surface Shaft Head (z = -340)
-        if (!foundRubble && !foundCorpse && !this.isNearRope && !this.isNearCrate && world.escapeHatch) {
-            const distToHatch = Math.hypot(pPos.x - world.escapeHatch.x, pPos.z - world.escapeHatch.z);
-            if (distToHatch < 4.8) {
+        // 5. Check Escape Hatch B-4 at z = -865
+        if (!foundRubble && !this.isNearCart && !foundCorpse && !this.isNearRope && world.escapeHatch) {
+            const dist = pPos.distanceTo(world.escapeHatch.position);
+            if (dist < 5.0) {
                 this.isNearHatch = true;
-                promptText = `[E] HEAVE OPEN EMERGENCY SURFACE HATCH (ESCAPE TO SUNLIGHT)`;
+                promptText = "[E] HEAVE OPEN EMERGENCY HATCH B-4 (ESCAPE TO MORNING SUNLIGHT)";
             } else {
                 this.isNearHatch = false;
             }
+        } else {
+            this.isNearHatch = false;
         }
 
         if (promptEl) {
@@ -185,210 +154,147 @@ class EventManager {
 
     handleInteraction() {
         if (this.currentRubble) {
-            if (this.currentRubble.isBedrock) {
-                if (window.gamePlayer && window.gamePlayer.hasBrokenPickaxe) {
-                    this.showNotification("Pickaxe is broken! Take the illuminated side bypass chute!");
-                    return;
-                }
-                // Break pickaxe sequence!
-                if (window.soundEngine) window.soundEngine.playPickaxeBreak();
-                if (window.gamePlayer) window.gamePlayer.hasBrokenPickaxe = true;
-                if (window.gameWorld && typeof window.gameWorld.revealChuteOpening === 'function') {
-                    window.gameWorld.revealChuteOpening();
-                }
-                this.triggerScreenShake(1.2, 14);
-                this.showNotification("CLANG! PICKAXE SHATTERED ON MONOLITHIC BEDROCK! A gaping fissure cracked open on the left wall ◄");
-                const objEl = document.querySelector('.hud-top-value[style*="69f0ae"]');
-                if (objEl) objEl.textContent = "CHUTE ◄";
-                if (window.gameState) {
-                    window.gameState.triggerMonologue("pickaxeBroken");
-                }
-                return;
-            }
-            if (this.currentRubble.requiresCrowbar && (!window.gamePlayer || !window.gamePlayer.hasCrowbar)) {
-                this.showNotification("Granite boulders jammed tight! Need heavy crowbar from Upper Ledge crate!");
-                return;
-            }
             this.startRhythmMinigame(this.currentRubble);
+        } else if (this.isNearCart && window.gameWorld && window.gameWorld.stage1) {
+            this.pushCart();
         } else if (this.currentCorpse) {
             this.lootCorpse(this.currentCorpse);
         } else if (this.isNearRope && window.gamePlayer && window.gameWorld && window.gameWorld.rescueRope) {
             window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
-        } else if (this.isNearCrate && window.gameWorld && window.gameWorld.gearCrate) {
-            window.gameWorld.retrieveCrowbar();
-            if (window.gamePlayer) {
-                window.gamePlayer.hasCrowbar = true;
-                window.gamePlayer.oxygen = Math.min(100.0, window.gamePlayer.oxygen + 15.0);
-            }
-            this.isNearCrate = false;
-            if (window.soundEngine) {
-                window.soundEngine.playFootstep(true);
-                window.soundEngine.playOxygenRefill();
-            }
-            this.showNotification("EQUIPPED: HEAVY CARBIDE CROWBAR (+15% O₂)! Found emergency respirator cartridge in gear crate!");
-            if (window.gameState) window.gameState.triggerMonologue("crowbarRetrieved");
-        } else if (this.isNearHatch) {
+        } else if (this.isNearHatch && window.gameWorld && window.gameWorld.escapeHatch) {
             this.triggerEscapeSequence();
         }
     }
 
-    // -------------------------------------------------------------
-    // PRECISION RHYTHM PICKAXE BREACH MINI-GAME
-    // -------------------------------------------------------------
+    pushCart() {
+        if (window.soundEngine && window.soundEngine.playFootstep) {
+            window.soundEngine.playFootstep(true);
+        }
+        const cartPushed = window.gameWorld.stage1.pushMineCart(1.0);
+        if (cartPushed) {
+            this.showNotification("HEAVED DERAILED CART ASIDE! TRACK CLEARED!");
+            if (window.saveSystem) {
+                window.saveSystem.saveCheckpoint(1, window.gamePlayer.position, window.gamePlayer.oxygen, window.gamePlayer.depth);
+            }
+        }
+    }
+
+    lootCorpse(corpse) {
+        corpse.looted = true;
+        if (corpse.beacon) corpse.beacon.visible = false;
+
+        // Collect badge into persistent save
+        if (window.saveSystem) {
+            window.saveSystem.collectBadge(corpse.id);
+        }
+
+        // Restore Oxygen
+        if (window.gamePlayer) {
+            window.gamePlayer.oxygen = Math.min(100, window.gamePlayer.oxygen + corpse.oxygenBonus);
+        }
+        if (window.soundEngine && window.soundEngine.playOxygenRefill) {
+            window.soundEngine.playOxygenRefill();
+        }
+
+        // Open Lore Note Modal
+        this.isNoteModalOpen = true;
+        const nameEl = document.getElementById('note-miner-name');
+        const bodyEl = document.getElementById('note-miner-body');
+        const modal = document.getElementById('story-note-modal');
+
+        if (nameEl) nameEl.textContent = corpse.name;
+        if (bodyEl) {
+            bodyEl.innerHTML = `<p>${corpse.note.replace(/\n\n/g, '</p><p style="margin-top:10px;">')}</p>
+            <p style="margin-top:14px; color:#69f0ae; font-weight:bold;">+${corpse.oxygenBonus}% OXYGEN SECURED FROM RESPIRATOR TANK!</p>`;
+        }
+        if (modal) modal.style.display = 'flex';
+        document.exitPointerLock();
+    }
+
+    closeNoteModal() {
+        this.isNoteModalOpen = false;
+        const modal = document.getElementById('story-note-modal');
+        if (modal) modal.style.display = 'none';
+        if (window.gamePlayer && window.gamePlayer.domElement) {
+            window.gamePlayer.domElement.requestPointerLock();
+        }
+    }
+
     startRhythmMinigame(rubble) {
         this.isRhythmActive = true;
         this.currentRubble = rubble;
         this.needlePos = 8;
         this.needleDir = 1;
-        this.needleSpeed = 50; // Smooth, relaxed rhythm oscillation
-
-        // Runtuhan akhir pas mau keluar (Granite Barrier at z = -285) harus 3x hijau!
-        this.hitsNeeded = (rubble.requiresCrowbar || rubble.id === 3) ? 3 : 1;
         this.hitsDone = 0;
-
-        // Wide, generous 38% sweet spot area
-        this.sweetSpotMin = 26 + Math.random() * 16;
-        this.sweetSpotMax = this.sweetSpotMin + 38; // Generous green zone
-        this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
+        this.hitsNeeded = rubble.hitsRemaining || 3;
 
         const overlay = document.getElementById('rhythm-minigame-overlay');
         const titleEl = document.getElementById('rhythm-rubble-title');
-        const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
+        const spotEl = document.getElementById('rhythm-sweet-spot');
         const feedbackEl = document.getElementById('rhythm-feedback');
 
-        if (titleEl) titleEl.textContent = rubble.name;
+        if (titleEl) titleEl.textContent = rubble.name || "Collapsed Rubble";
+        if (spotEl) {
+            spotEl.style.left = `${this.sweetSpotMin}%`;
+            spotEl.style.width = `${this.sweetSpotMax - this.sweetSpotMin}%`;
+        }
         if (feedbackEl) {
-            feedbackEl.textContent = this.hitsNeeded > 1 
-                ? "STRIKE INSIDE GREEN ZONE 3 TIMES TO PRY OPEN THE MASSIVE GRANITE BARRICADE!" 
-                : "PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!";
-            feedbackEl.className = "";
+            feedbackEl.textContent = `STRIKE TIMING IN GREEN ZONE (${this.hitsNeeded - this.hitsDone} HITS REMAINING)!`;
+            feedbackEl.style.color = '#fff';
         }
-        this.updateRhythmHealthDisplay();
-
-        if (sweetSpotEl) {
-            sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
-            sweetSpotEl.style.width = `${this.sweetSpotMax - this.sweetSpotMin}%`;
-        }
-
         if (overlay) overlay.style.display = 'flex';
         document.exitPointerLock();
-
-        if (window.gameState) {
-            window.gameState.state = 'MINIGAME';
-        }
-    }
-
-    updateRhythmHealthDisplay() {
-        const healthEl = document.getElementById('rhythm-health-text');
-        if (!healthEl || !this.currentRubble) return;
-        if (this.hitsNeeded > 1) {
-            const left = this.hitsNeeded - this.hitsDone;
-            healthEl.textContent = `Massive granite barricade: Land 3 green strikes with crowbar (${left} strike${left > 1 ? 's' : ''} remaining)!`;
-        } else {
-            healthEl.textContent = "Fracture line exposed: Any strike in the green zone shatters the rock!";
-        }
-    }
-
-    updateRhythm(delta) {
-        if (!this.isRhythmActive) return;
-
-        this.needlePos += this.needleDir * this.needleSpeed * delta;
-        if (this.needlePos >= 98) {
-            this.needlePos = 98;
-            this.needleDir = -1;
-        } else if (this.needlePos <= 2) {
-            this.needlePos = 2;
-            this.needleDir = 1;
-        }
-
-        const needleEl = document.getElementById('rhythm-needle');
-        if (needleEl) {
-            needleEl.style.left = `${this.needlePos}%`;
-        }
     }
 
     strikePickaxe() {
-        if (!this.isRhythmActive || !this.currentRubble) return;
+        if (!this.isRhythmActive) return;
 
-        const feedbackEl = document.getElementById('rhythm-feedback');
+        const isHit = (this.needlePos >= this.sweetSpotMin && this.needlePos <= this.sweetSpotMax);
 
-        // Generous Hit Detection: ANYWHERE inside the green zone (+5% edge padding)
-        const tolerance = 5.0;
-        const isInsideGreenZone = (this.needlePos >= (this.sweetSpotMin - tolerance) && this.needlePos <= (this.sweetSpotMax + tolerance));
-
-        if (isInsideGreenZone) {
-            if (window.soundEngine) window.soundEngine.playPickaxeHit(true);
-
-            this.hitsDone++;
-            this.triggerScreenShake(0.45, 12);
-            const remaining = this.hitsNeeded - this.hitsDone;
-
-            if (remaining > 0) {
-                // Relocate sweet spot for next strike
-                this.sweetSpotMin = 20 + Math.random() * 26;
-                this.sweetSpotMax = this.sweetSpotMin + 36;
-                this.sweetSpotCenter = (this.sweetSpotMin + this.sweetSpotMax) / 2;
-                const sweetSpotEl = document.getElementById('rhythm-sweet-spot');
-                if (sweetSpotEl) {
-                    sweetSpotEl.style.left = `${this.sweetSpotMin}%`;
-                    sweetSpotEl.style.width = `${this.sweetSpotMax - this.sweetSpotMin}%`;
-                }
-
-                if (feedbackEl) {
-                    feedbackEl.textContent = `SOLID GREEN HIT! (${this.hitsDone}/3) — ${remaining} MORE GREEN STRIKE${remaining > 1 ? 'S' : ''}!`;
-                    feedbackEl.className = "hit-perfect";
-                }
-                this.updateRhythmHealthDisplay();
-            } else {
-                // All required green hits completed!
-                this.currentRubble.currentHealth = 0;
-                this.updateRhythmHealthDisplay();
-
-                const isGranite = (this.hitsNeeded > 1 || this.currentRubble.requiresCrowbar);
-                if (feedbackEl) {
-                    feedbackEl.textContent = isGranite 
-                        ? "FINAL GREEN STRIKE! GRANITE SHATTERED! PATH CLEARED!" 
-                        : "PERFECT STRIKE! BOULDERS SHATTERED! PATH CLEARED!";
-                    feedbackEl.className = "hit-perfect";
-                }
-
-                try {
-                    if (window.soundEngine && typeof window.soundEngine.playRockCollapse === 'function') {
-                        window.soundEngine.playRockCollapse();
-                    } else if (window.soundEngine && typeof window.soundEngine.playHeavyCaveInThud === 'function') {
-                        window.soundEngine.playHeavyCaveInThud();
+        // First-person 3D pickaxe swing animation
+        if (window.pickaxeSystem) {
+            window.pickaxeSystem.swing(() => {
+                if (isHit) {
+                    this.hitsDone++;
+                    const feedbackEl = document.getElementById('rhythm-feedback');
+                    if (feedbackEl) {
+                        feedbackEl.textContent = `CRITICAL FRACTURE! (${this.hitsNeeded - this.hitsDone} HITS LEFT)`;
+                        feedbackEl.style.color = '#69f0ae';
                     }
-                } catch (e) {
-                    console.warn("Audio error ignored:", e);
-                }
 
-                const rubbleId = this.currentRubble.id;
-                if (window.gameWorld && typeof window.gameWorld.removeRubble === 'function') {
-                    window.gameWorld.removeRubble(rubbleId);
+                    if (this.hitsDone >= this.hitsNeeded) {
+                        this.breachRubbleSuccess();
+                    }
+                } else {
+                    const feedbackEl = document.getElementById('rhythm-feedback');
+                    if (feedbackEl) {
+                        feedbackEl.textContent = "GLANCING BLOW! TIMING MISSED!";
+                        feedbackEl.style.color = '#ff1744';
+                    }
+                    if (window.soundEngine && window.soundEngine.playPickaxeClang) {
+                        window.soundEngine.playPickaxeClang(false);
+                    }
                 }
-
-                setTimeout(() => {
-                    this.showNotification(isGranite 
-                        ? "Final granite barricade pried open! The surface hatch is ahead!" 
-                        : "Cave-in rubble destroyed! Keep moving forward!");
-                    this.closeRhythmMinigame();
-                }, 350);
-            }
+            });
         } else {
-            // Missed outside green zone
-            if (window.soundEngine) {
-                window.soundEngine.playPickaxeHit(false);
-                window.soundEngine.playEarthquake(1.2);
+            if (isHit) {
+                this.hitsDone++;
+                if (this.hitsDone >= this.hitsNeeded) this.breachRubbleSuccess();
             }
-            if (feedbackEl) {
-                feedbackEl.textContent = "MISSED! PRESS [SPACE] OR CLICK WHEN NEEDLE IS IN GREEN AREA!";
-                feedbackEl.className = "hit-miss";
-            }
+        }
+    }
 
-            if (window.gamePlayer) {
-                window.gamePlayer.oxygen = Math.max(0, window.gamePlayer.oxygen - 2.0);
+    breachRubbleSuccess() {
+        this.closeRhythmMinigame();
+
+        if (this.currentRubble && window.gameWorld) {
+            window.gameWorld.removeRubble(this.currentRubble.id);
+            this.showNotification("RUBBLE SHATTERED! PATH FORWARD CLEARED!");
+
+            // Save checkpoint
+            if (window.saveSystem && window.gamePlayer) {
+                window.saveSystem.saveCheckpoint(1, window.gamePlayer.position, window.gamePlayer.oxygen, window.gamePlayer.depth);
             }
-            this.triggerScreenShake(0.35, 7);
         }
     }
 
@@ -396,123 +302,9 @@ class EventManager {
         this.isRhythmActive = false;
         const overlay = document.getElementById('rhythm-minigame-overlay');
         if (overlay) overlay.style.display = 'none';
-
-        if (window.gameState && window.gameState.state === 'MINIGAME') {
-            window.gameState.state = 'PLAYING';
-            if (window.gamePlayer && window.gamePlayer.domElement) {
-                try {
-                    const p = window.gamePlayer.domElement.requestPointerLock();
-                    if (p && p.catch) p.catch(() => {});
-                } catch (e) {}
-            }
+        if (window.gamePlayer && window.gamePlayer.domElement) {
+            window.gamePlayer.domElement.requestPointerLock();
         }
-    }
-
-    lootCorpse(corpse) {
-        corpse.looted = true;
-        if (corpse.valveLight) corpse.valveLight.intensity = 0;
-
-        if (window.gamePlayer) {
-            const prevO2 = window.gamePlayer.oxygen;
-            window.gamePlayer.oxygen = Math.min(100, window.gamePlayer.oxygen + corpse.o2Bonus);
-            const gained = Math.round(window.gamePlayer.oxygen - prevO2);
-            if (window.soundEngine) window.soundEngine.playOxygenRefill();
-            this.showNotification(`+${gained}% O2 retrieved from ${corpse.name}'s survival canister!`);
-        }
-
-        this.showCorpseNote(corpse);
-    }
-
-    showCorpseNote(corpse) {
-        this.isNoteModalOpen = true;
-        document.exitPointerLock();
-
-        const modal = document.getElementById('story-note-modal');
-        const titleEl = document.getElementById('note-miner-name');
-        const bodyEl = document.getElementById('note-miner-body');
-
-        if (titleEl) titleEl.textContent = `Miner ID Badge: ${corpse.name} (${corpse.role})`;
-        if (bodyEl) {
-            bodyEl.innerHTML = `
-                <p><strong>Last Recorded Entry:</strong></p>
-                <p class="handwriting-text">"${corpse.note}"</p>
-                <div class="note-loot-info">
-                    <span>✔ High-Capacity O2 Canister Recovered (+${corpse.o2Bonus}%)</span><br>
-                    <span>✔ Headlamp Backup Battery Restored</span>
-                </div>
-            `;
-        }
-
-        if (modal) modal.style.display = 'flex';
-        if (window.gameState) window.gameState.state = 'INSPECTING';
-    }
-
-    closeNoteModal() {
-        this.isNoteModalOpen = false;
-        const modal = document.getElementById('story-note-modal');
-        if (modal) modal.style.display = 'none';
-
-        if (window.gameState && window.gameState.state === 'INSPECTING') {
-            window.gameState.state = 'PLAYING';
-            if (window.gamePlayer && window.gamePlayer.domElement) {
-                window.gamePlayer.domElement.requestPointerLock();
-            }
-        }
-    }
-
-    updateAftershocks(delta) {
-        this.nextAftershockTimer -= delta;
-        if (this.nextAftershockTimer <= 0) {
-            this.nextAftershockTimer = 38.0 + Math.random() * 25.0;
-            this.triggerAftershock();
-        }
-
-        if (this.isEarthquakeShaking) {
-            this.earthquakeDuration -= delta;
-            if (this.earthquakeDuration <= 0) {
-                this.isEarthquakeShaking = false;
-                document.body.classList.remove('earthquake-shake');
-            }
-        }
-    }
-
-    triggerAftershock() {
-        this.isEarthquakeShaking = true;
-        this.earthquakeDuration = 4.2;
-        if (window.soundEngine) {
-            window.soundEngine.playEarthquake(4.2);
-            window.soundEngine.setTinnitus(0.18);
-            setTimeout(() => {
-                if (window.soundEngine) window.soundEngine.setTinnitus(0.0001);
-            }, 3500);
-        }
-        document.body.classList.add('earthquake-shake');
-        const glitchEl = document.getElementById('glitch-overlay');
-        if (glitchEl) {
-            glitchEl.classList.add('active');
-            setTimeout(() => {
-                glitchEl.classList.remove('active');
-            }, 4200);
-        }
-        this.showNotification("WARNING: AFTERSHOCK TREMOR SHAKING SHAFT CEILING! ELECTRICAL SURGE GLITCHING!");
-    }
-
-    triggerScreenShake(duration, intensity) {
-        const viewport = document.getElementById('game-container');
-        if (!viewport) return;
-
-        let elapsed = 0;
-        const shakeInterval = setInterval(() => {
-            elapsed += 0.03;
-            const x = (Math.random() - 0.5) * intensity;
-            const y = (Math.random() - 0.5) * intensity;
-            viewport.style.transform = `translate(${x}px, ${y}px)`;
-
-            if (elapsed >= duration) {
-                clearInterval(shakeInterval);
-                viewport.style.transform = 'none';
-            }
-        }, 30);
     }
 
     triggerEscapeSequence() {
@@ -521,15 +313,34 @@ class EventManager {
         }
     }
 
-    showNotification(text) {
-        const banner = document.getElementById('notification-banner');
-        if (!banner) return;
-        banner.textContent = text;
-        banner.classList.add('active');
-        clearTimeout(this.notificationTimer);
-        this.notificationTimer = setTimeout(() => {
-            banner.classList.remove('active');
-        }, 3800);
+    showNotification(msg) {
+        const notif = document.getElementById('notification-banner');
+        if (notif) {
+            notif.textContent = msg;
+            notif.style.display = 'block';
+            notif.style.opacity = '1';
+            clearTimeout(this.notifTimeout);
+            this.notifTimeout = setTimeout(() => {
+                notif.style.opacity = '0';
+                setTimeout(() => notif.style.display = 'none', 500);
+            }, 3500);
+        }
+    }
+
+    update(delta) {
+        if (this.isRhythmActive) {
+            this.needlePos += this.needleSpeed * delta * this.needleDir;
+            if (this.needlePos >= 96) {
+                this.needlePos = 96;
+                this.needleDir = -1;
+            } else if (this.needlePos <= 4) {
+                this.needlePos = 4;
+                this.needleDir = 1;
+            }
+
+            const needleEl = document.getElementById('rhythm-needle');
+            if (needleEl) needleEl.style.left = `${this.needlePos}%`;
+        }
     }
 }
 

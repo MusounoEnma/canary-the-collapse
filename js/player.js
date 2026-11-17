@@ -1,10 +1,10 @@
 /**
  * CANARY: The Collapse - FPS Player Controller
  * Features:
- * - Underwater Swimming Stage (z=-160 to -178) with murky water FX and muffled audio.
- * - Vertical Rescue Rope Climbing Stage (z=-180) to ascend the 7.5m cliff ledge.
- * - Dramatic Rockslide Tumble: Slips and rolls 720 degrees down the steep chute.
- * - High-Tension Oxygen Depletion Climax.
+ * - 3x Extended Subterranean Expedition: 780m depth to 0m surface across 3 diverse sectors.
+ * - Stage 1 (Vein): Realistic fatigue stumbling, mine cart pushing, and pickaxe swing integration.
+ * - Stage 2 (Abyssal Chute & Grotto): 110m high-speed slide with steering + 225m swimming grotto with O2 geysers.
+ * - Stage 3 (Ascent & Surface): 24m manual hand-over-hand rope climb, concussive tremor wobble, active boulder dodging, and desperate final crawl.
  */
 
 class PlayerController {
@@ -15,8 +15,8 @@ class PlayerController {
         // Position & Movement
         this.position = new THREE.Vector3(0, 1.7, 0);
         this.velocity = new THREE.Vector3();
-        this.moveSpeed = 3.4;
-        this.sprintMultiplier = 1.75;
+        this.moveSpeed = 3.2;
+        this.sprintMultiplier = 1.7;
         this.isSprinting = false;
         this.isMoving = false;
         this.stepTimer = 0;
@@ -32,61 +32,60 @@ class PlayerController {
         this.oxygen = 100.0;
         this.isDead = false;
         this.isRespiratorLeaking = false;
+        this.depth = 780;
 
         // Equipment progression
         this.hasBrokenPickaxe = false;
         this.hasCrowbar = false;
 
-        // Cinematic Tumble & Roll Event (Side Bypass Chute)
-        this.hasTumbled = false;
-        this.isTumbling = false;
-        this.tumbleTimer = 0;
-        this.tumbleDuration = 2.2;
-        this.tumbleStartZ = -137;
-        this.tumbleEndZ = -162;
+        // Stage 2: The Abyssal Ore Chute Slide
+        this.isSliding = false;
+        this.slideProgress = 0; // 0 to 1
+        this.slideLateralOffset = 0;
+        this.slideSpeed = 0.09; // takes ~11 seconds to slide down 110 meters
 
-        // Underwater Swimming Stage & Smooth Water Transition
+        // Stage 2: Extended Swimming Grotto
         this.isSwimming = false;
         this.swimStrokeTimer = 0;
-        this.waterEntryTimer = 0;
-        this.waterEntryDuration = 1.6;
+        this.underwaterOverlay = document.getElementById('underwater-overlay');
+        this.splashVignette = document.getElementById('water-splash-vignette');
 
-        // Vertical Rescue Rope Climbing Stage
+        // Stage 3: Manual Hand-over-Hand Rope Climb (24m vertical)
         this.isClimbingRope = false;
-        this.ropeClimbProgress = 0; // 0 to 1
-        this.ropeClimbSpeed = 0.35; // ~3 seconds climb
-        this.ropeStartY = 0;
-        this.ropeEndY = 0;
+        this.ropeClimbMeters = 0;
+        this.ropeTotalMeters = 24.0;
         this.hasClimbedRope = false;
+        this.ropePullAlternate = false;
 
         // Flashlight (Helmet Headlamp)
         this.flashlight = null;
         this.flashlightTarget = null;
         this.isFlashlightOn = true;
-        this.isFlashlightWaterlogged = false;
         this.isFlashlightMalfunctioning = false;
         this.tapsRequired = 0;
-        this.nextMalfunctionCheck = 28.0;
+        this.nextMalfunctionCheck = 30.0;
 
-        // Physical Tripping Hazard
+        // Physical Fatigue Stumble & Collapse
         this.isStumbled = false;
-        this.stumblePitchOffset = 0;
-        this.stumbleRecoveryTimer = 0;
+        this.stumbleProgress = 0;
+        this.stumbleCooldown = 0;
+        this.stumbleTapsNeeded = 0;
 
-        // Climax Knockout & Wounded Staggering Finale
-        this.isClimaxKnockedOut = false;
-        this.isStaggering = false;
-        this.staggerBob = 0;
+        // Concussive Tremor Sway & Active Boulder Dodging
+        this.concussiveSway = 0;
 
-        // Initial Game Intro: Waking Up Prone from Collapse Knockout
+        // Desperate Crawling Finale (z < -820)
+        this.isForcedCrawl = false;
+
+        // Initial Game Intro: Waking Up Prone
         this.isWakingUp = false;
         this.wakeUpTimer = 0;
         this.wakeUpDuration = 3.6;
 
-        // Crouch / Crawl Mechanics
+        // Crouch Mechanics
         this.isCrouching = false;
         this.standEyeHeight = 1.65;
-        this.crouchEyeHeight = 0.82;
+        this.crouchEyeHeight = 0.80;
         this.currentEyeHeight = 1.65;
 
         // Head Bobbing & Elevation
@@ -106,7 +105,7 @@ class PlayerController {
     }
 
     initFlashlight() {
-        this.flashlight = new THREE.SpotLight(0xfffae0, 4.2, 60, Math.PI / 3.0, 0.45, 1.2);
+        this.flashlight = new THREE.SpotLight(0xfffae0, 4.5, 65, Math.PI / 2.8, 0.45, 1.2);
         this.flashlight.position.copy(this.camera.position);
 
         this.flashlightTarget = new THREE.Object3D();
@@ -116,7 +115,7 @@ class PlayerController {
         window.gameScene.add(this.flashlight);
         window.gameScene.add(this.flashlightTarget);
 
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.75, 10.5, 2);
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.85, 12.0, 2);
         window.gameScene.add(this.ambientBulb);
     }
 
@@ -159,8 +158,7 @@ class PlayerController {
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (this.isDead || this.isTumbling || this.isClimbingRope) return;
-            // Fully responsive look: works both with pointer lock AND mouse drag!
+            if (this.isDead || this.isSliding) return;
             if (!this.isLocked && !isMouseDown) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
@@ -168,13 +166,26 @@ class PlayerController {
         });
 
         window.addEventListener('keydown', (e) => {
-            if (this.isDead || this.isTumbling) return;
+            if (this.isDead) return;
 
-            // While climbing rope, space / W climbs faster
+            // Handle recovery when player has stumbled / collapsed to knees
+            if (this.isStumbled) {
+                if (e.code === 'Space' || e.code === 'KeyW') {
+                    this.stumbleTapsNeeded--;
+                    if (window.soundEngine && window.soundEngine.playFootstep) {
+                        window.soundEngine.playFootstep(0.4);
+                    }
+                    if (this.stumbleTapsNeeded <= 0) {
+                        this.recoverFromStumble();
+                    }
+                }
+                return;
+            }
+
+            // Manual hand-over-hand rope climbing
             if (this.isClimbingRope) {
-                if (e.code === 'KeyW' || e.code === 'Space') {
-                    this.ropeClimbProgress += 0.08;
-                    if (window.soundEngine) window.soundEngine.playRopeCreak();
+                if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'KeyY') {
+                    this.pullRopeHand();
                 }
                 return;
             }
@@ -260,588 +271,390 @@ class PlayerController {
         });
     }
 
+    startIntroWakeUp() {
+        this.isWakingUp = true;
+        this.wakeUpTimer = 0;
+        this.pitch = -0.7; // looking at ground
+        this.yaw = 0;
+        this.roll = 0.45; // head resting tilted on rock
+    }
+
     toggleCrouch() {
-        if (this.isDead || this.isTumbling || this.isClimbingRope || this.isSwimming) return;
+        if (this.isForcedCrawl) return; // Cannot stand up during forced crawl
         this.isCrouching = !this.isCrouching;
-        const stanceVal = document.getElementById('hud-stance-value');
-        if (stanceVal) {
-            stanceVal.textContent = this.isCrouching ? "CROUCHING [C]" : "STANDING [C]";
-            stanceVal.style.color = this.isCrouching ? "#ffb300" : "#69f0ae";
-        }
-        if (window.soundEngine) {
-            window.soundEngine.playFootstep(false);
+        const stanceEl = document.getElementById('hud-stance-value');
+        if (stanceEl) {
+            stanceEl.textContent = this.isCrouching ? "CROUCHING [C]" : "STANDING [C]";
+            stanceEl.style.color = this.isCrouching ? "#ffd54f" : "#69f0ae";
         }
     }
 
     handleHelmetTap() {
-        if (window.soundEngine) window.soundEngine.playHelmetTap();
-
-        // Waterlogged headlamp from tumbling into flooded water
-        if (this.isFlashlightWaterlogged) {
-            this.tapsRequired = (this.tapsRequired || 2) - 1;
-            if (this.flashlight) {
-                this.flashlight.intensity = Math.random() < 0.5 ? 1.2 : 0.0;
-            }
-            if (this.tapsRequired <= 0) {
-                this.isFlashlightWaterlogged = false;
-                this.isFlashlightOn = true;
-                if (this.flashlight) this.flashlight.intensity = 3.6;
-                if (this.ambientBulb) this.ambientBulb.intensity = 0.6;
-                const tapAlert = document.getElementById('helmet-tap-alert');
-                if (tapAlert) tapAlert.classList.remove('active');
-                if (window.eventManager) window.eventManager.showNotification("WATER DRAINED! HEADLAMP FULLY RESTORED!");
-            }
-            return;
-        }
-
-        if (!this.isFlashlightMalfunctioning) {
-            return;
-        }
-
+        if (!this.isFlashlightMalfunctioning) return;
         this.tapsRequired--;
-
-        if (this.flashlight) {
-            this.flashlight.intensity = 1.4;
-            setTimeout(() => {
-                if (this.isFlashlightMalfunctioning) this.flashlight.intensity = 0;
-            }, 60);
-        }
+        if (window.soundEngine) window.soundEngine.playHelmetTap();
 
         if (this.tapsRequired <= 0) {
             this.isFlashlightMalfunctioning = false;
-            if (this.flashlight) this.flashlight.intensity = 3.6;
+            this.isFlashlightOn = true;
+            this.flashlight.intensity = 4.5;
+            this.ambientBulb.intensity = 0.85;
             const tapAlert = document.getElementById('helmet-tap-alert');
-            if (tapAlert) tapAlert.classList.remove('active');
-            if (window.eventManager) window.eventManager.showNotification("Helmet headlamp contacts restored!");
+            if (tapAlert) tapAlert.style.display = 'none';
         }
     }
 
-    triggerFlashlightMalfunction() {
-        if (this.isFlashlightMalfunctioning || this.isTumbling || this.isClimbingRope) return;
-        this.isFlashlightMalfunctioning = true;
-        this.tapsRequired = Math.floor(1 + Math.random() * 2);
+    triggerStumble(severity = 1.0) {
+        if (this.isStumbled || this.isSliding || this.isClimbingRope || this.isSwimming) return;
 
-        let flickers = 0;
-        const flickInterval = setInterval(() => {
-            flickers++;
-            if (this.flashlight) {
-                this.flashlight.intensity = (flickers % 2 === 0) ? 0.3 : 0;
-            }
-            if (flickers > 5) {
-                clearInterval(flickInterval);
-                if (this.flashlight) this.flashlight.intensity = 0;
-                const tapAlert = document.getElementById('helmet-tap-alert');
-                if (tapAlert) tapAlert.classList.add('active');
-                if (window.soundEngine) window.soundEngine.playHelmetTap();
-                if (window.gameState) window.gameState.triggerMonologue("headlamp");
-            }
-        }, 110);
-    }
+        this.isStumbled = true;
+        this.stumbleTapsNeeded = 3;
+        this.stumbleProgress = 0;
+        this.stumbleCooldown = 15.0; // Prevent spam
 
-    // -------------------------------------------------------------
-    // CINEMATIC ROCKSLIDE TUMBLE & ROUTE SWITCH
-    // -------------------------------------------------------------
-    triggerRockslideTumble() {
-        if (this.hasTumbled || this.isTumbling) return;
-        this.hasTumbled = true;
-        this.isTumbling = true;
-        this.tumbleTimer = 0;
-        this.tumbleStartZ = this.position.z;
-
-        if (window.soundEngine) {
-            window.soundEngine.playEarthquake(3.5);
-            window.soundEngine.playWaterSplash(true);
-            window.soundEngine.setTinnitus(0.25);
-            setTimeout(() => {
-                if (window.soundEngine) window.soundEngine.setTinnitus(0.0001);
-            }, 3000);
+        if (window.soundEngine && window.soundEngine.playBreathGasp) {
+            window.soundEngine.playBreathGasp();
         }
-
         if (window.eventManager) {
-            window.eventManager.triggerScreenShake(2.2, 18);
-            window.eventManager.showNotification("PRECIPICE COLLAPSE! SLIDING AND TUMBLING DOWN THE SHAFT!");
-        }
-
-        this.isRespiratorLeaking = true;
-        this.oxygen = Math.max(12, this.oxygen - 18.0);
-    }
-
-    updateTumble(delta, world) {
-        this.tumbleTimer += delta;
-        const progress = Math.min(1.0, this.tumbleTimer / this.tumbleDuration);
-
-        const easeT = progress * progress * (3 - 2 * progress);
-        this.position.z = THREE.MathUtils.lerp(this.tumbleStartZ, this.tumbleEndZ, easeT);
-        this.position.x = world.getPathX(this.position.z);
-        this.position.y = world.getPathY(this.position.z);
-
-        // 720 degree tumble roll
-        this.roll = progress * Math.PI * 4;
-        this.pitch = Math.sin(progress * Math.PI * 6) * 0.45;
-
-        if (this.flashlight) {
-            this.flashlight.intensity = Math.random() > 0.4 ? 2.5 : 0.2;
-        }
-
-        if (progress >= 1.0) {
-            this.isTumbling = false;
-            this.waterEntryTimer = this.waterEntryDuration;
-
-            // Senter (headlamp) mati total setelah kecebur air!
-            this.isFlashlightWaterlogged = true;
-            this.isFlashlightOn = false;
-            this.tapsRequired = 2;
-            if (this.flashlight) this.flashlight.intensity = 0;
-            if (this.ambientBulb) this.ambientBulb.intensity = 0;
-
-            if (window.soundEngine) {
-                window.soundEngine.playWaterSplash(true);
-                window.soundEngine.playElectricalGlitch(); // Short-circuit fizzle
-            }
-
-            // Spawn the ethereal golden Lily scene in the pitch dark water
-            if (window.gameWorld) {
-                window.gameWorld.spawnWaterLilyScene();
-            }
-
-            // Trigger splash visual burst
-            const splashVignette = document.getElementById('water-splash-vignette');
-            if (splashVignette) {
-                splashVignette.classList.remove('active');
-                void splashVignette.offsetWidth;
-                splashVignette.classList.add('active');
-            }
-
-            if (window.gameState) {
-                window.gameState.triggerMonologue("waterLilyScene");
-            }
-
-            if (window.eventManager) {
-                window.eventManager.showNotification("HEADLAMP SHORTED OUT IN WATER! FOLLOW LILY'S GOLDEN LIGHT ACROSS THE FLOODED SUMP!");
-            }
+            window.eventManager.showNotification("EXHAUSTION! TAP [SPACE] OR [W] TO STRUGGLE BACK UP!");
         }
     }
 
-    // -------------------------------------------------------------
-    // VERTICAL RESCUE ROPE CLIMBING STAGE (z = -180)
-    // -------------------------------------------------------------
+    recoverFromStumble() {
+        this.isStumbled = false;
+        if (window.eventManager) {
+            window.eventManager.showNotification("Back on your feet! Keep moving!");
+        }
+    }
+
+    startSlide(slideChute) {
+        if (this.isSliding) return;
+        this.isSliding = true;
+        this.slideProgress = 0;
+        this.slideLateralOffset = 0;
+
+        if (window.soundEngine && window.soundEngine.playWhoosh) {
+            window.soundEngine.playWhoosh();
+        }
+        if (window.eventManager) {
+            window.eventManager.showNotification("HANG ON! PLUNGING DOWN THE ORE CHUTE! [A]/[D] STEER!");
+        }
+    }
+
+    updateSlide(delta) {
+        this.slideProgress += delta * this.slideSpeed;
+
+        // Player steering
+        if (this.keys.left) this.slideLateralOffset = Math.max(-1.2, this.slideLateralOffset - delta * 3.0);
+        if (this.keys.right) this.slideLateralOffset = Math.min(1.2, this.slideLateralOffset + delta * 3.0);
+
+        const pos = window.gameWorld.stage2.getSlidePosition(this.slideProgress, this.slideLateralOffset);
+        this.position.copy(pos);
+        this.camera.position.set(pos.x, pos.y + 0.6, pos.z);
+
+        // Slide dynamic camera pitch & roll
+        this.pitch = -0.35 + Math.sin(this.slideProgress * 20) * 0.08;
+        this.roll = this.slideLateralOffset * 0.25;
+
+        // End of slide: splash into water
+        if (this.slideProgress >= 1.0) {
+            this.isSliding = false;
+            this.enterWaterGrotto();
+        }
+    }
+
+    enterWaterGrotto() {
+        this.isSwimming = true;
+        this.position.set(0, -12.2, -400);
+
+        if (window.soundEngine && window.soundEngine.playWaterSplash) {
+            window.soundEngine.playWaterSplash();
+        }
+        if (this.underwaterOverlay) {
+            this.underwaterOverlay.style.opacity = '0.55';
+        }
+        if (this.splashVignette) {
+            this.splashVignette.style.opacity = '0.9';
+            setTimeout(() => {
+                this.splashVignette.style.opacity = '0';
+            }, 1200);
+        }
+        if (window.eventManager) {
+            window.eventManager.showNotification("SUBMERGED IN UNDERGROUND LAKE! SWIM TOWARDS THE O2 GEYSERS!");
+        }
+    }
+
     startRopeClimb(rescueRope) {
         if (this.isClimbingRope || this.hasClimbedRope) return;
         this.isClimbingRope = true;
-        this.hasClimbedRope = true;
-        this.ropeClimbProgress = 0;
-        this.ropeStartY = rescueRope.lowerY;
-        this.ropeEndY = rescueRope.upperY;
+        this.ropeClimbMeters = 0;
+        this.position.set(0, -12.0, -625);
 
-        // Position directly at rope
-        this.position.x = rescueRope.x;
-        this.position.z = rescueRope.z;
-
-        if (window.soundEngine) window.soundEngine.playRopeCreak();
-        if (window.eventManager) window.eventManager.showNotification("CLIMBING RESCUE ROPE! TAP [W] OR [SPACE] TO ASCEND FASTER!");
-    }
-
-    updateRopeClimb(delta) {
-        // Continuous upward climb + player key taps
-        this.ropeClimbProgress += delta * this.ropeClimbSpeed;
-        const p = Math.min(1.0, this.ropeClimbProgress);
-
-        // Vertically ascend camera and position
-        const currentY = THREE.MathUtils.lerp(this.ropeStartY, this.ropeEndY, p);
-        this.position.y = currentY;
-        this.cameraBaseY = currentY + 1.6;
-
-        // Camera looks up at anchor and rocks swaying slightly
-        this.pitch = Math.PI / 4.5 + Math.sin(this.ropeClimbProgress * 15) * 0.08;
-        this.roll = Math.cos(this.ropeClimbProgress * 15) * 0.06;
-
-        // Sound creaks periodically
-        if (Math.sin(this.ropeClimbProgress * 20) > 0.8) {
-            if (window.soundEngine) window.soundEngine.playRopeCreak();
-        }
-
-        if (p >= 1.0) {
-            // Reached upper canyon ledge!
-            this.isClimbingRope = false;
-            this.pitch = 0;
-            this.roll = 0;
-
-            // Step onto the solid rock of upper ledge (z = -197, y = 10.5)
-            this.position.z = -197;
-            this.position.y = this.ropeEndY;
-            this.cameraBaseY = this.ropeEndY + this.currentEyeHeight;
-
-            if (window.soundEngine) window.soundEngine.playFootstep(true);
-            if (window.eventManager) window.eventManager.showNotification("SUCCESS! REACHED UPPER CANYON LEDGE!");
-            if (window.gameState) window.gameState.triggerMonologue("ropeClimbed");
-        }
-    }
-
-    triggerStumble() {
-        if (this.isStumbled || this.isTumbling || this.isClimbingRope || this.isSwimming) return;
-        this.isStumbled = true;
-        this.stumbleRecoveryTimer = 1.4;
-        if (window.soundEngine) {
-            window.soundEngine.playWaterSplash(true);
-            window.soundEngine.playFootstep(true);
-        }
         if (window.eventManager) {
-            window.eventManager.showNotification("Slipped in deep flooded puddle! Lost breath!");
-        }
-        this.oxygen = Math.max(0, this.oxygen - 3.0);
-    }
-
-    startWakeUpIntro() {
-        this.isWakingUp = true;
-        this.wakeUpTimer = 0;
-        const overlay = document.getElementById('intro-wake-overlay');
-        if (overlay) {
-            overlay.classList.remove('awake');
-            overlay.classList.add('active');
-            setTimeout(() => {
-                overlay.classList.remove('active');
-                overlay.classList.add('awake');
-            }, 600);
-        }
-        if (window.soundEngine) {
-            window.soundEngine.playRaggedBreath();
+            window.eventManager.showNotification("CLIMBING RESCUE ROPE (24 METERS)! TAP [W] OR [SPACE] TO PULL UPWARD!");
         }
     }
 
-    update(delta, world) {
-        if (this.isDead || (window.gameState && window.gameState.state !== 'PLAYING')) return;
+    pullRopeHand() {
+        this.ropeClimbMeters += 0.85; // 0.85 meters per hand pull (~28 taps)
+        this.ropePullAlternate = !this.ropePullAlternate;
 
-        // Initial Game Intro: Waking up from unconsciousness on the shaft floor
-        if (this.isWakingUp) {
-            this.velocity.set(0, 0, 0);
-            this.wakeUpTimer += delta;
-            const t = Math.min(1.0, this.wakeUpTimer / this.wakeUpDuration);
-            const ease = t * t * (3 - 2 * t);
+        // Camera hand-pull sway
+        this.roll = (this.ropePullAlternate ? 1 : -1) * 0.12;
+        this.pitch = 0.55; // looking up the rope
 
-            const currentGroundY = world.getPathY(this.position.z);
-            const proneY = currentGroundY + 0.32;
-            const standY = currentGroundY + this.standEyeHeight;
-            const currentY = THREE.MathUtils.lerp(proneY, standY, ease);
-
-            const currentRoll = (1.0 - ease) * 0.52; // Tilted head against rock floor
-            const currentPitch = (1.0 - ease) * -0.32; // Groggily looking down at rubble
-
-            this.camera.position.set(this.position.x, currentY, this.position.z);
-            this.camera.rotation.set(0, 0, 0);
-            this.camera.rotation.y = this.yaw;
-            this.camera.rotation.x = this.pitch + currentPitch;
-            this.camera.rotation.z = currentRoll;
-
-            if (this.flashlight && this.flashlightTarget) {
-                this.flashlight.position.copy(this.camera.position);
-                const lookDir = new THREE.Vector3();
-                this.camera.getWorldDirection(lookDir);
-                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(5));
-                if (this.ambientBulb) this.ambientBulb.position.copy(this.camera.position);
-            }
-
-            if (t >= 1.0) {
-                this.isWakingUp = false;
-            }
-            return;
+        if (window.soundEngine && window.soundEngine.playRopeCreak) {
+            window.soundEngine.playRopeCreak();
         }
 
-        // Climax Catastrophic Cave-in Knockout (Prone on ground under rubble)
-        if (this.isClimaxKnockedOut) {
-            this.velocity.set(0, 0, 0);
-            const currentGroundY = world.getPathY(this.position.z);
-            this.camera.position.set(this.position.x, currentGroundY + 0.38, this.position.z);
-            this.camera.rotation.set(0, 0, 0);
-            this.camera.rotation.y = this.yaw;
-            this.camera.rotation.x = -0.42;
-            this.camera.rotation.z = 0.35;
-            if (this.flashlight && this.flashlightTarget) {
-                this.flashlight.position.copy(this.camera.position);
-                const lookDir = new THREE.Vector3();
-                this.camera.getWorldDirection(lookDir);
-                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(4));
-            }
-            return;
+        const currentY = -12.0 + this.ropeClimbMeters;
+        this.position.y = currentY;
+        this.camera.position.set(0, currentY + 1.2, -625);
+
+        const remaining = Math.max(0, Math.round(this.ropeTotalMeters - this.ropeClimbMeters));
+        if (window.eventManager) {
+            window.eventManager.showNotification(`CLIMBING... ${remaining} METERS REMAINING!`);
         }
 
-        // 1. Handle Active Tumble Event
-        if (this.isTumbling) {
-            this.updateTumble(delta, world);
-            this.camera.position.set(this.position.x, this.position.y + 1.2, this.position.z);
-            this.camera.rotation.set(0, 0, 0);
-            this.camera.rotation.y = this.yaw;
-            this.camera.rotation.x = this.pitch;
-            this.camera.rotation.z = this.roll;
-            if (this.flashlight && this.flashlightTarget) {
-                this.flashlight.position.copy(this.camera.position);
-                const lookDir = new THREE.Vector3();
-                this.camera.getWorldDirection(lookDir);
-                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(6));
-            }
-            return;
+        if (this.ropeClimbMeters >= this.ropeTotalMeters) {
+            this.completeRopeClimb();
         }
+    }
 
-        // 2. Handle Active Rope Climbing Event
-        if (this.isClimbingRope) {
-            this.updateRopeClimb(delta);
-            this.camera.position.set(this.position.x, this.cameraBaseY, this.position.z);
-            this.camera.rotation.set(0, 0, 0);
-            this.camera.rotation.y = this.yaw;
-            this.camera.rotation.x = this.pitch;
-            this.camera.rotation.z = this.roll;
-            if (this.flashlight && this.flashlightTarget) {
-                this.flashlight.position.copy(this.camera.position);
-                const lookDir = new THREE.Vector3();
-                this.camera.getWorldDirection(lookDir);
-                this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(6));
-            }
-            return;
+    completeRopeClimb() {
+        this.isClimbingRope = false;
+        this.hasClimbedRope = true;
+        this.roll = 0;
+        this.pitch = 0;
+        this.position.set(0, 12.0, -635);
+
+        if (window.eventManager) {
+            window.eventManager.showNotification("UPPER ESCAPE CANYON REACHED! PROCEED TOWARDS HATCH B-4!");
         }
-
-        // Smooth buoyant recovery bobbing after tumbling into water
-        if (this.waterEntryTimer > 0) {
-            this.waterEntryTimer -= delta;
-            const t = 1.0 - Math.max(0, this.waterEntryTimer / this.waterEntryDuration);
-            this.roll = (1.0 - t) * Math.sin(t * Math.PI * 4) * 0.16;
-            this.pitch = (1.0 - t) * Math.sin(t * Math.PI * 3) * 0.14;
+        if (window.gameState) {
+            window.gameState.triggerTremorClimax();
         }
+    }
 
-        // 3. Underwater Swimming Stage Detection (z between -160 and -182)
-        const inSwimmingZone = (this.position.z <= -160 && this.position.z >= -182);
-        if (inSwimmingZone !== this.isSwimming) {
-            this.isSwimming = inSwimmingZone;
-            if (this.isSwimming) {
-                this.isCrouching = false;
-            }
-            if (window.soundEngine) window.soundEngine.setUnderwater(this.isSwimming);
-
-            const underOverlay = document.getElementById('underwater-overlay');
-            if (underOverlay) {
-                if (this.isSwimming) {
-                    underOverlay.classList.add('active');
-                } else {
-                    underOverlay.classList.remove('active');
-                }
-            }
-
-            if (this.isSwimming && window.gameState) {
-                window.gameState.triggerMonologue("swimming");
-            }
-        }
-
-        // 4. Oxygen Depletion & High-Tension Climax Calculation
-        let drainRate = 0.48;
-        this.isSprinting = this.keys.shift && (this.keys.forward || this.keys.backward || this.keys.left || this.keys.right) && !this.isCrouching;
-
-        if (this.isSprinting) {
-            drainRate *= 3.0;
-        }
-
-        if (this.isSwimming) {
-            drainRate += 0.45; // Struggling in deep water
-        }
-
-        if (this.isCrouching) {
-            drainRate += 0.15; // Physical strain of crawling on hands and knees
-        }
-
-        if (this.isRespiratorLeaking) {
-            drainRate += 0.85;
-        }
-
-        // Final desperate stretch (z < -280): intense climax tension balanced with golden Lily oxygen restores
-        if (this.position.z < -280) {
-            drainRate += 0.45;
-        }
-
-        this.oxygen = Math.max(0, this.oxygen - drainRate * delta);
+    takeDamage(amount, reason) {
+        this.oxygen -= amount;
+        this.triggerStumble(1.2);
         if (this.oxygen <= 0) {
-            this.dieOfHypoxia();
-            return;
-        }
-
-        // 5. Trigger Rockslide Tumble Check (ONLY AFTER pickaxe is broken and player walks left into the side drainage chute)
-        if (this.hasBrokenPickaxe && !this.hasTumbled && this.position.z <= -130.2 && this.position.z >= -142) {
-            const currentPathX = world.getPathX(this.position.z);
-            // Player must intentionally turn and walk into the side drainage chute opening on the left (x < currentPathX - 1.15)
-            if (this.position.x < currentPathX - 1.15) {
-                this.triggerRockslideTumble();
-                return;
-            }
-        }
-
-        // Headlamp waterlogged maintenance
-        if (this.isFlashlightWaterlogged) {
-            if (this.ambientBulb) this.ambientBulb.intensity = 0;
-            if (this.position.z <= -176) {
-                const tapAlert = document.getElementById('helmet-tap-alert');
-                if (tapAlert) {
-                    tapAlert.textContent = "⚠ HEADLAMP WATERLOGGED! PRESS [F] TO DRAIN & RESTORE!";
-                    tapAlert.classList.add('active');
-                }
-            }
-        }
-
-        // 6. Headlamp Malfunction Random Check
-        this.nextMalfunctionCheck -= delta;
-        if (this.nextMalfunctionCheck <= 0 && !this.isFlashlightWaterlogged) {
-            this.nextMalfunctionCheck = 28.0 + Math.random() * 25.0;
-            if (Math.random() < 0.45) {
-                this.triggerFlashlightMalfunction();
-            }
-        }
-
-        // 7. Movement Calculation
-        let speed = this.moveSpeed;
-        if (this.isStaggering) {
-            speed *= 0.52; // Injured staggering limp
-        } else if (this.isSwimming) {
-            speed *= 0.75; // Slower viscous swimming speed
-        } else if (this.isCrouching) {
-            speed *= 0.52; // Authentic crawling / crouching speed
-        } else if (this.isSprinting) {
-            speed *= this.sprintMultiplier;
-        }
-        if (this.isStumbled) speed *= 0.35;
-
-        const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
-        const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-
-        const moveDir = new THREE.Vector3();
-        if (this.keys.forward) moveDir.add(forward);
-        if (this.keys.backward) moveDir.sub(forward);
-        if (this.keys.right) moveDir.add(right);
-        if (this.keys.left) moveDir.sub(right);
-
-        this.isMoving = moveDir.lengthSq() > 0.001;
-
-        if (this.isMoving) {
-            moveDir.normalize();
-            this.velocity.copy(moveDir).multiplyScalar(speed * delta);
-
-            const nextZ = this.position.z + this.velocity.z;
-            const nextPathX = world.getPathX(nextZ);
-            let nextX = this.position.x + this.velocity.x;
-
-            // Near the drainage chute entrance (z between -128 and -138)
-            // ONLY open the left chute path if the player has already attempted to breach and shattered the pickaxe!
-            const isNearChute = this.hasBrokenPickaxe && (this.position.z <= -128 && this.position.z >= -138);
-            const minX = isNearChute ? (nextPathX - 3.8) : (nextPathX - 1.25);
-            const maxX = nextPathX + 1.25;
-            nextX = Math.max(minX, Math.min(maxX, nextX));
-
-            let blockedByRubble = false;
-
-            // Low ceiling collapse crawlspace (z between -228 and -265)
-            // MUST CROUCH [C] TO PASS!
-            if (!this.isCrouching && !this.isSwimming && nextZ <= -228 && nextZ >= -265) {
-                blockedByRubble = true;
-                if (window.eventManager) {
-                    window.eventManager.showNotification("⚠ LOW CEILING COLLAPSE! PRESS [C] TO CROUCH AND CRAWL!");
-                }
-            }
-
-            // Rubble Obstacle Collision
-            world.rubbleObjects.forEach(r => {
-                if (!r.cleared) {
-                    if (r.isBedrock) {
-                        if (!this.hasBrokenPickaxe) {
-                            // Monolithic Bedrock completely blocks the entire shaft until the pickaxe is struck & broken on it!
-                            if (nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
-                                blockedByRubble = true;
-                            }
-                        } else {
-                            // Once pickaxe is broken, bedrock blocks the straight forward path, forcing player to turn left into the chute!
-                            if (nextX > r.x - 0.7 && nextZ <= r.z + 1.8 && nextZ >= r.z - 2.5) {
-                                blockedByRubble = true;
-                            }
-                        }
-                    } else {
-                        const distToRubble = Math.hypot(nextX - r.x, nextZ - r.z);
-                        if (distToRubble < 2.5) {
-                            blockedByRubble = true;
-                        }
-                    }
-                }
-            });
-
-            // Prevent walking past cliff edge at z = -195 if rope has NOT been climbed!
-            if (!this.hasClimbedRope && nextZ <= -195.2) {
-                blockedByRubble = true;
-            }
-
-            // Surface Hatch bunker collision at z = -340
-            if (nextZ <= -339.5) {
-                blockedByRubble = true;
-            }
-
-            if (!blockedByRubble) {
-                this.position.x = nextX;
-                if (nextZ < 6.5) {
-                    this.position.z = nextZ;
-                }
-            }
-
-            // Audio: Swimming stroke vs footstep sounds
-            this.stepTimer -= delta * (this.isSprinting ? 1.6 : 1.0);
-            if (this.stepTimer <= 0) {
-                if (this.isSwimming) {
-                    if (window.soundEngine) window.soundEngine.playWaterStroke();
-                    this.stepTimer = 0.65;
-                } else {
-                    if (window.soundEngine) window.soundEngine.playFootstep(this.isSprinting);
-                    this.stepTimer = 0.45;
-                }
-            }
-
-            this.bobCycle += delta * (this.isSwimming ? 5.5 : (this.isSprinting ? 12 : 8.0));
-        } else {
-            this.velocity.set(0, 0, 0);
-        }
-
-        // Smooth crouch eye-height transition
-        const targetEyeHeight = this.isCrouching ? this.crouchEyeHeight : this.standEyeHeight;
-        this.currentEyeHeight = THREE.MathUtils.lerp(this.currentEyeHeight, targetEyeHeight, delta * 12);
-
-        // Height Calculation: swimming floats slightly higher
-        const currentGroundY = world.getPathY(this.position.z);
-        const swimBob = this.isSwimming ? Math.sin(this.bobCycle) * 0.15 : 0;
-        const walkBob = !this.isSwimming && this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.08 : (this.isCrouching ? 0.025 : 0.04)) : 0;
-
-        this.cameraBaseY = currentGroundY + (this.isSwimming ? 1.15 + swimBob : this.currentEyeHeight + walkBob);
-        this.position.y = currentGroundY;
-
-        // Apply Camera Transformations
-        let staggerPitch = 0;
-        let staggerRoll = 0;
-        if (this.isStaggering) {
-            this.staggerBob += delta * (this.isMoving ? 4.8 : 1.6);
-            staggerPitch = Math.sin(this.staggerBob) * 0.045 - 0.04;
-            staggerRoll = Math.cos(this.staggerBob * 0.5) * 0.065;
-        }
-
-        this.camera.position.set(this.position.x, this.cameraBaseY, this.position.z);
-        this.camera.rotation.set(0, 0, 0);
-        this.camera.rotation.y = this.yaw;
-        this.camera.rotation.x = this.pitch + this.stumblePitchOffset + staggerPitch;
-        this.camera.rotation.z = staggerRoll;
-
-        // Update Flashlight position & direction
-        if (this.flashlight && this.flashlightTarget) {
-            this.flashlight.position.copy(this.camera.position);
-            const lookDir = new THREE.Vector3();
-            this.camera.getWorldDirection(lookDir);
-            this.flashlightTarget.position.copy(this.camera.position).add(lookDir.multiplyScalar(6));
-            if (this.ambientBulb) {
-                this.ambientBulb.position.copy(this.camera.position);
-            }
+            this.die(reason || "Crushed in the collapse!");
         }
     }
 
-    dieOfHypoxia() {
+    die(reason) {
+        if (this.isDead) return;
         this.isDead = true;
         if (window.gameState) {
-            window.gameState.triggerGameOver("Oxygen depleted. Your vision fades into eternal darkness at 780 meters below the surface...");
+            window.gameState.triggerGameOver(reason);
+        }
+    }
+
+    update(delta) {
+        if (this.isDead) return;
+
+        // 1. Initial Intro Wake-up Transition
+        if (this.isWakingUp) {
+            this.wakeUpTimer += delta;
+            const p = Math.min(1.0, this.wakeUpTimer / this.wakeUpDuration);
+            this.pitch = THREE.MathUtils.lerp(-0.7, 0, p);
+            this.roll = THREE.MathUtils.lerp(0.45, 0, p);
+            if (p >= 1.0) this.isWakingUp = false;
+            this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
+            return;
+        }
+
+        // 2. Abyssal Slide Simulation
+        if (this.isSliding) {
+            this.updateSlide(delta);
+            this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
+            return;
+        }
+
+        // 3. Manual Rope Climbing
+        if (this.isClimbingRope) {
+            this.roll = THREE.MathUtils.lerp(this.roll, 0, delta * 3.0);
+            this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
+            return;
+        }
+
+        // 4. Fatigue Stumble Recovery State
+        if (this.isStumbled) {
+            this.pitch = THREE.MathUtils.lerp(this.pitch, -0.45, delta * 6.0);
+            this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, this.position.y + 0.45, delta * 5.0);
+            this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
+            return;
+        }
+        if (this.stumbleCooldown > 0) this.stumbleCooldown -= delta;
+
+        // 5. Normal Walking / Swimming Movement
+        const world = window.gameWorld;
+        this.isMoving = false;
+
+        // Check if player entered slide intake at z = -282
+        if (!this.isSliding && this.position.z <= -282 && this.position.z >= -286) {
+            this.startSlide(world.stage2);
+            return;
+        }
+
+        // Check if player entered water zone (z <= -395 and z >= -615)
+        const inWater = world && world.isWaterZone(this.position.z);
+        if (inWater && !this.isSwimming) {
+            this.enterWaterGrotto();
+        } else if (!inWater && this.isSwimming && this.position.z < -615) {
+            this.isSwimming = false;
+            if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0';
+        }
+
+        // Check if player reached desperate crawl zone (z <= -820)
+        if (this.position.z <= -820 && !this.isForcedCrawl) {
+            this.isForcedCrawl = true;
+            this.isCrouching = true;
+            if (window.eventManager) {
+                window.eventManager.showNotification("AIR IS TOO THIN! CRAWL TOWARDS THE LIGHT OF HATCH B-4!");
+            }
+        }
+
+        // Movement Direction
+        const moveDir = new THREE.Vector3();
+        if (this.keys.forward) moveDir.z -= 1;
+        if (this.keys.backward) moveDir.z += 1;
+        if (this.keys.left) moveDir.x -= 1;
+        if (this.keys.right) moveDir.x += 1;
+
+        if (moveDir.lengthSq() > 0) {
+            moveDir.normalize();
+            this.isMoving = true;
+
+            // Apply camera yaw
+            moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+
+            let speed = this.moveSpeed;
+            if (this.isSwimming) {
+                speed *= 0.65; // Water drag
+            } else if (this.isForcedCrawl || this.isCrouching) {
+                speed *= 0.45; // Crawling
+            } else if (this.keys.shift) {
+                speed *= this.sprintMultiplier;
+                this.isSprinting = true;
+            } else {
+                this.isSprinting = false;
+            }
+
+            this.position.x += moveDir.x * speed * delta;
+            this.position.z += moveDir.z * speed * delta;
+
+            // Footsteps / swimming sound
+            this.stepTimer += delta * (this.isSprinting ? 1.6 : 1.0);
+            if (this.stepTimer > 0.45) {
+                this.stepTimer = 0;
+                if (this.isSwimming) {
+                    if (window.soundEngine && window.soundEngine.playSwimStroke) window.soundEngine.playSwimStroke();
+                } else {
+                    if (window.soundEngine && window.soundEngine.playFootstep) window.soundEngine.playFootstep();
+                }
+            }
+
+            // Head Bobbing
+            this.bobCycle += delta * (this.isSprinting ? 14 : 9);
+        } else {
+            this.isSprinting = false;
+        }
+
+        // Terrain Ground Height & Clamping
+        if (world) {
+            const groundY = world.getGroundHeight(this.position.x, this.position.z);
+            if (this.isSwimming) {
+                // Bobbing at water surface y = -12.2
+                this.position.y = -12.2 + Math.sin(performance.now() * 0.003) * 0.08;
+            } else {
+                this.position.y = groundY;
+            }
+        }
+
+        // Eye Height
+        const targetEyeH = this.isCrouching ? this.crouchEyeHeight : this.standEyeHeight;
+        this.currentEyeHeight = THREE.MathUtils.lerp(this.currentEyeHeight, targetEyeH, delta * 8.0);
+        const bob = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.06 : 0.035) : 0;
+        this.camera.position.set(this.position.x, this.position.y + this.currentEyeHeight + bob, this.position.z);
+
+        // Concussive Tremor Sway
+        if (this.concussiveSway > 0) {
+            this.roll = Math.sin(performance.now() * 0.008) * this.concussiveSway;
+            this.concussiveSway = Math.max(0, this.concussiveSway - delta * 0.15);
+        } else {
+            this.roll = 0;
+        }
+
+        this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
+
+        // Update Flashlight
+        if (this.flashlight) {
+            this.flashlight.position.copy(this.camera.position);
+            const front = new THREE.Vector3(0, 0, -5).applyMatrix4(this.camera.matrixWorld);
+            this.flashlightTarget.position.copy(front);
+            this.ambientBulb.position.copy(this.camera.position);
+        }
+
+        // 6. Oxygen Consumption
+        let o2DrainRate = 0.55; // Base drain rate per second
+        if (this.isSprinting) o2DrainRate *= 2.8;
+        if (this.isSwimming) o2DrainRate *= 1.8;
+
+        this.oxygen -= o2DrainRate * delta;
+        if (this.oxygen <= 0) {
+            this.oxygen = 0;
+            this.die("Asphyxiation! Respirator oxygen depleted in the collapsed mine.");
+        }
+
+        // Check if player is near oxygen geyser vents in Stage 2
+        if (world && world.airVents) {
+            world.airVents.forEach(vent => {
+                if (this.position.distanceTo(vent.position) < 2.5 && vent.cooldown <= 0) {
+                    vent.cooldown = 4.0;
+                    this.oxygen = Math.min(100, this.oxygen + 25);
+                    if (window.soundEngine && window.soundEngine.playDeepInhale) window.soundEngine.playDeepInhale();
+                    if (window.eventManager) window.eventManager.showNotification("FRESH AIR INHALED! +25% OXYGEN!");
+                }
+            });
+        }
+
+        // Check for spontaneous fatigue stumble when running with low O2
+        if (this.isSprinting && this.oxygen < 35 && this.stumbleCooldown <= 0) {
+            if (Math.random() < 0.02) {
+                this.triggerStumble(1.0);
+            }
+        }
+
+        // Update Real-time Mine Depth HUD
+        // z = 0 corresponds to 780m, z = -865 corresponds to 0m (Surface)
+        const progress = Math.min(1.0, Math.max(0, -this.position.z / 865));
+        this.depth = Math.max(0, Math.round(780 * (1 - progress)));
+        const depthEl = document.getElementById('hud-depth-value');
+        if (depthEl) depthEl.textContent = `${this.depth}m`;
+
+        const distEl = document.getElementById('hud-distance-to-hatch');
+        if (distEl) distEl.textContent = `${Math.max(0, Math.round(865 + this.position.z))}m`;
+
+        const o2ValEl = document.getElementById('hud-o2-value');
+        const o2FillEl = document.getElementById('hud-o2-fill');
+        if (o2ValEl) o2ValEl.textContent = `${Math.round(this.oxygen)}%`;
+        if (o2FillEl) {
+            o2FillEl.style.width = `${this.oxygen}%`;
+            if (this.oxygen < 25) {
+                o2FillEl.style.background = '#ff1744';
+            } else if (this.oxygen < 50) {
+                o2FillEl.style.background = '#ffb300';
+            } else {
+                o2FillEl.style.background = '#00e676';
+            }
+        }
+
+        // Update First-Person Pickaxe if available
+        if (window.pickaxeSystem) {
+            window.pickaxeSystem.update(delta, this.isMoving, this.isSprinting);
         }
     }
 }
