@@ -15,6 +15,7 @@ class Stage1Vein {
         this.corpses = [];
         this.mineCart = null;
         this.lanterns = [];
+        this.rotatingBeacons = [];
         this.chuteHatch = null;
 
         this.buildCorridor();
@@ -297,6 +298,107 @@ class Stage1Vein {
         this.group.add(arch);
     }
 
+    createRotatingBeacon(x, y, z, isRed = true, rotSpeed = 4.5) {
+        const beaconGroup = new THREE.Group();
+        beaconGroup.position.set(x, y, z);
+
+        const mainColor = isRed ? 0xff1744 : 0xffb300;
+        const beamColor = isRed ? 0xff2a45 : 0xffc107;
+
+        // 1. Heavy industrial mounting base bracket
+        const baseGeo = new THREE.CylinderGeometry(0.16, 0.20, 0.12, 12);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, metalness: 0.85, roughness: 0.25 });
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.set(0, 0.06, 0);
+        beaconGroup.add(base);
+
+        // 2. High-contrast translucent colored dome
+        const domeGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.24, 12);
+        const domeMat = new THREE.MeshStandardMaterial({
+            color: mainColor,
+            transparent: true,
+            opacity: 0.55,
+            roughness: 0.15,
+            metalness: 0.2
+        });
+        const dome = new THREE.Mesh(domeGeo, domeMat);
+        dome.position.set(0, 0.22, 0);
+        beaconGroup.add(dome);
+
+        // Top cap of dome
+        const capGeo = new THREE.SphereGeometry(0.14, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+        const cap = new THREE.Mesh(capGeo, domeMat);
+        cap.position.set(0, 0.34, 0);
+        beaconGroup.add(cap);
+
+        // 3. Central high-intensity glowing bulb
+        const bulbGeo = new THREE.SphereGeometry(0.065, 8, 8);
+        const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+        bulb.position.set(0, 0.22, 0);
+        beaconGroup.add(bulb);
+
+        // 4. Rotating Rotor Assembly (spinning continuously)
+        const rotor = new THREE.Group();
+        rotor.position.set(0, 0.22, 0);
+
+        // Metallic parabolic curved reflector shield behind the bulb
+        const reflectorGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.15, 10, 1, true, -Math.PI / 2, Math.PI);
+        const reflectorMat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 0.95, roughness: 0.05 });
+        const reflector = new THREE.Mesh(reflectorGeo, reflectorMat);
+        reflector.rotation.y = Math.PI / 2;
+        rotor.add(reflector);
+
+        // 5. Physically visible sweeping light beam / volumetric cone of light projecting directly from lamp!
+        const coneHeight = 4.2;
+        const coneRadius = 1.1;
+        const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 16, 1, true);
+        coneGeo.rotateX(Math.PI / 2);
+        coneGeo.translate(0, 0, coneHeight / 2);
+        const beamMat = new THREE.MeshBasicMaterial({
+            color: beamColor,
+            transparent: true,
+            opacity: 0.45,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        const beamCone = new THREE.Mesh(coneGeo, beamMat);
+        rotor.add(beamCone);
+
+        // 6. Rotating Directional Spotlight locked to the rotor direction
+        const spotLight = new THREE.SpotLight(mainColor, 3.4, 28, Math.PI / 4.6, 0.45, 1.2);
+        spotLight.position.set(0, 0, 0);
+        const spotTarget = new THREE.Object3D();
+        spotTarget.position.set(0, 0, 8);
+        rotor.add(spotTarget);
+        spotLight.target = spotTarget;
+        rotor.add(spotLight);
+
+        beaconGroup.add(rotor);
+
+        // 7. Core Strobe / Flare Light directly at the lamp head
+        const strobeLight = new THREE.PointLight(mainColor, 2.4, 12, 1.2);
+        strobeLight.position.set(0, 0.22, 0);
+        beaconGroup.add(strobeLight);
+
+        this.group.add(beaconGroup);
+
+        return {
+            group: beaconGroup,
+            rotor: rotor,
+            bulb: bulb,
+            bulbMat: bulbMat,
+            beamMat: beamMat,
+            strobeLight: strobeLight,
+            spotLight: spotLight,
+            isRed: isRed,
+            baseColor: mainColor,
+            rotSpeed: rotSpeed,
+            baseIntensity: 2.4
+        };
+    }
+
     buildAmberLanterns() {
         // Authentic industrial mine safety lanterns & red hazard beacons every 18m
         for (let z = 5; z >= -270; z -= 18) {
@@ -325,17 +427,35 @@ class Stage1Vein {
             this.group.add(lanternGroup);
         }
 
+        // Build 8 Industrial Revolving Emergency & Hazard Beacons (Rotating sweeping beams & flashing strobes)
+        const beaconConfigs = [
+            { z: -15, isRed: false, side: 1, speed: 3.5 }, // Amber revolving hazard beacon
+            { z: -42, isRed: true, side: -1, speed: 5.2 }, // Red flashing emergency siren
+            { z: -76, isRed: true, side: 1, speed: 5.6 },  // Red siren directly at collapsed rubble!
+            { z: -110, isRed: false, side: -1, speed: 3.4 }, // Amber revolving beacon
+            { z: -145, isRed: true, side: 1, speed: 5.2 }, // Red siren at derailed cart
+            { z: -180, isRed: false, side: -1, speed: 3.6 }, // Amber revolving beacon
+            { z: -220, isRed: true, side: 1, speed: 5.4 }, // Red emergency siren
+            { z: -268, isRed: true, side: -1, speed: 5.8 } // Red siren marking chute escape
+        ];
+
+        for (const bc of beaconConfigs) {
+            const bx = this.getPathX(bc.z) + (bc.side * 1.42);
+            const by = this.getPathY(bc.z) + 2.35;
+            this.rotatingBeacons.push(this.createRotatingBeacon(bx, by, bc.z, bc.isRed, bc.speed));
+        }
+
         // Strategic warm yellow mine lights & red emergency beacons along Stage 1
         const lightPositions = [
             { z: 5, color: 0xffb300, intensity: 3.4, dist: 42 },
             { z: -35, color: 0xffa000, intensity: 3.2, dist: 38 },
-            { z: -72, color: 0xff1744, intensity: 3.8, dist: 36 }, // Red hazard beacon near cave-in rubble
+            { z: -72, color: 0xff1744, intensity: 3.8, dist: 36 },
             { z: -105, color: 0xffb300, intensity: 3.2, dist: 40 },
             { z: -140, color: 0xffa000, intensity: 3.2, dist: 38 },
-            { z: -175, color: 0xff1744, intensity: 3.6, dist: 36 }, // Red hazard zone
+            { z: -175, color: 0xff1744, intensity: 3.6, dist: 36 },
             { z: -210, color: 0xffb300, intensity: 3.2, dist: 40 },
             { z: -245, color: 0xffa000, intensity: 3.2, dist: 38 },
-            { z: -275, color: 0xff1744, intensity: 3.6, dist: 36 }  // Red chute warning
+            { z: -275, color: 0xff1744, intensity: 3.6, dist: 36 }
         ];
         for (const lp of lightPositions) {
             const zLight = new THREE.PointLight(lp.color, lp.intensity, lp.dist, 1.15);
@@ -414,22 +534,9 @@ class Stage1Vein {
             meshes.push(mesh);
         }
 
-        // Red Emergency Mine Hazard Light (lampu merah khas tambang)
-        const redHousingGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.18, 8);
-        const redHousingMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.85 });
-        const redHousing = new THREE.Mesh(redHousingGeo, redHousingMat);
-        redHousing.position.set(-1.3, 2.2, 0.4);
-        group.add(redHousing);
-
-        const redDomeGeo = new THREE.SphereGeometry(0.11, 8, 8);
-        const redDomeMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
-        const redDome = new THREE.Mesh(redDomeGeo, redDomeMat);
-        redDome.position.set(-1.3, 2.33, 0.4);
-        group.add(redDome);
-
-        const redLight = new THREE.PointLight(0xff1744, 3.2, 18.0, 1.2);
-        redLight.position.set(-1.3, 2.35, 0.4);
-        group.add(redLight);
+        // Revolving Red Emergency Alarm Siren on the rubble barrier archway
+        const rubbleBeacon = this.createRotatingBeacon(-1.3, 2.2, 0.4, true, 5.8);
+        this.rotatingBeacons.push(rubbleBeacon);
 
         // Green sweet-spot interactive marker beacon
         const beaconGeo = new THREE.RingGeometry(0.18, 0.28, 16);
@@ -611,6 +718,36 @@ class Stage1Vein {
         this.lanterns.forEach((l, i) => {
             const flicker = Math.sin(time + i * 2.3) * 0.15 + Math.sin(time * 3 + i) * 0.08;
             l.light.intensity = THREE.MathUtils.clamp(l.baseIntensity + flicker, 1.2, 2.2);
+        });
+
+        // Update all revolving industrial hazard beacons & emergency sirens
+        const t = performance.now() * 0.001;
+        this.rotatingBeacons.forEach((b, i) => {
+            // 1. Physically spin the rotor assembly (reflector + volumetric cone of light + spotlight)
+            b.rotor.rotation.y += delta * b.rotSpeed;
+
+            // 2. High-intensity blink / strobe on the light source itself
+            let flash = 1.0;
+            if (b.isRed) {
+                // Dual-pulse industrial emergency strobe flash
+                const cycle = (t * 3.4 + i * 0.45) % 1.0;
+                flash = (cycle < 0.20 || (cycle > 0.35 && cycle < 0.52)) ? 1.0 : 0.12;
+            } else {
+                // Rotating amber beacon pulse
+                const cycle = (t * 2.4 + i * 0.6) % 1.0;
+                flash = 0.35 + 0.65 * Math.pow(Math.sin(cycle * Math.PI), 2);
+            }
+
+            // Animate core bulb scale and color directly at the light source
+            b.bulb.scale.setScalar(0.85 + flash * 0.45);
+            b.bulbMat.color.setHex(flash > 0.6 ? 0xffffff : b.baseColor);
+
+            // Animate sweeping volumetric light cone opacity directly projecting from the lamp
+            b.beamMat.opacity = 0.15 + flash * 0.35;
+
+            // Animate strobe and spot lights
+            b.strobeLight.intensity = b.baseIntensity * flash;
+            b.spotLight.intensity = (b.baseIntensity * 1.5) * (0.6 + flash * 0.4);
         });
     }
 }

@@ -137,7 +137,7 @@ class Stage3AscentAndBreach {
     }
 
     buildAlarmBeacons() {
-        // Flashing red emergency alarm sirens every 25m
+        // Revolving red emergency alarm sirens every 25m along Stage 3
         for (let z = -645; z >= -850; z -= 25) {
             const x = this.getPathX(z) + 1.3;
             const y = this.getPathY(z) + 2.4;
@@ -145,20 +145,68 @@ class Stage3AscentAndBreach {
             const beaconGroup = new THREE.Group();
             beaconGroup.position.set(x, y, z);
 
-            const housingGeo = new THREE.CylinderGeometry(0.12, 0.15, 0.25, 8);
-            const housingMat = new THREE.MeshStandardMaterial({ color: 0xb71c1c, metalness: 0.8 });
+            const housingGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.22, 10);
+            const housingMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, metalness: 0.85 });
             const housing = new THREE.Mesh(housingGeo, housingMat);
             beaconGroup.add(housing);
 
-            const domeGeo = new THREE.SphereGeometry(0.1, 8, 8);
-            const domeMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+            const domeGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.22, 12);
+            const domeMat = new THREE.MeshStandardMaterial({
+                color: 0xff1744,
+                transparent: true,
+                opacity: 0.55,
+                roughness: 0.15
+            });
             const dome = new THREE.Mesh(domeGeo, domeMat);
-            dome.position.set(0, 0.1, 0);
+            dome.position.set(0, 0.20, 0);
             beaconGroup.add(dome);
 
-            beaconGroup.matrixAutoUpdate = false;
-            beaconGroup.updateMatrix();
+            const bulbGeo = new THREE.SphereGeometry(0.06, 8, 8);
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+            bulb.position.set(0, 0.20, 0);
+            beaconGroup.add(bulb);
+
+            // Rotating rotor with parabolic reflector and volumetric light cone
+            const rotor = new THREE.Group();
+            rotor.position.set(0, 0.20, 0);
+
+            const reflectorGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.14, 8, 1, true, -Math.PI / 2, Math.PI);
+            const reflectorMat = new THREE.MeshStandardMaterial({ color: 0xd0d0d0, metalness: 0.95 });
+            const reflector = new THREE.Mesh(reflectorGeo, reflectorMat);
+            reflector.rotation.y = Math.PI / 2;
+            rotor.add(reflector);
+
+            const coneGeo = new THREE.ConeGeometry(0.9, 3.8, 14, 1, true);
+            coneGeo.rotateX(Math.PI / 2);
+            coneGeo.translate(0, 0, 1.9);
+            const beamMat = new THREE.MeshBasicMaterial({
+                color: 0xff2244,
+                transparent: true,
+                opacity: 0.40,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const beam = new THREE.Mesh(coneGeo, beamMat);
+            rotor.add(beam);
+
+            beaconGroup.add(rotor);
+
+            const light = new THREE.PointLight(0xff1744, 2.4, 14, 1.2);
+            light.position.set(0, 0.20, 0);
+            beaconGroup.add(light);
+
             this.group.add(beaconGroup);
+
+            this.alarmBeacons.push({
+                rotor: rotor,
+                bulb: bulb,
+                bulbMat: bulbMat,
+                beamMat: beamMat,
+                light: light,
+                rotSpeed: 5.4 + Math.random() * 0.8
+            });
         }
 
         // Industrial amber illumination light and emergency red warning beacon for Stage 3 ascent
@@ -302,11 +350,17 @@ class Stage3AscentAndBreach {
     }
 
     update(delta, playerPos) {
-        // Red flashing emergency alarm sirens
-        const time = performance.now() * 0.008;
+        // Update revolving emergency alarm sirens
+        const time = performance.now() * 0.001;
         this.alarmBeacons.forEach((b, i) => {
-            const strobe = Math.sin(time * 3 + i) > 0 ? 3.0 : 0.2;
-            b.light.intensity = strobe;
+            b.rotor.rotation.y += delta * b.rotSpeed;
+            const cycle = (time * 3.4 + i * 0.4) % 1.0;
+            const flash = (cycle < 0.20 || (cycle > 0.35 && cycle < 0.52)) ? 1.0 : 0.12;
+
+            b.bulb.scale.setScalar(0.85 + flash * 0.4);
+            b.bulbMat.color.setHex(flash > 0.6 ? 0xffffff : 0xff1744);
+            b.beamMat.opacity = 0.12 + flash * 0.35;
+            b.light.intensity = 2.4 * flash;
         });
 
         // Update active falling boulders
