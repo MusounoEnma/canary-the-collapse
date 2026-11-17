@@ -80,23 +80,17 @@ class Stage2SlideAndGrotto {
         waterStream.position.y -= 1.1; // Rest on flume floor
         this.group.add(waterStream);
 
-        // Vibrant Lighting along the entire slide (Eliminates pitch-black void!)
+        // Vibrant Lighting along the entire slide (Optimized for 60 FPS)
         for (let i = 2; i < points.length; i += 4) {
             const pt = points[i];
             const isCyan = (i % 8 === 2);
 
-            // Glowing guide arch ring
+            // Glowing guide arch ring (Visible glow with zero lighting cost!)
             const ringGeo = new THREE.TorusGeometry(3.1, 0.12, 6, 16);
             const ringMat = new THREE.MeshBasicMaterial({ color: isCyan ? 0x00e5ff : 0xffb74d });
             const ring = new THREE.Mesh(ringGeo, ringMat);
             ring.position.copy(pt);
             this.group.add(ring);
-
-            // Bright point light illuminating the flume
-            const lightColor = isCyan ? 0x00e5ff : 0xffa726;
-            const slideLight = new THREE.PointLight(lightColor, 2.2, 18, 1.6);
-            slideLight.position.set(pt.x, pt.y + 1.2, pt.z);
-            this.group.add(slideLight);
 
             // Natural hanging stalactites from flume ceiling
             for (let k = -1; k <= 1; k += 2) {
@@ -109,6 +103,7 @@ class Stage2SlideAndGrotto {
                 this.group.add(sMesh);
             }
         }
+
     }
 
     getSlidePosition(progress, lateralOffset = 0) {
@@ -179,15 +174,12 @@ class Stage2SlideAndGrotto {
                     clusterGroup.add(crystal);
                 }
 
-                // Vibrant turquoise point light illuminating rock walls & water surface
-                const light = new THREE.PointLight(0x00e5ff, 2.2, 22, 1.6);
-                light.position.set(0, 0, 0);
-                clusterGroup.add(light);
-                this.crystalLights.push(light);
-
+                clusterGroup.matrixAutoUpdate = false;
+                clusterGroup.updateMatrix();
                 this.group.add(clusterGroup);
             }
         }
+
     }
 
     buildWaterVolume() {
@@ -252,11 +244,6 @@ class Stage2SlideAndGrotto {
             const bubbles = new THREE.Points(bGeo, bMat);
             ventGroup.add(bubbles);
 
-            // Green luminous beacon light
-            const light = new THREE.PointLight(0x69f0ae, 1.8, 8.0);
-            light.position.set(0, 1.8, 0);
-            ventGroup.add(light);
-
             this.airVents.push({
                 id: v.id,
                 group: ventGroup,
@@ -296,11 +283,6 @@ class Stage2SlideAndGrotto {
         tank.position.set(0.35, 0.25, 0);
         raftGroup.add(tank);
 
-        // Beacon light
-        const light = new THREE.PointLight(0x00e676, 1.5, 4.0);
-        light.position.set(0, 0.6, 0);
-        raftGroup.add(light);
-
         this.group.add(raftGroup);
 
         this.raftCorpse = {
@@ -335,11 +317,6 @@ class Stage2SlideAndGrotto {
         const head = new THREE.Mesh(headGeo, glowMat);
         head.position.set(0, 1.2, 0);
         lilyGroup.add(head);
-
-        // Warm ethereal golden light
-        const light = new THREE.PointLight(0xffca28, 2.5, 18);
-        light.position.set(0, 1.2, 0);
-        lilyGroup.add(light);
 
         this.group.add(lilyGroup);
         this.lilyBeacon = {

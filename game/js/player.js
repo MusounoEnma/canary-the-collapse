@@ -124,8 +124,10 @@ class PlayerController {
         window.addEventListener('mousedown', (e) => {
             if (e.button === 0) {
                 isMouseDown = true;
-                if (window.eventManager && window.eventManager.isRhythmActive) {
-                    window.eventManager.strikePickaxe();
+                if (window.gameState && window.gameState.state === 'PLAYING') {
+                    if (window.eventManager) {
+                        window.eventManager.strikePickaxe();
+                    }
                 }
             }
         });
@@ -240,6 +242,11 @@ class PlayerController {
                     if (window.polaroidSystem && window.polaroidSystem.isInspecting) {
                         window.polaroidSystem.toggleInspect();
                         if (window.gameState) window.gameState.state = 'PLAYING';
+                    }
+                    break;
+                case 'Space':
+                    if (window.eventManager && window.eventManager.currentRubble) {
+                        window.eventManager.strikePickaxe();
                     }
                     break;
                 case 'KeyE':

@@ -13,7 +13,7 @@
     <meta name="author" content="Antigravity Participant">
     <meta name="offline-compliant" content="true">
 
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2">
     <!-- Local Three.js r128 (100% Offline Compatible) -->
     <script src="libs/three.min.js"></script>
 </head>
@@ -134,26 +134,18 @@
         </div>
     </div>
 
-    <!-- Precision Rhythm Pickaxe Breach Mini-game Modal -->
-    <div id="rhythm-minigame-overlay">
-        <div class="rhythm-card">
-            <h2 id="rhythm-rubble-title" class="rhythm-title">Rubble Cave-in (Shaft 07)</h2>
-            <p class="rhythm-subtitle">Strike anywhere inside the green fracture zone to shatter the rock!</p>
-            
-            <div class="rhythm-meter-container">
-                <div id="rhythm-sweet-spot"></div>
-                <div id="rhythm-needle"></div>
-            </div>
-
-            <div id="rhythm-feedback">PRESS [SPACE] OR CLICK ANYWHERE INSIDE THE GREEN AREA!</div>
-            <div id="rhythm-health-text" style="color: #69f0ae; margin-bottom: 16px; font-weight: bold;">Any hit in the green zone shatters the rock instantly!</div>
-
-            <button id="btn-strike-pickaxe" class="btn-strike">⚡ STRIKE WITH PICKAXE [SPACE / CLICK] ⚡</button>
-
-            <div style="margin-top: 15px;">
-                <span class="rhythm-controls-hint"><strong>[SPACE] / CLICK</strong> Strike &nbsp;|&nbsp; <strong>[ESC]</strong> Step Back</span>
-            </div>
+    <!-- Real-time 3D First-Person Mining HUD (Diegetic, Zero Screen Interruption) -->
+    <div id="mining-hud">
+        <div class="mining-header">
+            <span class="mining-icon">⛏️</span>
+            <span id="mining-rubble-title">COLLAPSED GRANITE ARCH</span>
         </div>
+        <div class="mining-pips">
+            <span class="mining-pip active" id="mining-pip-1">◆</span>
+            <span class="mining-pip active" id="mining-pip-2">◆</span>
+            <span class="mining-pip active" id="mining-pip-3">◆</span>
+        </div>
+        <div id="mining-status" class="mining-status">[CLICK / SPACE / E] SWING PICKAXE</div>
     </div>
 
     <!-- Polaroid Full Inspect Modal [T] -->

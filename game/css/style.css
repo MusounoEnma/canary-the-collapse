@@ -655,135 +655,66 @@ body.earthquake-shake {
 }
 
 /* ==========================================================================
-   PRECISION RHYTHM PICKAXE BREACH MINI-GAME OVERLAY
+   REAL-TIME 3D FIRST-PERSON MINING HUD (DIEGETIC & COMPACT)
    ========================================================================== */
 
-#rhythm-minigame-overlay {
-    display: none;
+#mining-hud {
     position: absolute;
-    bottom: 95px;
+    bottom: 80px;
     left: 50%;
     transform: translateX(-50%);
-    width: auto;
-    height: auto;
-    background: transparent;
-    backdrop-filter: none;
-    z-index: 40;
+    display: none;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    pointer-events: none;
-}
-
-.rhythm-card {
-    width: 460px;
-    background: rgba(16, 20, 26, 0.88);
-    border: 2px solid rgba(255, 179, 0, 0.7);
+    background: rgba(14, 18, 24, 0.82);
+    border: 1.5px solid rgba(255, 179, 0, 0.6);
     border-radius: 8px;
-    padding: 16px 24px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 18px rgba(255, 179, 0, 0.25);
-    pointer-events: auto;
+    padding: 10px 22px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    z-index: 50;
+    backdrop-filter: blur(4px);
 }
 
-.rhythm-title {
-    font-size: 20px;
-    color: #ffca28;
+.mining-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-family: monospace;
+    font-weight: bold;
+    color: #ffb300;
     letter-spacing: 1.5px;
-    margin-bottom: 8px;
     text-transform: uppercase;
 }
 
-.rhythm-subtitle {
-    font-size: 13px;
-    color: #aaa;
-    margin-bottom: 24px;
+.mining-pips {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0;
 }
 
-.rhythm-meter-container {
-    position: relative;
-    width: 100%;
-    height: 48px;
-    background: #20242c;
-    border: 2px solid #444c59;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 24px;
+.mining-pip {
+    font-size: 18px;
+    transition: all 0.2s ease-out;
 }
 
-#rhythm-sweet-spot {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    background: rgba(0, 230, 118, 0.58);
-    border: 2px solid #00e676;
-    border-radius: 4px;
-    box-shadow: 0 0 24px rgba(0, 230, 118, 0.65);
-}
-
-.btn-strike {
-    background: linear-gradient(180deg, #ff9100 0%, #e65100 100%);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    padding: 12px 28px;
-    border: 2px solid #ffb300;
-    border-radius: 6px;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(230, 81, 0, 0.45);
-    transition: transform 0.1s, filter 0.1s;
-    width: 100%;
-    max-width: 440px;
-    margin: 8px auto 0 auto;
-    display: block;
-}
-
-.btn-strike:hover {
-    filter: brightness(1.1);
-}
-
-.btn-strike:active {
-    transform: scale(0.97);
-    filter: brightness(1.25);
-}
-
-#rhythm-needle {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 6px;
-    height: 100%;
-    background: #ff1744;
-    box-shadow: 0 0 10px #ff1744;
-    transform: translateX(-50%);
-}
-
-#rhythm-feedback {
-    font-size: 15px;
-    font-weight: bold;
-    min-height: 24px;
-    margin-bottom: 18px;
-    letter-spacing: 1px;
-}
-
-.hit-perfect {
+.mining-pip.active {
     color: #00e676;
-    text-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
+    text-shadow: 0 0 10px rgba(0, 230, 118, 0.8);
 }
 
-.hit-miss {
-    color: #ff1744;
-    text-shadow: 0 0 8px rgba(255, 23, 68, 0.6);
+.mining-pip.shattered {
+    color: rgba(255, 255, 255, 0.15);
+    text-shadow: none;
+    transform: scale(0.85);
 }
 
-.rhythm-controls-hint {
-    font-size: 13px;
-    color: #888;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 8px 16px;
-    border-radius: 4px;
-    display: inline-block;
+.mining-status {
+    font-size: 12px;
+    font-family: monospace;
+    color: #cfd8dc;
+    letter-spacing: 1px;
 }
 
 /* ==========================================================================

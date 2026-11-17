@@ -71,11 +71,6 @@ class Stage3AscentAndBreach {
         anchor.position.set(0, climbH + 0.2, 0);
         ropeGroup.add(anchor);
 
-        // Luminous beacon light at rope base and top
-        const baseLight = new THREE.PointLight(0x69f0ae, 1.8, 8.0);
-        baseLight.position.set(0, 1.2, 0.4);
-        ropeGroup.add(baseLight);
-
         this.group.add(ropeGroup);
 
         this.rescueRope = {
@@ -156,13 +151,11 @@ class Stage3AscentAndBreach {
             dome.position.set(0, 0.1, 0);
             beaconGroup.add(dome);
 
-            const redLight = new THREE.PointLight(0xff1744, 2.0, 14, 2.0);
-            redLight.position.set(0, 0.1, 0);
-            beaconGroup.add(redLight);
-
-            this.alarmBeacons.push({ group: beaconGroup, light: redLight });
+            beaconGroup.matrixAutoUpdate = false;
+            beaconGroup.updateMatrix();
             this.group.add(beaconGroup);
         }
+    }
     }
 
     buildEscapeHatch() {
@@ -218,10 +211,6 @@ class Stage3AscentAndBreach {
         this.group.add(sunLight);
         this.group.add(sunLight.target);
 
-        const sunPoint = new THREE.PointLight(0xfff59d, 0.0, 30);
-        sunPoint.position.set(0, 2.0, -864);
-        hatchGroup.add(sunPoint);
-
         this.group.add(hatchGroup);
 
         this.escapeHatch = {
@@ -229,7 +218,6 @@ class Stage3AscentAndBreach {
             door: door,
             wheel: wheel,
             sunLight: sunLight,
-            sunPoint: sunPoint,
             position: new THREE.Vector3(hx, hy, -865),
             isOpen: false,
             openProgress: 0
@@ -286,7 +274,7 @@ class Stage3AscentAndBreach {
 
         // Flood scene with dazzling dawn sunlight
         this.escapeHatch.sunLight.intensity = p * 4.5;
-        this.escapeHatch.sunPoint.intensity = p * 6.0;
+        if (this.escapeHatch.sunPoint) this.escapeHatch.sunPoint.intensity = p * 6.0;
 
         if (p >= 1.0) {
             this.escapeHatch.isOpen = true;

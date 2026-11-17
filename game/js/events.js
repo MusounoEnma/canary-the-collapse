@@ -1,63 +1,24 @@
 /**
- * CANARY: The Collapse - Dynamic Event Manager
- * Coordinates interactive world objects across all 3 stages:
- * - Pickaxe rhythm mini-game & first-person 3D strike swings.
- * - Derailed minecart pushing interaction.
- * - Fallen miner ID badges & lore collectibles with O2 refills.
- * - Manual 24m rope climbing trigger.
- * - Escape Hatch B-4 breach and victory sequence.
+ * CANARY: The Collapse - Narrative Events & Environmental Interaction Manager
+ * Coordinates real-time 3D first-person mining strikes, minecart pushing, fallen miner looting,
+ * vertical rope ascents, and emergency escape hatch operations.
  */
 
 class EventManager {
     constructor() {
+        this.isRhythmActive = false; // Kept for backward compatibility
         this.currentRubble = null;
         this.currentCorpse = null;
         this.isNearCart = false;
         this.isNearRope = false;
         this.isNearHatch = false;
-
-        // Rhythm Pickaxe Mini-Game State
-        this.isRhythmActive = false;
-        this.needlePos = 10;
-        this.needleSpeed = 55;
-        this.needleDir = 1;
-        this.sweetSpotMin = 32;
-        this.sweetSpotMax = 68; // Generous 36% sweet spot
-        this.hitsDone = 0;
-        this.hitsNeeded = 3;
-
         this.isNoteModalOpen = false;
 
-        this.initListeners();
-    }
-
-    initListeners() {
-        window.addEventListener('keydown', (e) => {
-            if (this.isRhythmActive) {
-                if (e.code === 'Space') {
-                    e.preventDefault();
-                    this.strikePickaxe();
-                } else if (e.code === 'Escape') {
-                    this.closeRhythmMinigame();
-                }
-            } else if (this.isNoteModalOpen) {
-                if (e.code === 'KeyE' || e.code === 'Escape' || e.code === 'Space') {
-                    this.closeNoteModal();
-                }
-            }
-        });
-
-        const strikeBtn = document.getElementById('btn-strike-pickaxe');
-        if (strikeBtn) {
-            strikeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (this.isRhythmActive) this.strikePickaxe();
-            });
-        }
+        this.notifTimeout = null;
     }
 
     checkInteractions(player, world) {
-        if (!player || !world || this.isRhythmActive || this.isNoteModalOpen) return;
+        if (!player || !world || this.isNoteModalOpen) return;
 
         const pPos = player.position;
         const promptEl = document.getElementById('interaction-prompt');
@@ -78,8 +39,12 @@ class EventManager {
 
         if (foundRubble) {
             this.currentRubble = foundRubble;
-            promptText = `[E] BREACH ROCK BARRIER WITH PICKAXE (${foundRubble.hitsRemaining} STRIKE${foundRubble.hitsRemaining > 1 ? 'S' : ''} NEEDED)`;
+            this.showMiningHUD(foundRubble);
+            promptText = `[CLICK / SPACE / E] BREACH ROCK BARRIER (${foundRubble.hitsRemaining} HIT${foundRubble.hitsRemaining > 1 ? 'S' : ''} REMAINING)`;
         } else {
+            if (this.currentRubble) {
+                this.hideMiningHUD();
+            }
             this.currentRubble = null;
         }
 
@@ -154,7 +119,7 @@ class EventManager {
 
     handleInteraction() {
         if (this.currentRubble) {
-            this.startRhythmMinigame(this.currentRubble);
+            this.strikePickaxe();
         } else if (this.isNearCart && window.gameWorld && window.gameWorld.stage1) {
             this.pushCart();
         } else if (this.currentCorpse) {
@@ -220,107 +185,119 @@ class EventManager {
         }
     }
 
-    startRhythmMinigame(rubble) {
-        this.isRhythmActive = true;
-        this.currentRubble = rubble;
-        this.needlePos = 8;
-        this.needleDir = 1;
-        this.hitsDone = 0;
-        this.hitsNeeded = rubble.hitsRemaining || 3;
-
-        // Ready the 3D first-person pickaxe in the player's hands!
-        if (window.pickaxeSystem) {
-            window.pickaxeSystem.setVisible(true);
-        }
-
-        const overlay = document.getElementById('rhythm-minigame-overlay');
-        const titleEl = document.getElementById('rhythm-rubble-title');
-        const spotEl = document.getElementById('rhythm-sweet-spot');
-        const feedbackEl = document.getElementById('rhythm-feedback');
-
-        if (titleEl) titleEl.textContent = rubble.name || "Collapsed Rubble";
-        if (spotEl) {
-            spotEl.style.left = `${this.sweetSpotMin}%`;
-            spotEl.style.width = `${this.sweetSpotMax - this.sweetSpotMin}%`;
-        }
-        if (feedbackEl) {
-            feedbackEl.textContent = `STRIKE TIMING IN GREEN ZONE (${this.hitsNeeded - this.hitsDone} HITS REMAINING)!`;
-            feedbackEl.style.color = '#fff';
-        }
-        if (overlay) overlay.style.display = 'flex';
-        // Note: Do NOT exit pointer lock, keep player looking at the 3D rubble!
-    }
-
     strikePickaxe() {
-        if (!this.isRhythmActive) return;
+        if (window.pickaxeSystem && window.pickaxeSystem.isSwinging) return;
 
-        const isHit = (this.needlePos >= this.sweetSpotMin && this.needlePos <= this.sweetSpotMax);
+        if (this.currentRubble && !this.currentRubble.cleared) {
+            const rubble = this.currentRubble;
+            if (window.pickaxeSystem) {
+                window.pickaxeSystem.swing(() => {
+                    rubble.hitsRemaining = Math.max(0, (rubble.hitsRemaining || 3) - 1);
 
-        // Shake rubble mesh on strike
-        if (this.currentRubble && this.currentRubble.group) {
-            const rx = this.currentRubble.position.x;
-            this.currentRubble.group.position.x = rx + (Math.random() - 0.5) * 0.16;
-            setTimeout(() => {
-                if (this.currentRubble && this.currentRubble.group) {
-                    this.currentRubble.group.position.x = rx;
-                }
-            }, 100);
-        }
-
-        // First-person 3D pickaxe swing animation
-        if (window.pickaxeSystem) {
-            window.pickaxeSystem.swing(() => {
-                if (isHit) {
-                    this.hitsDone++;
-                    const feedbackEl = document.getElementById('rhythm-feedback');
-                    if (feedbackEl) {
-                        feedbackEl.textContent = `CRITICAL FRACTURE! (${this.hitsNeeded - this.hitsDone} HITS LEFT)`;
-                        feedbackEl.style.color = '#69f0ae';
+                    // 1. Shake rubble group violently
+                    if (rubble.group) {
+                        const origX = rubble.position.x;
+                        rubble.group.position.x = origX + (Math.random() - 0.5) * 0.25;
+                        setTimeout(() => {
+                            if (rubble && rubble.group) rubble.group.position.x = origX;
+                        }, 80);
                     }
 
-                    if (this.hitsDone >= this.hitsNeeded) {
-                        this.breachRubbleSuccess();
+                    // 2. Break off boulder meshes from rubble pile
+                    if (rubble.meshes && rubble.meshes.length > 0) {
+                        const toDrop = Math.ceil(rubble.meshes.length / (rubble.hitsRemaining + 1));
+                        for (let k = 0; k < toDrop && rubble.meshes.length > 0; k++) {
+                            const dropped = rubble.meshes.pop();
+                            if (dropped) {
+                                rubble.group.remove(dropped);
+                                if (window.pickaxeSystem) {
+                                    window.pickaxeSystem.spawnRockShatterDebris(
+                                        new THREE.Vector3().copy(rubble.position).add(dropped.position),
+                                        0x353a40
+                                    );
+                                }
+                            }
+                        }
                     }
-                } else {
-                    const feedbackEl = document.getElementById('rhythm-feedback');
-                    if (feedbackEl) {
-                        feedbackEl.textContent = "GLANCING BLOW! TIMING MISSED!";
-                        feedbackEl.style.color = '#ff1744';
+
+                    // 3. Update HUD
+                    this.updateMiningHUD(rubble);
+
+                    // 4. Check if shattered
+                    if (rubble.hitsRemaining <= 0) {
+                        this.breachRubbleSuccess(rubble);
                     }
-                    if (window.soundEngine && window.soundEngine.playPickaxeClang) {
-                        window.soundEngine.playPickaxeClang(false);
-                    }
-                }
-            });
+                });
+            }
         } else {
-            if (isHit) {
-                this.hitsDone++;
-                if (this.hitsDone >= this.hitsNeeded) this.breachRubbleSuccess();
+            // Free air swing with whoosh
+            if (window.pickaxeSystem) {
+                window.pickaxeSystem.swing();
             }
         }
     }
 
-    breachRubbleSuccess() {
-        this.closeRhythmMinigame();
-
-        if (this.currentRubble && window.gameWorld) {
-            window.gameWorld.removeRubble(this.currentRubble.id);
-            this.showNotification("RUBBLE SHATTERED! PATH FORWARD CLEARED!");
-
-            // Save checkpoint
-            if (window.saveSystem && window.gamePlayer) {
-                window.saveSystem.saveCheckpoint(1, window.gamePlayer.position, window.gamePlayer.oxygen, window.gamePlayer.depth);
+    breachRubbleSuccess(rubble) {
+        rubble.cleared = true;
+        if (rubble.group) {
+            if (rubble.meshes) {
+                rubble.meshes.forEach(m => {
+                    rubble.group.remove(m);
+                    if (window.pickaxeSystem) {
+                        window.pickaxeSystem.spawnRockShatterDebris(
+                            new THREE.Vector3().copy(rubble.position).add(m.position),
+                            0x353a40
+                        );
+                    }
+                });
+                rubble.meshes = [];
             }
+            rubble.group.visible = false;
+        }
+
+        if (window.soundEngine && window.soundEngine.playTremorRumble) {
+            window.soundEngine.playTremorRumble();
+        }
+
+        this.hideMiningHUD();
+        this.currentRubble = null;
+        this.showNotification("★ GRANITE BARRIER SHATTERED! PASSAGEWAY CLEARED!");
+
+        if (window.saveSystem && window.gamePlayer) {
+            window.saveSystem.saveCheckpoint(1, window.gamePlayer.position, window.gamePlayer.oxygen, window.gamePlayer.depth);
         }
     }
 
-    closeRhythmMinigame() {
-        this.isRhythmActive = false;
-        const overlay = document.getElementById('rhythm-minigame-overlay');
-        if (overlay) overlay.style.display = 'none';
-        if (window.pickaxeSystem) {
-            window.pickaxeSystem.setVisible(false);
+    showMiningHUD(rubble) {
+        const hud = document.getElementById('mining-hud');
+        const title = document.getElementById('mining-rubble-title');
+        if (title) title.textContent = rubble.name || "GRANITE BARRIER";
+        if (hud) hud.style.display = 'flex';
+        this.updateMiningHUD(rubble);
+    }
+
+    updateMiningHUD(rubble) {
+        const p1 = document.getElementById('mining-pip-1');
+        const p2 = document.getElementById('mining-pip-2');
+        const p3 = document.getElementById('mining-pip-3');
+        const status = document.getElementById('mining-status');
+        const left = rubble.hitsRemaining !== undefined ? rubble.hitsRemaining : 3;
+
+        if (p1) p1.className = left >= 1 ? 'mining-pip active' : 'mining-pip shattered';
+        if (p2) p2.className = left >= 2 ? 'mining-pip active' : 'mining-pip shattered';
+        if (p3) p3.className = left >= 3 ? 'mining-pip active' : 'mining-pip shattered';
+
+        if (status) {
+            if (left === 3) status.textContent = "[CLICK / SPACE / E] SWING PICKAXE (3 HITS TO SHATTER)";
+            else if (left === 2) status.textContent = "CRACKED! (2 HITS REMAINING)";
+            else if (left === 1) status.textContent = "CRITICAL FRACTURE! (1 HIT REMAINING)";
+            else status.textContent = "SHATTERED!";
         }
+    }
+
+    hideMiningHUD() {
+        const hud = document.getElementById('mining-hud');
+        if (hud) hud.style.display = 'none';
     }
 
     triggerEscapeSequence() {
@@ -344,19 +321,7 @@ class EventManager {
     }
 
     update(delta) {
-        if (this.isRhythmActive) {
-            this.needlePos += this.needleSpeed * delta * this.needleDir;
-            if (this.needlePos >= 96) {
-                this.needlePos = 96;
-                this.needleDir = -1;
-            } else if (this.needlePos <= 4) {
-                this.needlePos = 4;
-                this.needleDir = 1;
-            }
-
-            const needleEl = document.getElementById('rhythm-needle');
-            if (needleEl) needleEl.style.left = `${this.needlePos}%`;
-        }
+        // Event manager tick
     }
 }
 
