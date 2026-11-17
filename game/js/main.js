@@ -32,13 +32,13 @@ class GameState {
         // Three.js Scene Setup
         this.scene = new THREE.Scene();
         window.gameScene = this.scene;
-        this.scene.fog = new THREE.FogExp2(0x14171a, 0.022);
+        this.scene.fog = new THREE.FogExp2(0x14171a, 0.012);
 
-        // Balanced Global Ambient Lighting (Crisp contrast, no washed-out overexposure)
-        const hemiLight = new THREE.HemisphereLight(0x88929b, 0x1a1e22, 0.35);
+        // Balanced Global Ambient Lighting (Crisp contrast, clear cave visibility)
+        const hemiLight = new THREE.HemisphereLight(0xb0bec5, 0x37474f, 0.65);
         this.scene.add(hemiLight);
 
-        const ambLight = new THREE.AmbientLight(0x2a2f35, 0.45);
+        const ambLight = new THREE.AmbientLight(0xffeedd, 0.55);
         this.scene.add(ambLight);
 
         // Camera Setup
@@ -50,7 +50,7 @@ class GameState {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25)); // 1.25 pixel ratio for maximum smoothness
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.0;
+        this.renderer.toneMappingExposure = 1.15;
         this.renderer.shadowMap.enabled = false; // Disable heavy shadow maps to eliminate GPU lag!
         container.appendChild(this.renderer.domElement);
 
@@ -333,20 +333,6 @@ class GameState {
             if (window.polaroidSystem && this.player) {
                 window.polaroidSystem.updateHUD(this.player.oxygen);
             }
-        }
-
-        // Always update pickaxe viewmodel animations, swings and sparks
-        if (this.pickaxe) {
-            this.pickaxe.update(
-                delta,
-                this.player ? this.player.isMoving : false,
-                this.player ? this.player.isSprinting : false
-            );
-        }
-
-        // In MENU state, title screen covers 100% of viewport, skip expensive WebGL scene render
-        if (this.state === 'MENU') {
-            return;
         }
 
         if (this.renderer && this.scene && this.camera) {

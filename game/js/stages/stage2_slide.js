@@ -104,6 +104,14 @@ class Stage2SlideAndGrotto {
             }
         }
 
+        // Two key lights for the slide flume
+        const chuteLight1 = new THREE.PointLight(0xffb74d, 1.5, 30, 1.8);
+        chuteLight1.position.set(0, 0, -320);
+        this.group.add(chuteLight1);
+
+        const chuteLight2 = new THREE.PointLight(0x00e5ff, 1.8, 30, 1.8);
+        chuteLight2.position.set(0, -8, -370);
+        this.group.add(chuteLight2);
     }
 
     getSlidePosition(progress, lateralOffset = 0) {
@@ -180,6 +188,14 @@ class Stage2SlideAndGrotto {
             }
         }
 
+        // Two global turquoise illumination lights for the entire grotto
+        const grottoLight1 = new THREE.PointLight(0x00e5ff, 1.8, 50, 1.5);
+        grottoLight1.position.set(0, -6.0, -450);
+        this.group.add(grottoLight1);
+
+        const grottoLight2 = new THREE.PointLight(0x00e5ff, 1.8, 50, 1.5);
+        grottoLight2.position.set(0, -6.0, -560);
+        this.group.add(grottoLight2);
     }
 
     buildWaterVolume() {
@@ -244,6 +260,11 @@ class Stage2SlideAndGrotto {
             const bubbles = new THREE.Points(bGeo, bMat);
             ventGroup.add(bubbles);
 
+            // Green luminous beacon light
+            const light = new THREE.PointLight(0x69f0ae, 1.8, 8.0);
+            light.position.set(0, 1.8, 0);
+            ventGroup.add(light);
+
             this.airVents.push({
                 id: v.id,
                 group: ventGroup,
@@ -283,6 +304,11 @@ class Stage2SlideAndGrotto {
         tank.position.set(0.35, 0.25, 0);
         raftGroup.add(tank);
 
+        // Beacon light
+        const light = new THREE.PointLight(0x00e676, 1.5, 4.0);
+        light.position.set(0, 0.6, 0);
+        raftGroup.add(light);
+
         this.group.add(raftGroup);
 
         this.raftCorpse = {
@@ -317,6 +343,11 @@ class Stage2SlideAndGrotto {
         const head = new THREE.Mesh(headGeo, glowMat);
         head.position.set(0, 1.2, 0);
         lilyGroup.add(head);
+
+        // Warm ethereal golden light
+        const light = new THREE.PointLight(0xffca28, 2.5, 18);
+        light.position.set(0, 1.2, 0);
+        lilyGroup.add(light);
 
         this.group.add(lilyGroup);
         this.lilyBeacon = {

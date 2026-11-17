@@ -136,10 +136,8 @@ class Stage1Vein {
         helmet.position.set(helmetX, helmetY + 0.12, -8);
         propsGroup.add(helmet);
 
-        const beaconGeo = new THREE.SphereGeometry(0.06, 8, 8);
-        const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
-        const beacon = new THREE.Mesh(beaconGeo, beaconMat);
-        beacon.position.set(helmetX, helmetY + 0.28, -8);
+        const beacon = new THREE.PointLight(0xff1744, 1.2, 3.5);
+        beacon.position.set(helmetX, helmetY + 0.35, -8);
         propsGroup.add(beacon);
 
         // 4. Directional distance plaque: ◄ HATCH B-4: 865 METERS UPWARD
@@ -325,6 +323,14 @@ class Stage1Vein {
             this.group.add(lanternGroup);
         }
 
+        // Only 2 strategic area lights in Stage 1 for maximum 60 FPS performance
+        const zoneLight1 = new THREE.PointLight(0xffa726, 1.4, 25, 2.0);
+        zoneLight1.position.set(0, 3.0, -75);
+        this.group.add(zoneLight1);
+
+        const zoneLight2 = new THREE.PointLight(0xffa726, 1.4, 25, 2.0);
+        zoneLight2.position.set(0, 3.0, -195);
+        this.group.add(zoneLight2);
     }
 
     buildObstacles() {
@@ -385,7 +391,6 @@ class Stage1Vein {
             const s = 0.45 + Math.random() * 0.55;
             const geo = new THREE.DodecahedronGeometry(s, 0);
             const mat = this.materials.rock.clone();
-            mat.color.setHex(0x353a40);
             mat.roughness = 0.95;
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(
@@ -488,10 +493,8 @@ class Stage1Vein {
         corpseGroup.add(tank);
 
         // Pulse beacon
-        const beaconGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        const beaconMat = new THREE.MeshBasicMaterial({ color: 0x69f0ae });
-        const beacon = new THREE.Mesh(beaconGeo, beaconMat);
-        beacon.position.set(0, 0.45, 0);
+        const beacon = new THREE.PointLight(0x69f0ae, 1.2, 3.5);
+        beacon.position.set(0, 0.5, 0);
         corpseGroup.add(beacon);
 
         this.group.add(corpseGroup);
@@ -543,12 +546,9 @@ class Stage1Vein {
         hole.rotation.x = -Math.PI / 3.8; // Angled down
         chuteGroup.add(hole);
 
-        // Beacon light pointing down (radiant cyan ring with zero GPU overhead)
-        const chuteBeaconGeo = new THREE.RingGeometry(0.8, 1.1, 16);
-        const chuteBeaconMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide });
-        const chuteLight = new THREE.Mesh(chuteBeaconGeo, chuteBeaconMat);
-        chuteLight.position.set(0, 0.8, -1.0);
-        chuteLight.rotation.x = Math.PI / 2;
+        // Beacon light pointing down
+        const chuteLight = new THREE.PointLight(0x00e5ff, 2.0, 12);
+        chuteLight.position.set(0, 0.5, -1.0);
         chuteGroup.add(chuteLight);
 
         this.group.add(chuteGroup);

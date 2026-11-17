@@ -105,18 +105,19 @@ class PlayerController {
     }
 
     initFlashlight() {
-        this.flashlight = new THREE.SpotLight(0xfffae0, 4.5, 65, Math.PI / 2.8, 0.45, 1.2);
-        this.flashlight.position.copy(this.camera.position);
+        // Bright 360-degree helmet headlamp attached directly to camera
+        this.ambientBulb = new THREE.PointLight(0xffeedd, 1.8, 26.0, 1.2);
+        this.ambientBulb.position.set(0, 0, 0);
+        this.camera.add(this.ambientBulb);
 
+        // Forward focused beam attached directly to camera
+        this.flashlight = new THREE.SpotLight(0xfffae0, 4.0, 50, Math.PI / 3.0, 0.35, 1.2);
+        this.flashlight.position.set(0, 0, 0);
         this.flashlightTarget = new THREE.Object3D();
-        this.flashlightTarget.position.set(0, 1.7, -5);
+        this.flashlightTarget.position.set(0, 0, -5);
+        this.camera.add(this.flashlightTarget);
         this.flashlight.target = this.flashlightTarget;
-
-        window.gameScene.add(this.flashlight);
-        window.gameScene.add(this.flashlightTarget);
-
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 0.85, 12.0, 2);
-        window.gameScene.add(this.ambientBulb);
+        this.camera.add(this.flashlight);
     }
 
     initInputListeners() {
