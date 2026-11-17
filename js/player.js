@@ -105,16 +105,16 @@ class PlayerController {
     }
 
     initFlashlight() {
-        // Bright 360-degree helmet headlamp attached directly to camera
-        this.ambientBulb = new THREE.PointLight(0xffeedd, 1.8, 26.0, 1.2);
+        // Soft atmospheric cyan ambient fill around player (never blows out black walls)
+        this.ambientBulb = new THREE.PointLight(0x0091ea, 0.45, 10.0, 2.0);
         this.ambientBulb.position.set(0, 0, 0);
         this.camera.add(this.ambientBulb);
 
-        // Forward focused beam attached directly to camera
-        this.flashlight = new THREE.SpotLight(0xfffae0, 4.0, 50, Math.PI / 3.0, 0.35, 1.2);
+        // Cinematic cyan miner beam focused straight ahead
+        this.flashlight = new THREE.SpotLight(0x40c4ff, 2.4, 38, Math.PI / 4.2, 0.45, 1.4);
         this.flashlight.position.set(0, 0, 0);
         this.flashlightTarget = new THREE.Object3D();
-        this.flashlightTarget.position.set(0, 0, -5);
+        this.flashlightTarget.position.set(0, 0, -6);
         this.camera.add(this.flashlightTarget);
         this.flashlight.target = this.flashlightTarget;
         this.camera.add(this.flashlight);
@@ -310,8 +310,8 @@ class PlayerController {
         if (this.tapsRequired <= 0) {
             this.isFlashlightMalfunctioning = false;
             this.isFlashlightOn = true;
-            this.flashlight.intensity = 4.5;
-            this.ambientBulb.intensity = 0.85;
+            this.flashlight.intensity = 2.4;
+            this.ambientBulb.intensity = 0.45;
             const tapAlert = document.getElementById('helmet-tap-alert');
             if (tapAlert) tapAlert.style.display = 'none';
         }
@@ -645,13 +645,7 @@ class PlayerController {
 
         this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
 
-        // Update Flashlight
-        if (this.flashlight) {
-            this.flashlight.position.copy(this.camera.position);
-            const front = new THREE.Vector3(0, 0, -5).applyMatrix4(this.camera.matrixWorld);
-            this.flashlightTarget.position.copy(front);
-            this.ambientBulb.position.copy(this.camera.position);
-        }
+        // Note: Headlamp lights are children of this.camera, naturally tracking player view with zero overhead
 
         // 6. Oxygen Consumption
         let o2DrainRate = 0.55; // Base drain rate per second

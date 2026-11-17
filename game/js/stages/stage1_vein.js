@@ -298,7 +298,7 @@ class Stage1Vein {
     }
 
     buildAmberLanterns() {
-        // Bright amber industrial safety lanterns every 18m
+        // Cinematic cyan-blue industrial safety lanterns every 18m
         for (let z = 5; z >= -270; z -= 18) {
             const x = this.getPathX(z) + 1.45;
             const y = this.getPathY(z) + 2.5;
@@ -308,13 +308,13 @@ class Stage1Vein {
 
             // Cage fixture
             const cageGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.32, 6);
-            const cageMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.2 });
+            const cageMat = new THREE.MeshStandardMaterial({ color: 0x1a2634, metalness: 0.9, roughness: 0.2 });
             const cage = new THREE.Mesh(cageGeo, cageMat);
             lanternGroup.add(cage);
 
-            // Radiant glowing amber core (emits visual light with zero GPU cost!)
+            // Radiant glowing cyan-blue core (cinematic atmosphere with zero GPU cost!)
             const bulbGeo = new THREE.SphereGeometry(0.11, 8, 8);
-            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffb74d });
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0x00b0ff });
             const bulb = new THREE.Mesh(bulbGeo, bulbMat);
             lanternGroup.add(bulb);
 
@@ -323,10 +323,10 @@ class Stage1Vein {
             this.group.add(lanternGroup);
         }
 
-        // 5 strategic warm amber floodlights along Stage 1 for full radiant illumination
+        // 5 strategic cinematic cyan-blue key lights along Stage 1 for rich moody illumination
         const lightPositions = [5, -60, -120, -180, -240];
         for (const lz of lightPositions) {
-            const zLight = new THREE.PointLight(0xffb74d, 2.2, 35, 1.2);
+            const zLight = new THREE.PointLight(0x00b0ff, 2.0, 36, 1.4);
             zLight.position.set(this.getPathX(lz), this.getPathY(lz) + 2.5, lz);
             this.group.add(zLight);
         }

@@ -40,10 +40,16 @@ class EventManager {
         if (foundRubble) {
             this.currentRubble = foundRubble;
             this.showMiningHUD(foundRubble);
+            if (window.pickaxeSystem) {
+                window.pickaxeSystem.setVisible(true);
+            }
             promptText = `[CLICK / SPACE / E] BREACH ROCK BARRIER (${foundRubble.hitsRemaining} HIT${foundRubble.hitsRemaining > 1 ? 'S' : ''} REMAINING)`;
         } else {
             if (this.currentRubble) {
                 this.hideMiningHUD();
+            }
+            if (window.pickaxeSystem && !window.pickaxeSystem.isSwinging) {
+                window.pickaxeSystem.setVisible(false);
             }
             this.currentRubble = null;
         }
@@ -260,6 +266,9 @@ class EventManager {
         }
 
         this.hideMiningHUD();
+        if (window.pickaxeSystem) {
+            window.pickaxeSystem.setVisible(false);
+        }
         this.currentRubble = null;
         this.showNotification("★ GRANITE BARRIER SHATTERED! PASSAGEWAY CLEARED!");
 

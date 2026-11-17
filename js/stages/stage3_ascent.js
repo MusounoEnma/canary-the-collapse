@@ -161,12 +161,12 @@ class Stage3AscentAndBreach {
             this.group.add(beaconGroup);
         }
 
-        // Bright emergency illumination lights for Stage 3 ascent
-        const s3Light1 = new THREE.PointLight(0xffb74d, 2.2, 40, 1.2);
+        // Cinematic illumination lights for Stage 3 ascent
+        const s3Light1 = new THREE.PointLight(0x00b0ff, 2.0, 42, 1.3);
         s3Light1.position.set(0, 5.0, -660);
         this.group.add(s3Light1);
 
-        const s3Light2 = new THREE.PointLight(0xff5722, 2.2, 40, 1.2);
+        const s3Light2 = new THREE.PointLight(0x00e5ff, 2.0, 42, 1.3);
         s3Light2.position.set(0, 12.0, -760);
         this.group.add(s3Light2);
     }
