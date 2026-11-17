@@ -36,51 +36,66 @@ class MineWorld {
     }
 
     initTextures() {
-        // High-readability warm sedimentary rock texture
+        // High-contrast, authentic chiseled dark slate & granite rock texture
         const rockCanvas = document.createElement('canvas');
         rockCanvas.width = 1024; rockCanvas.height = 1024;
         const rctx = rockCanvas.getContext('2d');
-        rctx.fillStyle = '#2d2720'; // Warm stone base
+        rctx.fillStyle = '#1c2024'; // Dark slate-granite base
         rctx.fillRect(0, 0, 1024, 1024);
 
-        // Sedimentary strata bedding & mineral grain
+        // Sedimentary strata bedding & rough jagged granite facets
         for (let y = 0; y < 1024; y += 2) {
-            const noise = Math.sin(y * 0.04) * 26 + Math.random() * 32;
-            const lum = 42 + Math.floor(noise * 0.55);
-            rctx.fillStyle = `rgb(${lum + 12},${lum + 8},${lum})`;
+            const noise = Math.sin(y * 0.05) * 35 + Math.random() * 40;
+            const lum = 32 + Math.floor(noise * 0.55);
+            // Cool gray stone tones (granite/slate), not muddy brown sand!
+            rctx.fillStyle = `rgb(${lum + 2},${lum + 5},${lum + 8})`;
             rctx.fillRect(0, y, 1024, 2 + Math.random() * 2);
         }
 
-        // Jagged quartz and iron-vein fracture lines
-        for (let i = 0; i < 70; i++) {
-            rctx.strokeStyle = i % 4 === 0 ? 'rgba(255, 183, 77, 0.45)' : 'rgba(15, 12, 10, 0.85)';
-            rctx.lineWidth = 2 + Math.random() * 3.5;
+        // Chiseled rock fracture facets & sharp micro-shadows
+        for (let i = 0; i < 90; i++) {
+            rctx.strokeStyle = i % 5 === 0 ? 'rgba(5, 7, 9, 0.96)' : 'rgba(75, 85, 96, 0.7)';
+            rctx.lineWidth = 1.5 + Math.random() * 3.5;
             rctx.beginPath();
             let curX = 0;
             let curY = Math.random() * 1024;
             rctx.moveTo(curX, curY);
             while (curX < 1024) {
-                curX += 20 + Math.random() * 35;
-                curY += (Math.random() - 0.5) * 45;
+                curX += 15 + Math.random() * 30;
+                curY += (Math.random() - 0.5) * 40;
                 rctx.lineTo(curX, curY);
             }
             rctx.stroke();
         }
 
+        // Quartz mineral flecks and reflective crystalline sparkles
+        for (let k = 0; k < 15000; k++) {
+            const px = Math.random() * 1024;
+            const py = Math.random() * 1024;
+            const isQuartz = Math.random() < 0.15;
+            if (isQuartz) {
+                rctx.fillStyle = 'rgba(220, 235, 245, 0.85)';
+            } else {
+                const lum = Math.floor(22 + Math.random() * 45);
+                rctx.fillStyle = `rgb(${lum},${lum + 3},${lum + 6})`;
+            }
+            rctx.fillRect(px, py, 2 + Math.random() * 2, 2 + Math.random() * 2);
+        }
+
         this.rockTexture = new THREE.CanvasTexture(rockCanvas);
         this.rockTexture.wrapS = THREE.RepeatWrapping;
         this.rockTexture.wrapT = THREE.RepeatWrapping;
-        this.rockTexture.repeat.set(4, 80);
+        this.rockTexture.repeat.set(6, 90); // Tighter repeat for sharp rock grain
 
         // Weathered Dark Timber Texture
         const woodCanvas = document.createElement('canvas');
         woodCanvas.width = 256; woodCanvas.height = 256;
         const wctx = woodCanvas.getContext('2d');
-        wctx.fillStyle = '#3e2723';
+        wctx.fillStyle = '#2d1e16';
         wctx.fillRect(0, 0, 256, 256);
         for (let i = 0; i < 1500; i++) {
             const y = Math.random() * 256;
-            wctx.fillStyle = `rgba(20, 10, 5, ${0.15 + Math.random() * 0.35})`;
+            wctx.fillStyle = `rgba(15, 8, 4, ${0.15 + Math.random() * 0.35})`;
             wctx.fillRect(0, y, 256, 1 + Math.random() * 3);
         }
         this.woodTexture = new THREE.CanvasTexture(woodCanvas);
@@ -91,10 +106,10 @@ class MineWorld {
         const metalCanvas = document.createElement('canvas');
         metalCanvas.width = 256; metalCanvas.height = 256;
         const mctx = metalCanvas.getContext('2d');
-        mctx.fillStyle = '#455a64';
+        mctx.fillStyle = '#37474f';
         mctx.fillRect(0, 0, 256, 256);
         for (let i = 0; i < 1000; i++) {
-            mctx.fillStyle = `rgba(180, 85, 35, ${Math.random() * 0.45})`;
+            mctx.fillStyle = `rgba(200, 95, 30, ${Math.random() * 0.45})`;
             mctx.fillRect(Math.random() * 256, Math.random() * 256, 4 + Math.random() * 8, 4 + Math.random() * 8);
         }
         this.metalTexture = new THREE.CanvasTexture(metalCanvas);

@@ -546,6 +546,48 @@ class PlayerController {
             this.position.x += moveDir.x * speed * delta;
             this.position.z += moveDir.z * speed * delta;
 
+            // Physical Boundaries & Wall Clamping (Prevents falling out of the cavern into void)
+            if (world) {
+                // 1. Rear Cave-in Wall at Entrance (z = 2.5m)
+                if (this.position.z > 2.5) {
+                    this.position.z = 2.5;
+                }
+                // 2. Surface Hatch End Point (z = -865m)
+                if (this.position.z < -865.0) {
+                    this.position.z = -865.0;
+                }
+
+                // 3. Rubble Cave-in Solid Collision (Must breach with pickaxe to pass)
+                if (world.rubbles) {
+                    world.rubbles.forEach(r => {
+                        if (!r.cleared && Math.abs(this.position.z - r.position.z) < 1.3) {
+                            if (this.position.z > r.position.z) {
+                                this.position.z = r.position.z + 1.3;
+                            } else {
+                                this.position.z = r.position.z - 1.3;
+                            }
+                        }
+                    });
+                }
+
+                // 4. Derailed Minecart Blockade (Must push [E] to clear track)
+                if (world.mineCart && !world.mineCart.isPushed) {
+                    if (this.position.z <= -143.2 && this.position.z >= -146.5) {
+                        this.position.z = -143.2;
+                    }
+                }
+
+                // 5. Vertical Cliff at Rope Base (Cannot walk past without climbing rope)
+                if (!this.hasClimbedRope && this.position.z <= -626.0 && this.position.y < 0) {
+                    this.position.z = -626.0;
+                }
+
+                // 6. Lateral Cavern Wall Clamping (Clamps player safely inside the 3D tube)
+                const pathX = world.getPathX(this.position.z);
+                const maxLateral = this.isSwimming ? 5.8 : (this.position.z < -640 ? 1.35 : 1.45);
+                this.position.x = Math.max(pathX - maxLateral, Math.min(pathX + maxLateral, this.position.x));
+            }
+
             // Footsteps / swimming sound
             this.stepTimer += delta * (this.isSprinting ? 1.6 : 1.0);
             if (this.stepTimer > 0.45) {

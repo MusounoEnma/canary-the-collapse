@@ -18,9 +18,147 @@ class Stage1Vein {
         this.chuteHatch = null;
 
         this.buildCorridor();
+        this.buildRearCaveInWall();
+        this.buildStartingAtmosphericProps();
         this.buildRailsAndTimber();
         this.buildAmberLanterns();
         this.buildObstacles();
+    }
+
+    buildRearCaveInWall() {
+        // Massive, impassable boulder cave-in sealing the shaft completely behind player at z = 4.0
+        const wallGroup = new THREE.Group();
+        wallGroup.position.set(this.getPathX(4.0), this.getPathY(4.0), 4.0);
+
+        // Circular stone bulkhead
+        const plugGeo = new THREE.CylinderGeometry(2.8, 2.8, 1.2, 16);
+        plugGeo.rotateX(Math.PI / 2);
+        const plug = new THREE.Mesh(plugGeo, this.materials.rock);
+        plug.position.set(0, 1.5, 0);
+        wallGroup.add(plug);
+
+        // Broken, shattered timber cross-beams pinned under rock
+        for (let i = 0; i < 6; i++) {
+            const beamGeo = new THREE.BoxGeometry(0.24, 0.24, 2.8 + Math.random() * 0.8);
+            const beam = new THREE.Mesh(beamGeo, this.materials.wood);
+            beam.position.set((Math.random() - 0.5) * 1.8, 0.8 + Math.random() * 1.6, (Math.random() - 0.5) * 0.4);
+            beam.rotation.set(Math.random() * 0.5, Math.random() * 0.5, (Math.random() - 0.5) * 1.2);
+            wallGroup.add(beam);
+        }
+
+        // 14 fallen massive granite boulders blocking the entrance
+        for (let i = 0; i < 14; i++) {
+            const bGeo = new THREE.DodecahedronGeometry(0.55 + Math.random() * 0.45, 0);
+            const boulder = new THREE.Mesh(bGeo, this.materials.rock);
+            boulder.position.set(
+                (Math.random() - 0.5) * 3.2,
+                0.3 + Math.random() * 2.2,
+                -0.4 - Math.random() * 0.8
+            );
+            boulder.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            wallGroup.add(boulder);
+        }
+
+        // Metal Warning Sign pinned to timbers: SHAFT 07 ISOLATED // COLLAPSED
+        const signCanvas = document.createElement('canvas');
+        signCanvas.width = 256; signCanvas.height = 80;
+        const sctx = signCanvas.getContext('2d');
+        sctx.fillStyle = '#d50000'; // Warning red
+        sctx.fillRect(0, 0, 256, 80);
+        sctx.fillStyle = '#ffffff';
+        sctx.font = 'bold 18px monospace';
+        sctx.textAlign = 'center';
+        sctx.fillText('⚠ SHAFT 07 COLLAPSE ⚠', 128, 30);
+        sctx.font = '13px monospace';
+        sctx.fillText('PASSAGE SEALED // EVACUATE UPWARD', 128, 55);
+        const signTex = new THREE.CanvasTexture(signCanvas);
+        const signMat = new THREE.MeshBasicMaterial({ map: signTex });
+        const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.5), signMat);
+        sign.position.set(0, 2.2, -0.7);
+        sign.rotation.z = -0.08;
+        wallGroup.add(sign);
+
+        this.group.add(wallGroup);
+    }
+
+    buildStartingAtmosphericProps() {
+        // Enrich the starting zone (z = 2 to z = -35) with detailed mine assets
+        const propsGroup = new THREE.Group();
+
+        // 1. Heavy industrial high-voltage conduit cables running along left wall
+        for (let side of [-1.55, 1.55]) {
+            const cablePoints = [];
+            for (let z = 3; z >= -60; z -= 3) {
+                cablePoints.push(new THREE.Vector3(this.getPathX(z) + side, this.getPathY(z) + 2.2 + Math.sin(z * 0.3) * 0.08, z));
+            }
+            const cableCurve = new THREE.CatmullRomCurve3(cablePoints);
+            const cableGeo = new THREE.TubeGeometry(cableCurve, 40, 0.045, 6, false);
+            const cableMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+            const cable = new THREE.Mesh(cableGeo, cableMat);
+            propsGroup.add(cable);
+        }
+
+        // 2. Discarded heavy battery crates and toolboxes near start
+        for (let z of [-4, -12, -22]) {
+            const crateX = this.getPathX(z) + (z % 2 === 0 ? 1.25 : -1.25);
+            const crateY = this.getPathY(z);
+
+            // Steel toolbox crate
+            const crateGeo = new THREE.BoxGeometry(0.7, 0.5, 0.55);
+            const crateMat = new THREE.MeshStandardMaterial({ color: 0xf57f17, metalness: 0.8, roughness: 0.3 });
+            const crate = new THREE.Mesh(crateGeo, crateMat);
+            crate.position.set(crateX, crateY + 0.28, z);
+            crate.rotation.y = Math.random() * 0.6;
+            propsGroup.add(crate);
+
+            // Small glowing green LED indicator
+            const ledGeo = new THREE.SphereGeometry(0.04, 6, 6);
+            const ledMat = new THREE.MeshBasicMaterial({ color: 0x00e676 });
+            const led = new THREE.Mesh(ledGeo, ledMat);
+            led.position.set(crateX, crateY + 0.56, z);
+            propsGroup.add(led);
+
+            // Loose rock chunks scattered beside the crate
+            for (let k = 0; k < 4; k++) {
+                const rGeo = new THREE.DodecahedronGeometry(0.12 + Math.random() * 0.14, 0);
+                const rMesh = new THREE.Mesh(rGeo, this.materials.rock);
+                rMesh.position.set(crateX + (Math.random() - 0.5) * 0.6, crateY + 0.1, z + (Math.random() - 0.5) * 0.6);
+                propsGroup.add(rMesh);
+            }
+        }
+
+        // 3. Fallen Miner Safety Helmet with blinking red beacon at z = -8
+        const helmetX = this.getPathX(-8) - 0.65;
+        const helmetY = this.getPathY(-8);
+        const helmetGeo = new THREE.SphereGeometry(0.18, 10, 10);
+        const helmetMat = new THREE.MeshStandardMaterial({ color: 0xffd600, roughness: 0.4 });
+        const helmet = new THREE.Mesh(helmetGeo, helmetMat);
+        helmet.position.set(helmetX, helmetY + 0.12, -8);
+        propsGroup.add(helmet);
+
+        const beacon = new THREE.PointLight(0xff1744, 1.2, 3.5);
+        beacon.position.set(helmetX, helmetY + 0.35, -8);
+        propsGroup.add(beacon);
+
+        // 4. Directional distance plaque: ◄ HATCH B-4: 865 METERS UPWARD
+        const dirCanvas = document.createElement('canvas');
+        dirCanvas.width = 256; dirCanvas.height = 64;
+        const dctx = dirCanvas.getContext('2d');
+        dctx.fillStyle = '#ffb300';
+        dctx.fillRect(0, 0, 256, 64);
+        dctx.fillStyle = '#000000';
+        dctx.font = 'bold 18px monospace';
+        dctx.textAlign = 'center';
+        dctx.fillText('◄ EMERGENCY ESCAPE', 128, 28);
+        dctx.font = '13px monospace';
+        dctx.fillText('SURFACE ACCESS: 865m', 128, 50);
+        const dirTex = new THREE.CanvasTexture(dirCanvas);
+        const dirSign = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.4), new THREE.MeshBasicMaterial({ map: dirTex }));
+        dirSign.position.set(this.getPathX(-15) - 1.45, this.getPathY(-15) + 1.8, -15);
+        dirSign.rotation.y = Math.PI / 2.2;
+        propsGroup.add(dirSign);
+
+        this.group.add(propsGroup);
     }
 
     buildCorridor() {
