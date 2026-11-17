@@ -32,14 +32,14 @@ class GameState {
         // Three.js Scene Setup
         this.scene = new THREE.Scene();
         window.gameScene = this.scene;
-        // Deep Cinematic Blue-Black Atmospheric Fog
-        this.scene.fog = new THREE.FogExp2(0x040810, 0.014);
+        // Deep Cinematic Blue Atmospheric Fog
+        this.scene.fog = new THREE.FogExp2(0x06152a, 0.012);
 
-        // Moody Midnight Blue Ambient Lighting (Deep black shadows, cinematic cyan contrast)
-        const hemiLight = new THREE.HemisphereLight(0x0091ea, 0x020408, 0.55);
+        // Radiant Midnight Blue Ambient Lighting (Deep black shadows, glowing cyan-blue contrast)
+        const hemiLight = new THREE.HemisphereLight(0x00b4d8, 0x020814, 0.85);
         this.scene.add(hemiLight);
 
-        const ambLight = new THREE.AmbientLight(0x040a14, 0.30);
+        const ambLight = new THREE.AmbientLight(0x082040, 0.50);
         this.scene.add(ambLight);
 
         // Camera Setup
@@ -52,7 +52,7 @@ class GameState {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25)); // 1.25 pixel ratio for maximum smoothness
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.0;
+        this.renderer.toneMappingExposure = 1.15;
         this.renderer.shadowMap.enabled = false; // Disable heavy shadow maps to eliminate GPU lag!
         container.appendChild(this.renderer.domElement);
 

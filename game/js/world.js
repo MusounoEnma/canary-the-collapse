@@ -68,16 +68,16 @@ class MineWorld {
             rctx.stroke();
         }
 
-        // Bioluminescent cyan quartz flecks and crystalline sparkles
-        for (let k = 0; k < 2500; k++) {
+        // Bioluminescent vivid cyan quartz flecks and crystalline sparkles
+        for (let k = 0; k < 3600; k++) {
             const px = Math.random() * 512;
             const py = Math.random() * 512;
-            if (Math.random() < 0.25) {
-                rctx.fillStyle = 'rgba(0, 210, 255, 0.85)'; // Neon cyan minerals
+            if (Math.random() < 0.32) {
+                rctx.fillStyle = 'rgba(0, 235, 255, 0.95)'; // Radiant neon cyan minerals
                 rctx.fillRect(px, py, 2, 2);
             } else {
-                const lum = 14 + Math.floor(Math.random() * 16);
-                rctx.fillStyle = `rgb(${lum},${lum + 3},${lum + 7})`;
+                const lum = 16 + Math.floor(Math.random() * 18);
+                rctx.fillStyle = `rgb(${lum},${lum + 6},${lum + 14})`;
                 rctx.fillRect(px, py, 1.5, 1.5);
             }
         }
@@ -119,9 +119,9 @@ class MineWorld {
         this.materials = {
             rock: new THREE.MeshStandardMaterial({
                 map: this.rockTexture,
-                color: new THREE.Color(0x12171e), // Deep black basalt tone
-                roughness: 0.88,
-                metalness: 0.12,
+                color: new THREE.Color(0x162232), // Deep black basalt tone with rich midnight-blue undertone
+                roughness: 0.82,
+                metalness: 0.18,
                 side: THREE.DoubleSide
             }),
             wood: new THREE.MeshStandardMaterial({
@@ -142,8 +142,8 @@ class MineWorld {
     }
 
     setupAtmosphericLighting() {
-        // Soft cinematic cyan-blue ambient fill
-        const ambientLight = new THREE.AmbientLight(0x060e18, 0.35);
+        // Radiant cinematic cyan-blue ambient fill
+        const ambientLight = new THREE.AmbientLight(0x0a2444, 0.55);
         this.scene.add(ambientLight);
     }
 

@@ -312,9 +312,9 @@ class Stage1Vein {
             const cage = new THREE.Mesh(cageGeo, cageMat);
             lanternGroup.add(cage);
 
-            // Radiant glowing cyan-blue core (cinematic atmosphere with zero GPU cost!)
-            const bulbGeo = new THREE.SphereGeometry(0.11, 8, 8);
-            const bulbMat = new THREE.MeshBasicMaterial({ color: 0x00b0ff });
+            // Radiant glowing cyan-blue core (vivid cinematic atmosphere)
+            const bulbGeo = new THREE.SphereGeometry(0.12, 8, 8);
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
             const bulb = new THREE.Mesh(bulbGeo, bulbMat);
             lanternGroup.add(bulb);
 
@@ -323,10 +323,10 @@ class Stage1Vein {
             this.group.add(lanternGroup);
         }
 
-        // 5 strategic cinematic cyan-blue key lights along Stage 1 for rich moody illumination
-        const lightPositions = [5, -60, -120, -180, -240];
+        // Strategic cinematic cyan-blue key lights along Stage 1 for rich, vibrant illumination
+        const lightPositions = [5, -30, -60, -90, -120, -150, -180, -210, -240, -270];
         for (const lz of lightPositions) {
-            const zLight = new THREE.PointLight(0x00b0ff, 2.0, 36, 1.4);
+            const zLight = new THREE.PointLight(0x00b0ff, 2.6, 38, 1.3);
             zLight.position.set(this.getPathX(lz), this.getPathY(lz) + 2.5, lz);
             this.group.add(zLight);
         }
