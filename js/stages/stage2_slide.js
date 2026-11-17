@@ -28,36 +28,86 @@ class Stage2SlideAndGrotto {
     }
 
     buildSlideChute() {
-        // Steep, curved slide tube from z = -285 down to z = -395
+        // Natural curved subterranean rock flume & ore chute from z = -285 down to z = -395
         const points = [];
-        for (let z = -285; z >= -395; z -= 3.0) {
+        for (let z = -285; z >= -395; z -= 2.5) {
             const p = (-z - 285) / 110; // 0 to 1
-            const y = THREE.MathUtils.lerp(4.5, -14.0, Math.pow(p, 1.2));
-            const x = Math.sin(p * Math.PI * 2.5) * 4.2;
+            const y = THREE.MathUtils.lerp(4.5, -14.0, Math.pow(p, 1.25));
+            const x = Math.sin(p * Math.PI * 2.2) * 4.8;
             points.push(new THREE.Vector3(x, y, z));
         }
 
         const curve = new THREE.CatmullRomCurve3(points);
-        const tubeGeo = new THREE.TubeGeometry(curve, 60, 2.1, 12, false);
+        const tubeGeo = new THREE.TubeGeometry(curve, 80, 3.2, 16, false);
 
-        // Slick polished steel/wet stone chute material
+        // Chiseled wet cavern rock displacement
+        const posAttr = tubeGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            let vx = posAttr.getX(i);
+            let vy = posAttr.getY(i);
+            let vz = posAttr.getZ(i);
+            const bump = Math.sin(vx * 1.8 + vz * 0.9) * 0.28 + Math.cos(vy * 2.2) * 0.22;
+            posAttr.setX(i, vx + bump);
+            posAttr.setY(i, vy + bump);
+        }
+        tubeGeo.computeVertexNormals();
+
+        // Wet, polished subterranean slate rock material
         const chuteMat = new THREE.MeshStandardMaterial({
-            color: 0x37474f,
-            roughness: 0.15,
-            metalness: 0.85,
+            map: this.materials.rock.map,
+            color: 0x2e3b42,
+            roughness: 0.25,
+            metalness: 0.45,
             side: THREE.DoubleSide
         });
         const chuteMesh = new THREE.Mesh(tubeGeo, chuteMat);
+        chuteMesh.matrixAutoUpdate = false;
+        chuteMesh.updateMatrix();
         this.group.add(chuteMesh);
 
-        // Chute guide ribs
-        for (let i = 0; i < points.length; i += 4) {
+        // Rushing water flume stream running along the trough of the chute
+        const waterStreamGeo = new THREE.TubeGeometry(curve, 80, 1.4, 8, false);
+        waterStreamGeo.scale(1.0, 0.18, 1.0); // Flatten to flume bed
+        const waterStreamMat = new THREE.MeshStandardMaterial({
+            color: 0x00e5ff,
+            emissive: 0x004d40,
+            roughness: 0.1,
+            metalness: 0.85,
+            transparent: true,
+            opacity: 0.75
+        });
+        const waterStream = new THREE.Mesh(waterStreamGeo, waterStreamMat);
+        waterStream.position.y -= 1.1; // Rest on flume floor
+        this.group.add(waterStream);
+
+        // Vibrant Lighting along the entire slide (Eliminates pitch-black void!)
+        for (let i = 2; i < points.length; i += 4) {
             const pt = points[i];
-            const ringGeo = new THREE.TorusGeometry(2.15, 0.12, 6, 16);
-            const ringMat = new THREE.MeshStandardMaterial({ color: 0xffb300, roughness: 0.4 });
+            const isCyan = (i % 8 === 2);
+
+            // Glowing guide arch ring
+            const ringGeo = new THREE.TorusGeometry(3.1, 0.12, 6, 16);
+            const ringMat = new THREE.MeshBasicMaterial({ color: isCyan ? 0x00e5ff : 0xffb74d });
             const ring = new THREE.Mesh(ringGeo, ringMat);
             ring.position.copy(pt);
             this.group.add(ring);
+
+            // Bright point light illuminating the flume
+            const lightColor = isCyan ? 0x00e5ff : 0xffa726;
+            const slideLight = new THREE.PointLight(lightColor, 2.2, 18, 1.6);
+            slideLight.position.set(pt.x, pt.y + 1.2, pt.z);
+            this.group.add(slideLight);
+
+            // Natural hanging stalactites from flume ceiling
+            for (let k = -1; k <= 1; k += 2) {
+                const sGeo = new THREE.ConeGeometry(0.22, 1.4 + Math.random() * 0.8, 6);
+                sGeo.rotateX(Math.PI);
+                const sMesh = new THREE.Mesh(sGeo, this.materials.rock);
+                sMesh.position.set(pt.x + k * 1.6, pt.y + 2.2, pt.z + (Math.random() - 0.5) * 1.5);
+                sMesh.matrixAutoUpdate = false;
+                sMesh.updateMatrix();
+                this.group.add(sMesh);
+            }
         }
     }
 
@@ -65,8 +115,8 @@ class Stage2SlideAndGrotto {
         // progress: 0 to 1
         const p = THREE.MathUtils.clamp(progress, 0, 1);
         const z = THREE.MathUtils.lerp(-285, -395, p);
-        const y = THREE.MathUtils.lerp(4.5, -14.0, Math.pow(p, 1.2));
-        const x = Math.sin(p * Math.PI * 2.5) * 4.2 + lateralOffset;
+        const y = THREE.MathUtils.lerp(4.5, -14.0, Math.pow(p, 1.25));
+        const x = Math.sin(p * Math.PI * 2.2) * 4.8 + lateralOffset;
         return new THREE.Vector3(x, y, z);
     }
 

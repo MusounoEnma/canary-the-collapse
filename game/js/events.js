@@ -228,6 +228,11 @@ class EventManager {
         this.hitsDone = 0;
         this.hitsNeeded = rubble.hitsRemaining || 3;
 
+        // Ready the 3D first-person pickaxe in the player's hands!
+        if (window.pickaxeSystem) {
+            window.pickaxeSystem.setVisible(true);
+        }
+
         const overlay = document.getElementById('rhythm-minigame-overlay');
         const titleEl = document.getElementById('rhythm-rubble-title');
         const spotEl = document.getElementById('rhythm-sweet-spot');
@@ -243,13 +248,24 @@ class EventManager {
             feedbackEl.style.color = '#fff';
         }
         if (overlay) overlay.style.display = 'flex';
-        document.exitPointerLock();
+        // Note: Do NOT exit pointer lock, keep player looking at the 3D rubble!
     }
 
     strikePickaxe() {
         if (!this.isRhythmActive) return;
 
         const isHit = (this.needlePos >= this.sweetSpotMin && this.needlePos <= this.sweetSpotMax);
+
+        // Shake rubble mesh on strike
+        if (this.currentRubble && this.currentRubble.group) {
+            const rx = this.currentRubble.position.x;
+            this.currentRubble.group.position.x = rx + (Math.random() - 0.5) * 0.16;
+            setTimeout(() => {
+                if (this.currentRubble && this.currentRubble.group) {
+                    this.currentRubble.group.position.x = rx;
+                }
+            }, 100);
+        }
 
         // First-person 3D pickaxe swing animation
         if (window.pickaxeSystem) {
@@ -302,8 +318,8 @@ class EventManager {
         this.isRhythmActive = false;
         const overlay = document.getElementById('rhythm-minigame-overlay');
         if (overlay) overlay.style.display = 'none';
-        if (window.gamePlayer && window.gamePlayer.domElement) {
-            window.gamePlayer.domElement.requestPointerLock();
+        if (window.pickaxeSystem) {
+            window.pickaxeSystem.setVisible(false);
         }
     }
 

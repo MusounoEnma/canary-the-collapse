@@ -217,24 +217,38 @@ class Stage1Vein {
     }
 
     buildRailsAndTimber() {
-        const step = 3.5;
+        const step = 2.0;
         for (let z = 12; z >= -275; z -= step) {
             const x = this.getPathX(z);
             const y = this.getPathY(z);
 
-            // Wooden Cross-tie
-            const tieGeo = new THREE.BoxGeometry(1.9, 0.12, 0.28);
+            // Wooden Cross-tie every 2 meters
+            const tieGeo = new THREE.BoxGeometry(2.0, 0.12, 0.28);
             const tie = new THREE.Mesh(tieGeo, this.materials.wood);
             tie.position.set(x, y + 0.06, z);
+            tie.matrixAutoUpdate = false;
+            tie.updateMatrix();
             this.group.add(tie);
 
-            // Timber Support Arch every 10.5 meters
-            if (Math.abs(z % 10.5) < step) {
+            // Dense Timber Support Arch every 6.0 meters
+            if (Math.abs(z % 6.0) < step) {
                 this.buildTimberArch(x, y, z);
+            }
+
+            // Side heaps of blasted rock & ore rubble every 12 meters
+            if (Math.abs(z % 12.0) < step) {
+                for (let side of [-1.55, 1.55]) {
+                    const oreGeo = new THREE.DodecahedronGeometry(0.35 + Math.random() * 0.35, 0);
+                    const oreMesh = new THREE.Mesh(oreGeo, this.materials.rock);
+                    oreMesh.position.set(x + side, y + 0.25, z + (Math.random() - 0.5) * 0.8);
+                    oreMesh.matrixAutoUpdate = false;
+                    oreMesh.updateMatrix();
+                    this.group.add(oreMesh);
+                }
             }
         }
 
-        // Steel Rails
+        // Continuous High-Tension Steel Rails
         for (let side of [-0.62, 0.62]) {
             const points = [];
             for (let z = 14; z >= -278; z -= 3.0) {
@@ -243,6 +257,8 @@ class Stage1Vein {
             const railCurve = new THREE.CatmullRomCurve3(points);
             const railGeo = new THREE.TubeGeometry(railCurve, 90, 0.038, 5, false);
             const rail = new THREE.Mesh(railGeo, this.materials.metal);
+            rail.matrixAutoUpdate = false;
+            rail.updateMatrix();
             this.group.add(rail);
         }
     }
@@ -251,7 +267,7 @@ class Stage1Vein {
         const arch = new THREE.Group();
         arch.position.set(x, y, z);
 
-        // Vertical posts
+        // Heavy vertical posts
         const postGeo = new THREE.BoxGeometry(0.24, 3.2, 0.24);
         const leftPost = new THREE.Mesh(postGeo, this.materials.wood);
         leftPost.position.set(-1.6, 1.6, 0);
@@ -263,9 +279,21 @@ class Stage1Vein {
         const beam = new THREE.Mesh(beamGeo, this.materials.wood);
         beam.position.set(0, 3.1, 0);
 
+        // Diagonal knee-braces for authentic reinforced mine drift look
+        for (let side of [-1, 1]) {
+            const braceGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18);
+            const brace = new THREE.Mesh(braceGeo, this.materials.wood);
+            brace.position.set(side * 1.3, 2.75, 0);
+            brace.rotation.z = side * Math.PI / 4;
+            arch.add(brace);
+        }
+
         arch.add(leftPost);
         arch.add(rightPost);
         arch.add(beam);
+
+        arch.matrixAutoUpdate = false;
+        arch.updateMatrix();
         this.group.add(arch);
     }
 

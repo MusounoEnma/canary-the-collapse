@@ -155,9 +155,9 @@ class MineWorld {
         const positions = new Float32Array(dustCount * 3);
 
         for (let i = 0; i < dustCount * 3; i += 3) {
-            positions[i + 0] = (Math.random() - 0.5) * 8.0;
-            positions[i + 1] = Math.random() * 6.0;
-            positions[i + 2] = (Math.random() - 0.5) * 20.0;
+            positions[i + 0] = (Math.random() - 0.5) * 16.0;
+            positions[i + 1] = Math.random() * 8.0 - 2.0;
+            positions[i + 2] = (Math.random() - 0.5) * 30.0;
         }
 
         geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -165,11 +165,12 @@ class MineWorld {
             color: 0xffd54f,
             size: 0.055,
             transparent: true,
-            opacity: 0.6,
+            opacity: 0.65,
             blending: THREE.AdditiveBlending
         });
 
         this.dustParticles = new THREE.Points(geo, mat);
+        this.dustParticles.position.set(0, 0, 0); // Stays at world origin, never parented to player!
         this.scene.add(this.dustParticles);
     }
 
@@ -254,12 +255,27 @@ class MineWorld {
     }
 
     update(delta, playerPos, oxygen) {
-        // Follow player with floating dust motes
+        // Natural, independent 3D dust particle drift (wraps around player volume in world space)
         if (this.dustParticles && playerPos) {
-            this.dustParticles.position.set(playerPos.x, playerPos.y, playerPos.z);
             const posAttr = this.dustParticles.geometry.attributes.position;
-            for (let i = 1; i < posAttr.count * 3; i += 3) {
-                posAttr.array[i] += Math.sin(performance.now() * 0.001 + i) * 0.004;
+            const time = performance.now() * 0.001;
+            const px = playerPos.x;
+            const py = playerPos.y;
+            const pz = playerPos.z;
+
+            for (let i = 0; i < posAttr.count * 3; i += 3) {
+                // Autonomous gentle 3D air currents
+                posAttr.array[i + 1] -= delta * 0.22; // subtle downward settling
+                posAttr.array[i + 0] += Math.sin(time * 0.8 + i) * 0.008;
+                posAttr.array[i + 2] += Math.cos(time * 0.6 + i) * 0.008;
+
+                // Infinite wrap box: 18m width, 8m height, 32m depth around player
+                if (posAttr.array[i + 0] < px - 9.0) posAttr.array[i + 0] = px + 9.0;
+                if (posAttr.array[i + 0] > px + 9.0) posAttr.array[i + 0] = px - 9.0;
+                if (posAttr.array[i + 1] < py - 1.5) posAttr.array[i + 1] = py + 6.0;
+                if (posAttr.array[i + 1] > py + 6.0) posAttr.array[i + 1] = py - 1.5;
+                if (posAttr.array[i + 2] < pz - 16.0) posAttr.array[i + 2] = pz + 16.0;
+                if (posAttr.array[i + 2] > pz + 16.0) posAttr.array[i + 2] = pz - 16.0;
             }
             posAttr.needsUpdate = true;
         }

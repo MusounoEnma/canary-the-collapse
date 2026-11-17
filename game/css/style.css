@@ -661,28 +661,29 @@ body.earthquake-shake {
 #rhythm-minigame-overlay {
     display: none;
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(8, 9, 12, 0.88);
-    backdrop-filter: blur(10px);
-    z-index: 50;
+    bottom: 95px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    height: auto;
+    background: transparent;
+    backdrop-filter: none;
+    z-index: 40;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 .rhythm-card {
-    width: 600px;
-    background: #14171d;
-    border: 2px solid #333a44;
+    width: 460px;
+    background: rgba(16, 20, 26, 0.88);
+    border: 2px solid rgba(255, 179, 0, 0.7);
     border-radius: 8px;
-    padding: 30px;
+    padding: 16px 24px;
     text-align: center;
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
-    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 18px rgba(255, 179, 0, 0.25);
+    pointer-events: auto;
 }
 
 .rhythm-title {

@@ -122,7 +122,12 @@ class PlayerController {
     initInputListeners() {
         let isMouseDown = false;
         window.addEventListener('mousedown', (e) => {
-            if (e.button === 0) isMouseDown = true;
+            if (e.button === 0) {
+                isMouseDown = true;
+                if (window.eventManager && window.eventManager.isRhythmActive) {
+                    window.eventManager.strikePickaxe();
+                }
+            }
         });
         window.addEventListener('mouseup', () => {
             isMouseDown = false;
