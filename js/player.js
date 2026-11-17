@@ -105,13 +105,13 @@ class PlayerController {
     }
 
     initFlashlight() {
-        // High-visibility radiant cyan ambient bulb around player (bright, crystal clear 360-degree illumination)
-        this.ambientBulb = new THREE.PointLight(0x38bdf8, 1.8, 24.0, 1.2);
+        // Authentic warm golden-amber miner helmet ambient glow
+        this.ambientBulb = new THREE.PointLight(0xffca28, 1.1, 18.0, 1.4);
         this.ambientBulb.position.set(0, 0, 0);
         this.camera.add(this.ambientBulb);
 
-        // High-powered vivid cyan-blue miner beam illuminating the mine corridor ahead
-        this.flashlight = new THREE.SpotLight(0x7dd3fc, 4.8, 65, Math.PI / 3.4, 0.35, 1.0);
+        // High-powered warm incandescent miner headlamp beam
+        this.flashlight = new THREE.SpotLight(0xfff3e0, 4.2, 58, Math.PI / 3.4, 0.35, 1.1);
         this.flashlight.position.set(0, 0, 0);
         this.flashlightTarget = new THREE.Object3D();
         this.flashlightTarget.position.set(0, 0, -6);
@@ -310,8 +310,8 @@ class PlayerController {
         if (this.tapsRequired <= 0) {
             this.isFlashlightMalfunctioning = false;
             this.isFlashlightOn = true;
-            this.flashlight.intensity = 4.8;
-            this.ambientBulb.intensity = 1.8;
+            this.flashlight.intensity = 4.2;
+            this.ambientBulb.intensity = 1.1;
             const tapAlert = document.getElementById('helmet-tap-alert');
             if (tapAlert) tapAlert.style.display = 'none';
         }

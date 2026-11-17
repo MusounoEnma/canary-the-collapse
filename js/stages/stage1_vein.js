@@ -298,7 +298,7 @@ class Stage1Vein {
     }
 
     buildAmberLanterns() {
-        // Cinematic cyan-blue industrial safety lanterns every 18m
+        // Authentic industrial mine safety lanterns & red hazard beacons every 18m
         for (let z = 5; z >= -270; z -= 18) {
             const x = this.getPathX(z) + 1.45;
             const y = this.getPathY(z) + 2.5;
@@ -306,15 +306,17 @@ class Stage1Vein {
             const lanternGroup = new THREE.Group();
             lanternGroup.position.set(x, y, z);
 
-            // Cage fixture
+            // Heavy cast-iron cage fixture
             const cageGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.32, 6);
-            const cageMat = new THREE.MeshStandardMaterial({ color: 0x1a2634, metalness: 0.9, roughness: 0.2 });
+            const cageMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.9, roughness: 0.2 });
             const cage = new THREE.Mesh(cageGeo, cageMat);
             lanternGroup.add(cage);
 
-            // Radiant glowing cyan-blue core (vivid cinematic atmosphere)
+            // Alternating warm yellow mine lantern and red hazard warning beacon
+            const isRedWarning = (z === -72 || z === -144 || z === -252);
+            const bulbColor = isRedWarning ? 0xff1744 : 0xffb300;
             const bulbGeo = new THREE.SphereGeometry(0.12, 8, 8);
-            const bulbMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+            const bulbMat = new THREE.MeshBasicMaterial({ color: bulbColor });
             const bulb = new THREE.Mesh(bulbGeo, bulbMat);
             lanternGroup.add(bulb);
 
@@ -323,11 +325,21 @@ class Stage1Vein {
             this.group.add(lanternGroup);
         }
 
-        // Strategic cinematic cyan-blue key lights along Stage 1 for bright, high-visibility illumination
-        const lightPositions = [5, -30, -60, -90, -120, -150, -180, -210, -240, -270];
-        for (const lz of lightPositions) {
-            const zLight = new THREE.PointLight(0x38bdf8, 3.6, 48, 1.1);
-            zLight.position.set(this.getPathX(lz), this.getPathY(lz) + 2.5, lz);
+        // Strategic warm yellow mine lights & red emergency beacons along Stage 1
+        const lightPositions = [
+            { z: 5, color: 0xffb300, intensity: 3.4, dist: 42 },
+            { z: -35, color: 0xffa000, intensity: 3.2, dist: 38 },
+            { z: -72, color: 0xff1744, intensity: 3.8, dist: 36 }, // Red hazard beacon near cave-in rubble
+            { z: -105, color: 0xffb300, intensity: 3.2, dist: 40 },
+            { z: -140, color: 0xffa000, intensity: 3.2, dist: 38 },
+            { z: -175, color: 0xff1744, intensity: 3.6, dist: 36 }, // Red hazard zone
+            { z: -210, color: 0xffb300, intensity: 3.2, dist: 40 },
+            { z: -245, color: 0xffa000, intensity: 3.2, dist: 38 },
+            { z: -275, color: 0xff1744, intensity: 3.6, dist: 36 }  // Red chute warning
+        ];
+        for (const lp of lightPositions) {
+            const zLight = new THREE.PointLight(lp.color, lp.intensity, lp.dist, 1.15);
+            zLight.position.set(this.getPathX(lp.z), this.getPathY(lp.z) + 2.5, lp.z);
             this.group.add(zLight);
         }
     }
@@ -401,6 +413,23 @@ class Stage1Vein {
             group.add(mesh);
             meshes.push(mesh);
         }
+
+        // Red Emergency Mine Hazard Light (lampu merah khas tambang)
+        const redHousingGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.18, 8);
+        const redHousingMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.85 });
+        const redHousing = new THREE.Mesh(redHousingGeo, redHousingMat);
+        redHousing.position.set(-1.3, 2.2, 0.4);
+        group.add(redHousing);
+
+        const redDomeGeo = new THREE.SphereGeometry(0.11, 8, 8);
+        const redDomeMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+        const redDome = new THREE.Mesh(redDomeGeo, redDomeMat);
+        redDome.position.set(-1.3, 2.33, 0.4);
+        group.add(redDome);
+
+        const redLight = new THREE.PointLight(0xff1744, 3.2, 18.0, 1.2);
+        redLight.position.set(-1.3, 2.35, 0.4);
+        group.add(redLight);
 
         // Green sweet-spot interactive marker beacon
         const beaconGeo = new THREE.RingGeometry(0.18, 0.28, 16);

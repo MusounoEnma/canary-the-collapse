@@ -104,12 +104,12 @@ class Stage2SlideAndGrotto {
             }
         }
 
-        // Two vivid cyan-blue key lights for the slide flume (bright, crystal clear)
-        const chuteLight1 = new THREE.PointLight(0x38bdf8, 3.4, 48, 1.2);
+        // Industrial amber safety light and red chute hazard beacon
+        const chuteLight1 = new THREE.PointLight(0xffa000, 3.4, 48, 1.2);
         chuteLight1.position.set(0, 0, -320);
         this.group.add(chuteLight1);
 
-        const chuteLight2 = new THREE.PointLight(0x00e5ff, 3.6, 48, 1.2);
+        const chuteLight2 = new THREE.PointLight(0xff1744, 3.4, 48, 1.2);
         chuteLight2.position.set(0, -8, -370);
         this.group.add(chuteLight2);
     }

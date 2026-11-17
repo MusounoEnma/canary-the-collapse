@@ -32,14 +32,14 @@ class GameState {
         // Three.js Scene Setup
         this.scene = new THREE.Scene();
         window.gameScene = this.scene;
-        // Bright Cinematic Blue Atmospheric Fog (Gentle distance fog, clear visibility)
-        this.scene.fog = new THREE.Fog(0x0e243a, 40, 160);
+        // Deep Navy Blue Mine Atmospheric Fog (Dark navy, no icy cyan)
+        this.scene.fog = new THREE.Fog(0x060e1a, 35, 140);
 
-        // Radiant, High-Visibility Mine Lighting (Vibrant cinematic cyan-blue, zero crushed blacks)
-        const hemiLight = new THREE.HemisphereLight(0x38bdf8, 0x1e3a5f, 1.35);
+        // Authentic Subterranean Mine Ambient Illumination (Deep navy contrast)
+        const hemiLight = new THREE.HemisphereLight(0x0f2b48, 0x140e0a, 0.85);
         this.scene.add(hemiLight);
 
-        const ambLight = new THREE.AmbientLight(0x224a73, 1.05);
+        const ambLight = new THREE.AmbientLight(0x0a182c, 0.65);
         this.scene.add(ambLight);
 
         // Camera Setup
@@ -52,7 +52,7 @@ class GameState {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25)); // 1.25 pixel ratio for maximum smoothness
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.30;
+        this.renderer.toneMappingExposure = 1.15;
         this.renderer.shadowMap.enabled = false; // Disable heavy shadow maps to eliminate GPU lag!
         container.appendChild(this.renderer.domElement);
 
