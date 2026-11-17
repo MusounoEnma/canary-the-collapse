@@ -323,10 +323,10 @@ class Stage1Vein {
             this.group.add(lanternGroup);
         }
 
-        // Strategic cinematic cyan-blue key lights along Stage 1 for rich, vibrant illumination
+        // Strategic cinematic cyan-blue key lights along Stage 1 for bright, high-visibility illumination
         const lightPositions = [5, -30, -60, -90, -120, -150, -180, -210, -240, -270];
         for (const lz of lightPositions) {
-            const zLight = new THREE.PointLight(0x00b0ff, 2.6, 38, 1.3);
+            const zLight = new THREE.PointLight(0x38bdf8, 3.6, 48, 1.1);
             zLight.position.set(this.getPathX(lz), this.getPathY(lz) + 2.5, lz);
             this.group.add(zLight);
         }

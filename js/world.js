@@ -36,25 +36,25 @@ class MineWorld {
     }
 
     initTextures() {
-        // Deep obsidian & black basalt rock texture with bioluminescent cyan quartz
+        // High-contrast, authentic slate & granite rock texture with bioluminescent cyan quartz
         const rockCanvas = document.createElement('canvas');
         rockCanvas.width = 512; rockCanvas.height = 512;
         const rctx = rockCanvas.getContext('2d');
         
-        // Solid deep black basalt base
-        rctx.fillStyle = '#080a0e';
+        // Rich, visible slate base with deep cyan-blue undertones
+        rctx.fillStyle = '#1c2838';
         rctx.fillRect(0, 0, 512, 512);
 
-        // Volcanic rock grain and micro-facets
+        // Jagged granite facets & sedimentary bedding
         for (let i = 0; i < 9000; i++) {
-            const lum = 10 + Math.floor(Math.random() * 16);
-            rctx.fillStyle = `rgb(${lum},${lum + 2},${lum + 6})`;
+            const lum = 38 + Math.floor(Math.random() * 32);
+            rctx.fillStyle = `rgb(${lum},${lum + 8},${lum + 18})`;
             rctx.fillRect(Math.random() * 512, Math.random() * 512, 1.5 + Math.random() * 2.5, 1.5 + Math.random() * 2.5);
         }
 
-        // Jagged basalt fractures & deep shadow crevices
-        for (let i = 0; i < 40; i++) {
-            rctx.strokeStyle = i % 3 === 0 ? 'rgba(0, 0, 0, 0.98)' : 'rgba(12, 20, 30, 0.70)';
+        // Sharp rock fracture seams & crisp chisels
+        for (let i = 0; i < 45; i++) {
+            rctx.strokeStyle = i % 3 === 0 ? 'rgba(12, 20, 30, 0.90)' : 'rgba(32, 52, 74, 0.75)';
             rctx.lineWidth = 1.0 + Math.random() * 2.2;
             rctx.beginPath();
             let curX = 0;
@@ -69,15 +69,15 @@ class MineWorld {
         }
 
         // Bioluminescent vivid cyan quartz flecks and crystalline sparkles
-        for (let k = 0; k < 3600; k++) {
+        for (let k = 0; k < 3800; k++) {
             const px = Math.random() * 512;
             const py = Math.random() * 512;
-            if (Math.random() < 0.32) {
-                rctx.fillStyle = 'rgba(0, 235, 255, 0.95)'; // Radiant neon cyan minerals
+            if (Math.random() < 0.35) {
+                rctx.fillStyle = 'rgba(0, 240, 255, 0.95)'; // Radiant neon cyan minerals
                 rctx.fillRect(px, py, 2, 2);
             } else {
-                const lum = 16 + Math.floor(Math.random() * 18);
-                rctx.fillStyle = `rgb(${lum},${lum + 6},${lum + 14})`;
+                const lum = 45 + Math.floor(Math.random() * 25);
+                rctx.fillStyle = `rgb(${lum},${lum + 12},${lum + 24})`;
                 rctx.fillRect(px, py, 1.5, 1.5);
             }
         }
@@ -91,11 +91,11 @@ class MineWorld {
         const woodCanvas = document.createElement('canvas');
         woodCanvas.width = 256; woodCanvas.height = 256;
         const wctx = woodCanvas.getContext('2d');
-        wctx.fillStyle = '#22150e';
+        wctx.fillStyle = '#2d1e16';
         wctx.fillRect(0, 0, 256, 256);
         for (let i = 0; i < 1500; i++) {
             const y = Math.random() * 256;
-            wctx.fillStyle = `rgba(10, 5, 2, ${0.2 + Math.random() * 0.4})`;
+            wctx.fillStyle = `rgba(15, 8, 4, ${0.2 + Math.random() * 0.4})`;
             wctx.fillRect(0, y, 256, 1 + Math.random() * 3);
         }
         this.woodTexture = new THREE.CanvasTexture(woodCanvas);
@@ -106,7 +106,7 @@ class MineWorld {
         const metalCanvas = document.createElement('canvas');
         metalCanvas.width = 256; metalCanvas.height = 256;
         const mctx = metalCanvas.getContext('2d');
-        mctx.fillStyle = '#1c242b';
+        mctx.fillStyle = '#263238';
         mctx.fillRect(0, 0, 256, 256);
         for (let i = 0; i < 1000; i++) {
             mctx.fillStyle = `rgba(180, 85, 20, ${Math.random() * 0.45})`;
@@ -119,21 +119,21 @@ class MineWorld {
         this.materials = {
             rock: new THREE.MeshStandardMaterial({
                 map: this.rockTexture,
-                color: new THREE.Color(0x162232), // Deep black basalt tone with rich midnight-blue undertone
-                roughness: 0.82,
-                metalness: 0.18,
+                color: new THREE.Color(0x32475e), // Clear, readable slate rock with rich blue undertone
+                roughness: 0.68,
+                metalness: 0.20,
                 side: THREE.DoubleSide
             }),
             wood: new THREE.MeshStandardMaterial({
                 map: this.woodTexture,
-                color: new THREE.Color(0x2d1d15), // Deep weathered dark timber
-                roughness: 0.90,
-                metalness: 0.04,
+                color: new THREE.Color(0x3e2723), // Warm weathered timber
+                roughness: 0.88,
+                metalness: 0.05,
                 side: THREE.DoubleSide
             }),
             metal: new THREE.MeshStandardMaterial({
                 map: this.metalTexture,
-                color: new THREE.Color(0x37474f),
+                color: new THREE.Color(0x455a64),
                 roughness: 0.38,
                 metalness: 0.88,
                 side: THREE.DoubleSide
@@ -142,8 +142,8 @@ class MineWorld {
     }
 
     setupAtmosphericLighting() {
-        // Radiant cinematic cyan-blue ambient fill
-        const ambientLight = new THREE.AmbientLight(0x0a2444, 0.55);
+        // Bright, radiant cinematic cyan-blue ambient fill
+        const ambientLight = new THREE.AmbientLight(0x284c72, 0.90);
         this.scene.add(ambientLight);
     }
 

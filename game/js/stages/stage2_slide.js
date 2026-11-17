@@ -104,12 +104,12 @@ class Stage2SlideAndGrotto {
             }
         }
 
-        // Two vivid cyan-blue key lights for the slide flume
-        const chuteLight1 = new THREE.PointLight(0x00b0ff, 2.2, 36, 1.5);
+        // Two vivid cyan-blue key lights for the slide flume (bright, crystal clear)
+        const chuteLight1 = new THREE.PointLight(0x38bdf8, 3.4, 48, 1.2);
         chuteLight1.position.set(0, 0, -320);
         this.group.add(chuteLight1);
 
-        const chuteLight2 = new THREE.PointLight(0x00e5ff, 2.4, 36, 1.5);
+        const chuteLight2 = new THREE.PointLight(0x00e5ff, 3.6, 48, 1.2);
         chuteLight2.position.set(0, -8, -370);
         this.group.add(chuteLight2);
     }
@@ -188,12 +188,12 @@ class Stage2SlideAndGrotto {
             }
         }
 
-        // Two global vivid cyan-blue illumination lights for the entire grotto
-        const grottoLight1 = new THREE.PointLight(0x00e5ff, 2.4, 55, 1.4);
+        // Two global vivid cyan-blue illumination lights for the entire grotto (crystal clear visibility)
+        const grottoLight1 = new THREE.PointLight(0x00e5ff, 3.5, 70, 1.2);
         grottoLight1.position.set(0, -6.0, -450);
         this.group.add(grottoLight1);
 
-        const grottoLight2 = new THREE.PointLight(0x00e5ff, 2.4, 55, 1.4);
+        const grottoLight2 = new THREE.PointLight(0x00e5ff, 3.5, 70, 1.2);
         grottoLight2.position.set(0, -6.0, -560);
         this.group.add(grottoLight2);
     }
