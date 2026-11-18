@@ -38,11 +38,11 @@ class PlayerController {
         this.hasBrokenPickaxe = false;
         this.hasCrowbar = false;
 
-        // Stage 2: The Abyssal Ore Chute Slide
+        // Stage 2: The Abyssal Natural Rock Chasm Fall & Plunge
         this.isSliding = false;
         this.slideProgress = 0; // 0 to 1
         this.slideLateralOffset = 0;
-        this.slideSpeed = 0.09; // takes ~11 seconds to slide down 110 meters
+        this.fallVelocity = 0.22; // Natural gravity plunge acceleration (~3.2 seconds total fall)
 
         // Stage 2: Extended Swimming Grotto
         this.isSwimming = false;
@@ -340,36 +340,47 @@ class PlayerController {
         }
     }
 
-    startSlide(slideChute) {
+    startChasmPlunge(slideChute) {
         if (this.isSliding) return;
         this.isSliding = true;
         this.slideProgress = 0;
         this.slideLateralOffset = 0;
+        this.fallVelocity = 0.22; // Natural gravity plunge acceleration
 
-        if (window.soundEngine && window.soundEngine.playWhoosh) {
-            window.soundEngine.playWhoosh();
+        if (window.soundEngine) {
+            if (window.soundEngine.playWhoosh) window.soundEngine.playWhoosh();
+            if (window.soundEngine.playTremorRumble) window.soundEngine.playTremorRumble();
         }
         if (window.eventManager) {
-            window.eventManager.showNotification("HANG ON! PLUNGING DOWN THE ORE CHUTE! [A]/[D] STEER!");
+            window.eventManager.showNotification("CRITICAL CAVE-IN! TUMBLING DOWN THE ROCKY CHASM!");
         }
     }
 
+    startSlide(slideChute) {
+        this.startChasmPlunge(slideChute);
+    }
+
     updateSlide(delta) {
-        this.slideProgress += delta * this.slideSpeed;
+        // Natural gravity fall acceleration down the rocky shaft
+        this.fallVelocity = Math.min(0.48, this.fallVelocity + delta * 0.16);
+        this.slideProgress += delta * this.fallVelocity;
 
-        // Player steering
-        if (this.keys.left) this.slideLateralOffset = Math.max(-1.2, this.slideLateralOffset - delta * 3.0);
-        if (this.keys.right) this.slideLateralOffset = Math.min(1.2, this.slideLateralOffset + delta * 3.0);
+        // Dynamic chaotic tumbling shudder & debris buffeting down the natural rock chasm
+        const t = performance.now() * 0.001;
+        const shudder = Math.sin(t * 38.0) * 0.035 * (1.0 - this.slideProgress * 0.3);
+        const rockRoll = Math.sin(t * 16.0) * 0.06;
 
-        const pos = window.gameWorld.stage2.getSlidePosition(this.slideProgress, this.slideLateralOffset);
+        // Follow the natural chasm drop path down to the flooded grotto
+        const pos = window.gameWorld.stage2.getSlidePosition(this.slideProgress, 0);
         this.position.copy(pos);
-        this.camera.position.set(pos.x, pos.y + 0.6, pos.z);
+        this.camera.position.set(pos.x, pos.y + 0.5, pos.z);
 
-        // Slide dynamic camera pitch & roll
-        this.pitch = -0.35 + Math.sin(this.slideProgress * 20) * 0.08;
-        this.roll = this.slideLateralOffset * 0.25;
+        // Realistic downward plunge camera tilt: looking down into the yawning abyss
+        this.pitch = -0.68 + Math.sin(t * 14.0) * 0.06 + shudder;
+        this.roll = rockRoll;
+        this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
 
-        // End of slide: splash into water
+        // End of fall: violent impact splashdown into submerged lake
         if (this.slideProgress >= 1.0) {
             this.isSliding = false;
             this.enterWaterGrotto();
@@ -506,9 +517,9 @@ class PlayerController {
         const world = window.gameWorld;
         this.isMoving = false;
 
-        // Check if player entered slide intake at z = -282
-        if (!this.isSliding && this.position.z <= -282 && this.position.z >= -286) {
-            this.startSlide(world.stage2);
+        // Check if player entered natural chasm fall zone at z <= -280
+        if (!this.isSliding && this.position.z <= -280 && this.position.z >= -286) {
+            this.startChasmPlunge(world.stage2);
             return;
         }
 

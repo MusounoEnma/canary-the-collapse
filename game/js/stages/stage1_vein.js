@@ -482,15 +482,24 @@ class Stage1Vein {
         this.corpses.push(this.createMinerCorpse(
             'miner_elena',
             'Dr. Elena Rostova // Geologist',
-            'Died holding an emergency beacon and high-capacity respirator canister.\n\n"\'Seismic readings show tectonic shifts increasing every hour. The ore chute at -280m drops straight into the submerged grotto. Take the plunge before the tremors seal it!\'"',
+            'Died holding an emergency beacon and high-capacity respirator canister.\n\n"\'Seismic readings show tectonic shifts increasing every hour. The fissure ahead drops into an underground cavern reservoir. The bedrock is fractured—if you break through the rock blockage, the cave floor will collapse right into the grotto below!\'"',
             this.getPathX(-225) + 0.9,
             this.getPathY(-225),
             -225,
             40 // gives 40% oxygen
         ));
 
-        // Ore Chute Entrance Structure at z = -280
-        this.buildChuteEntrance(this.getPathX(-280), this.getPathY(-280), -280);
+        // Obstacle 3: Fractured Bedrock Wall blocking the chasm drop at z = -278 (Destroy with pickaxe to trigger collapse!)
+        this.rubbles.push(this.createRubbleBarrier(
+            'rubble_chasm_collapse',
+            this.getPathX(-278),
+            this.getPathY(-278),
+            -278,
+            'Fractured Chasm Bedrock (Depth 640m)'
+        ));
+
+        // Natural Cavern Chasm Rim at z = -280
+        this.buildNaturalChasmEntrance(this.getPathX(-280), this.getPathY(-280), -280);
     }
 
     createRubbleBarrier(id, x, y, z, name) {
@@ -627,49 +636,63 @@ class Stage1Vein {
         };
     }
 
-    buildChuteEntrance(x, y, z) {
-        const chuteGroup = new THREE.Group();
-        chuteGroup.position.set(x, y, z);
+    buildNaturalChasmEntrance(x, y, z) {
+        const chasmGroup = new THREE.Group();
+        chasmGroup.position.set(x, y, z);
 
-        // Steel funnel archway
-        const archGeo = new THREE.TorusGeometry(1.6, 0.18, 8, 16, Math.PI);
-        const archMat = new THREE.MeshStandardMaterial({ color: 0x37474f, metalness: 0.85, roughness: 0.3 });
-        const arch = new THREE.Mesh(archGeo, archMat);
-        arch.position.set(0, 1.6, 0);
-        chuteGroup.add(arch);
+        // 1. Natural rugged rock arch framing the deep chasm opening (no artificial signs or neon arches!)
+        const archRockCount = 16;
+        for (let i = 0; i < archRockCount; i++) {
+            const angle = (i / (archRockCount - 1)) * Math.PI;
+            const r = 2.5;
+            const rx = Math.cos(angle) * r;
+            const ry = Math.sin(angle) * r + 0.5;
+            const rockGeo = new THREE.DodecahedronGeometry(0.7 + Math.random() * 0.35, 0);
+            const rockMat = this.materials.rock.clone();
+            rockMat.roughness = 0.95;
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(rx, ry, (Math.random() - 0.5) * 0.9);
+            rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            chasmGroup.add(rock);
+        }
 
-        // Warning sign: ORE CHUTE DANGER
-        const signCanvas = document.createElement('canvas');
-        signCanvas.width = 256; signCanvas.height = 64;
-        const sctx = signCanvas.getContext('2d');
-        sctx.fillStyle = '#ffb300';
-        sctx.fillRect(0, 0, 256, 64);
-        sctx.fillStyle = '#000000';
-        sctx.font = 'bold 22px monospace';
-        sctx.textAlign = 'center';
-        sctx.fillText('▼ ORE CHUTE NO. 4 ▼', 128, 38);
-        const signTex = new THREE.CanvasTexture(signCanvas);
-        const signMat = new THREE.MeshBasicMaterial({ map: signTex });
-        const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.45), signMat);
-        sign.position.set(0, 2.7, 0.1);
-        chuteGroup.add(sign);
+        // 2. Broken, splintered wooden support timbers hanging under tonnes of collapsed rock
+        const timberMat = new THREE.MeshStandardMaterial({ color: 0x332219, roughness: 0.9 });
+        const postLeft = new THREE.Mesh(new THREE.BoxGeometry(0.24, 3.4, 0.24), timberMat);
+        postLeft.position.set(-1.75, 1.5, 0);
+        postLeft.rotation.z = -0.10;
+        chasmGroup.add(postLeft);
 
-        // Downward chute gaping hole
-        const holeGeo = new THREE.CylinderGeometry(1.4, 1.4, 4.0, 12, 1, true);
-        const holeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
-        const hole = new THREE.Mesh(holeGeo, holeMat);
-        hole.position.set(0, -1.8, -1.5);
-        hole.rotation.x = -Math.PI / 3.8; // Angled down
-        chuteGroup.add(hole);
+        const postRight = new THREE.Mesh(new THREE.BoxGeometry(0.24, 3.4, 0.24), timberMat);
+        postRight.position.set(1.75, 1.5, 0);
+        postRight.rotation.z = 0.10;
+        chasmGroup.add(postRight);
 
-        // Beacon light pointing down
-        const chuteLight = new THREE.PointLight(0x00e5ff, 2.0, 12);
-        chuteLight.position.set(0, 0.5, -1.0);
-        chuteGroup.add(chuteLight);
+        const beamTop = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.28, 0.28), timberMat);
+        beamTop.position.set(0, 3.0, 0);
+        beamTop.rotation.z = 0.05;
+        chasmGroup.add(beamTop);
 
-        this.group.add(chuteGroup);
+        // 3. Natural fractured rock fissure gaping into the black abyss
+        const pitGeo = new THREE.CylinderGeometry(2.4, 3.0, 6.0, 12, 1, true);
+        const pitMat = new THREE.MeshStandardMaterial({ color: 0x090d12, roughness: 0.98, metalness: 0.1 });
+        const pit = new THREE.Mesh(pitGeo, pitMat);
+        pit.position.set(0, -2.8, -2.2);
+        pit.rotation.x = -Math.PI / 3.4;
+        chasmGroup.add(pit);
+
+        // 4. Stationary industrial red safety lantern on broken timber beam (smooth gentle blinking)
+        const lanternBeacon = this.createRotatingBeacon(1.35, 2.7, 0.2, true);
+        this.rotatingBeacons.push(lanternBeacon);
+
+        // 5. Deep abyss ambient light: faint eerie cyan reflection rising from the subterranean lake below
+        const abyssLight = new THREE.PointLight(0x00e5ff, 1.4, 18);
+        abyssLight.position.set(0, -1.8, -3.2);
+        chasmGroup.add(abyssLight);
+
+        this.group.add(chasmGroup);
         this.chuteHatch = {
-            group: chuteGroup,
+            group: chasmGroup,
             position: new THREE.Vector3(x, y, z)
         };
     }

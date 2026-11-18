@@ -270,6 +270,28 @@ class EventManager {
             window.pickaxeSystem.setVisible(false);
         }
         this.currentRubble = null;
+
+        // Check if this is the chasm collapse barrier
+        if (rubble.id === 'rubble_chasm_collapse') {
+            if (window.soundEngine) {
+                if (window.soundEngine.playRockCollapse) window.soundEngine.playRockCollapse();
+                if (window.soundEngine.playHeavyCaveInThud) window.soundEngine.playHeavyCaveInThud();
+            }
+            this.showNotification("CRITICAL FRACTURE! THE BEDROCK HAS COLLAPSED INTO THE ABYSS!");
+
+            if (window.gamePlayer) {
+                window.gamePlayer.concussiveSway = 0.35;
+                window.gamePlayer.pitch += 0.12;
+
+                setTimeout(() => {
+                    if (window.gamePlayer && window.gameWorld) {
+                        window.gamePlayer.startChasmPlunge(window.gameWorld.stage2);
+                    }
+                }, 400);
+            }
+            return;
+        }
+
         this.showNotification("★ GRANITE BARRIER SHATTERED! PASSAGEWAY CLEARED!");
 
         if (window.saveSystem && window.gamePlayer) {
