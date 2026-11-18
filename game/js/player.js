@@ -588,7 +588,13 @@ class PlayerController {
 
             let speed = this.moveSpeed;
             if (this.isSwimming) {
-                speed *= 0.65; // Water drag
+                speed *= 0.78; // Base swimming stroke speed
+                if (this.keys.shift) {
+                    speed *= 1.45; // Sprint swim / evasive dodge paddle!
+                    this.isSprinting = true;
+                } else {
+                    this.isSprinting = false;
+                }
             } else if (this.isForcedCrawl || this.isCrouching) {
                 speed *= 0.45; // Crawling
             } else if (this.keys.shift) {

@@ -358,14 +358,14 @@ class Stage2SlideAndGrotto {
     triggerFallingStalactite(playerPos) {
         if (!playerPos || playerPos.z > -395 || playerPos.z < -615) return;
 
-        // Choose target impact location on water
-        const isTargeted = Math.random() < 0.70;
+        // Choose target impact location on water (telegraphed well ahead of the player)
+        const isTargeted = Math.random() < 0.60;
         const targetX = isTargeted 
-            ? playerPos.x + (Math.random() - 0.5) * 3.4 
+            ? playerPos.x + (Math.random() - 0.5) * 2.8 
             : (Math.random() - 0.5) * 8.0;
         const targetZ = isTargeted 
-            ? playerPos.z - 1.5 - Math.random() * 4.2 
-            : playerPos.z - 4.0 - Math.random() * 8.0;
+            ? playerPos.z - 3.2 - Math.random() * 4.8 
+            : playerPos.z - 4.5 - Math.random() * 8.0;
 
         const targetWaterY = this.getWaterHeightAt(targetX, targetZ);
 
@@ -373,8 +373,8 @@ class Stage2SlideAndGrotto {
         const warningGroup = new THREE.Group();
         warningGroup.position.set(targetX, targetWaterY + 0.06, targetZ);
 
-        // Outer pulsing red danger ring
-        const ringGeo = new THREE.RingGeometry(0.85, 1.45, 24);
+        // Outer pulsing red danger ring (scaled to match nerfed 0.75m hitbox)
+        const ringGeo = new THREE.RingGeometry(0.55, 0.80, 24);
         ringGeo.rotateX(-Math.PI / 2);
         const ringMat = new THREE.MeshBasicMaterial({
             color: 0xff1744,
@@ -386,7 +386,7 @@ class Stage2SlideAndGrotto {
         warningGroup.add(ringMesh);
 
         // Inner glowing translucent danger target zone
-        const discGeo = new THREE.CircleGeometry(0.85, 24);
+        const discGeo = new THREE.CircleGeometry(0.55, 24);
         discGeo.rotateX(-Math.PI / 2);
         const discMat = new THREE.MeshBasicMaterial({
             color: 0xd50000,
@@ -399,10 +399,10 @@ class Stage2SlideAndGrotto {
 
         // Crosshair hazard lines inside warning ring
         const crossMat = new THREE.MeshBasicMaterial({ color: 0xff5252, side: THREE.DoubleSide });
-        const crossBar1 = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.08), crossMat);
+        const crossBar1 = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.06), crossMat);
         crossBar1.rotateX(-Math.PI / 2);
         warningGroup.add(crossBar1);
-        const crossBar2 = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 1.6), crossMat);
+        const crossBar2 = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 1.1), crossMat);
         crossBar2.rotateX(-Math.PI / 2);
         warningGroup.add(crossBar2);
 
@@ -412,12 +412,12 @@ class Stage2SlideAndGrotto {
         const isStalactite = Math.random() < 0.55;
         let rockMesh;
         if (isStalactite) {
-            const stalGeo = new THREE.ConeGeometry(0.26 + Math.random() * 0.12, 1.5 + Math.random() * 0.8, 6);
+            const stalGeo = new THREE.ConeGeometry(0.24 + Math.random() * 0.10, 1.3 + Math.random() * 0.7, 6);
             stalGeo.rotateX(Math.PI);
             const stalMat = new THREE.MeshStandardMaterial({ color: 0x273138, roughness: 0.9 });
             rockMesh = new THREE.Mesh(stalGeo, stalMat);
         } else {
-            const dGeo = new THREE.DodecahedronGeometry(0.40 + Math.random() * 0.35, 0);
+            const dGeo = new THREE.DodecahedronGeometry(0.35 + Math.random() * 0.25, 0);
             const dMat = new THREE.MeshStandardMaterial({ color: 0x1e272e, roughness: 0.95 });
             rockMesh = new THREE.Mesh(dGeo, dMat);
         }
@@ -433,7 +433,7 @@ class Stage2SlideAndGrotto {
             discMat: discMat,
             targetX: targetX,
             targetZ: targetZ,
-            delay: 1.35, // 1.35 seconds telegraph warning delay!
+            delay: 1.60, // 1.60 seconds telegraph warning delay (fair reaction & dodge window!)
             velY: 0,
             rotSpeedX: (Math.random() - 0.5) * 6.0,
             rotSpeedZ: (Math.random() - 0.5) * 6.0,
@@ -466,8 +466,8 @@ class Stage2SlideAndGrotto {
         // 2. Active falling ceiling rock debris & stalactites hazard
         if (playerPos && playerPos.z <= -395 && playerPos.z >= -615) {
             this.fallingRockTimer += delta;
-            // Spawn falling rocks every 1.5 - 2.5 seconds
-            if (this.fallingRockTimer > (1.5 + Math.random() * 1.0)) {
+            // Spawn falling rocks every 2.4 - 3.8 seconds (fair rhythmic pacing)
+            if (this.fallingRockTimer > (2.4 + Math.random() * 1.4)) {
                 this.fallingRockTimer = 0;
                 this.triggerFallingStalactite(playerPos);
             }
@@ -504,11 +504,14 @@ class Stage2SlideAndGrotto {
                 // Hit collision detection with player
                 if (window.gamePlayer && !window.gamePlayer.isDead) {
                     const pPos = window.gamePlayer.position;
-                    const distToPlayer = s.mesh.position.distanceTo(pPos);
+                    // Planar horizontal distance matches the 0.75m red danger circle on the water
+                    const horizDist = Math.hypot(s.mesh.position.x - pPos.x, s.mesh.position.z - pPos.z);
+                    const vertDist = Math.abs(s.mesh.position.y - pPos.y);
 
-                    if (distToPlayer < 1.45 && Math.abs(s.mesh.position.y - pPos.y) < 1.5) {
+                    // Nerfed hitbox: 0.75m radius (cleanly dodgeable when swimming outside red ring)
+                    if (horizDist < 0.75 && vertDist < 1.1) {
                         // Direct hit! Player failed to dodge out of red zone
-                        window.gamePlayer.takeRockHit(10, 30);
+                        window.gamePlayer.takeRockHit(8, 24);
                         if (window.pickaxeSystem) {
                             window.pickaxeSystem.spawnRockShatterDebris(s.mesh.position, 0x273138);
                         }
@@ -516,10 +519,10 @@ class Stage2SlideAndGrotto {
                         this.group.remove(s.mesh);
                         this.fallingStalactites.splice(i, 1);
                         continue;
-                    } else if (distToPlayer < 3.2 && !s.nearMissChecked) {
-                        // Near-miss jolt: panic spike
+                    } else if (horizDist < 1.75 && vertDist < 1.8 && !s.nearMissChecked) {
+                        // Near-miss jolt: player dodged right past the falling rock!
                         s.nearMissChecked = true;
-                        window.gamePlayer.triggerNearMissPanic(8);
+                        window.gamePlayer.triggerNearMissPanic(6);
                     }
                 }
 
