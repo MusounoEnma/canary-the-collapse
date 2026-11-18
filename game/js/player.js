@@ -129,6 +129,10 @@ class PlayerController {
         window.addEventListener('mousedown', (e) => {
             if (e.button === 0) {
                 isMouseDown = true;
+                if (this.isClimbingRope) {
+                    this.pullRopeHand();
+                    return;
+                }
                 if (window.gameState && window.gameState.state === 'PLAYING') {
                     if (window.eventManager) {
                         window.eventManager.strikePickaxe();
@@ -143,7 +147,7 @@ class PlayerController {
         // Click anywhere on viewport to lock mouse in PLAYING mode
         window.addEventListener('click', (e) => {
             if (!this.isDead && window.gameState && window.gameState.state === 'PLAYING') {
-                if (e.target.closest('#title-screen') || e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal')) {
+                if (e.target.closest('#title-screen') || e.target.closest('#polaroid-container') || e.target.closest('#story-note-modal') || e.target.closest('#rhythm-minigame-overlay') || e.target.closest('#polaroid-inspect-modal') || e.target.closest('#gameover-screen')) {
                     return;
                 }
                 if (this.domElement && document.pointerLockElement !== this.domElement) {
@@ -170,7 +174,7 @@ class PlayerController {
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (this.isDead || this.isSliding) return;
+            if (this.isDead || this.isSliding || this.isClimbingRope) return;
             if (!this.isLocked && !isMouseDown) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
@@ -194,9 +198,9 @@ class PlayerController {
                 return;
             }
 
-            // Manual hand-over-hand rope climbing
+            // Manual hand-over-hand rope climbing (responsive to W, Space, E, ArrowUp, Enter, Y)
             if (this.isClimbingRope) {
-                if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'KeyY') {
+                if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'KeyE' || e.code === 'ArrowUp' || e.code === 'KeyY' || e.code === 'Enter') {
                     this.pullRopeHand();
                 }
                 return;
@@ -446,10 +450,15 @@ class PlayerController {
         this.ropeSlipsDone = 0;
         // Two random fatigue slip altitudes during the 24m ascent (around ~9.5m and ~17.5m)
         this.ropeSlipTargets = [8.8 + Math.random() * 2.2, 16.5 + Math.random() * 2.2];
-        this.position.set(0, -12.0, -625);
+        this.position.set(0, -12.0, -625.0);
+        this.camera.position.set(0, -10.8, -625.0);
+        this.yaw = 0;
+        this.pitch = 0.85; // Locked looking up the vertical rescue rope!
+        this.roll = 0;
+        this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
 
         if (window.eventManager) {
-            window.eventManager.showNotification("CLIMBING RESCUE ROPE (24 METERS)! TAP [W] OR [SPACE] TO PULL UPWARD!");
+            window.eventManager.showNotification("CLIMBING RESCUE ROPE (24 METERS)! TAP [W], [SPACE], [E], OR CLICK TO PULL UPWARD!");
         }
     }
 
@@ -461,7 +470,7 @@ class PlayerController {
             this.ropeClimbMeters = Math.max(0.5, this.ropeClimbMeters - slipDist);
 
             // Violent downward camera drop and loss of grip
-            this.pitch = -0.42;
+            this.pitch = -0.38;
             this.roll = (Math.random() - 0.5) * 0.35;
             this.concussiveSway = 0.45;
 
@@ -484,22 +493,22 @@ class PlayerController {
             }
 
             const currentY = -12.0 + this.ropeClimbMeters;
-            this.position.y = currentY;
-            this.camera.position.set(0, currentY + 1.2, -625);
+            this.position.set(0, currentY, -625.0);
+            this.camera.position.set(0, currentY + 1.2, -625.0);
 
             const remaining = Math.max(0, Math.round(this.ropeTotalMeters - this.ropeClimbMeters));
             if (window.eventManager) {
-                window.eventManager.showNotification(`⚠️ LOSS OF GRIP! SLIPPED -${slipDist.toFixed(1)}m! EXHAUSTION SETTING IN! HOLD ON AND KEEP CLIMBING [W]! (${remaining}m LEFT)`);
+                window.eventManager.showNotification(`⚠️ LOSS OF GRIP! SLIPPED -${slipDist.toFixed(1)}m! EXHAUSTION SETTING IN! HOLD ON AND KEEP CLIMBING! (${remaining}m LEFT)`);
             }
             return;
         }
 
-        this.ropeClimbMeters += 0.85; // 0.85 meters per hand pull (~28 taps)
+        this.ropeClimbMeters += 0.95; // 0.95 meters per pull
         this.ropePullAlternate = !this.ropePullAlternate;
 
-        // Camera hand-pull sway
-        this.roll = (this.ropePullAlternate ? 1 : -1) * 0.12;
-        this.pitch = 0.55; // looking up the rope towards safety
+        // Camera hand-pull sway (subtle lateral tilt, locked looking up)
+        this.roll = (this.ropePullAlternate ? 1 : -1) * 0.08;
+        this.pitch = 0.82; // Firmly locked looking UP towards upper escape canyon!
 
         if (window.soundEngine) {
             if (window.soundEngine.playRopeCreak) window.soundEngine.playRopeCreak();
@@ -509,12 +518,12 @@ class PlayerController {
         }
 
         const currentY = -12.0 + this.ropeClimbMeters;
-        this.position.y = currentY;
-        this.camera.position.set(0, currentY + 1.2, -625);
+        this.position.set(0, currentY, -625.0);
+        this.camera.position.set(0, currentY + 1.2, -625.0);
 
         const remaining = Math.max(0, Math.round(this.ropeTotalMeters - this.ropeClimbMeters));
         if (window.eventManager) {
-            window.eventManager.showNotification(`CLIMBING... ${remaining} METERS REMAINING! [W] / [SPACE]`);
+            window.eventManager.showNotification(`CLIMBING... ${remaining} METERS REMAINING! [W] / [SPACE] / [E] / [CLICK]`);
         }
 
         if (this.ropeClimbMeters >= this.ropeTotalMeters) {
@@ -527,10 +536,19 @@ class PlayerController {
         this.hasClimbedRope = true;
         this.roll = 0;
         this.pitch = 0;
-        this.position.set(0, 12.0, -635);
+        this.yaw = 0;
+        this.position.set(0, 12.0, -635.0);
+        this.camera.position.set(0, 13.6, -635.0);
+        this.camera.rotation.set(0, 0, 0, 'YXZ');
+
+        // Save official checkpoint: Upper Escape Canyon reached!
+        if (window.saveSystem) {
+            window.saveSystem.unlockSector(3);
+            window.saveSystem.saveCheckpoint(3, this.position, Math.max(55, this.oxygen), this.depth);
+        }
 
         if (window.eventManager) {
-            window.eventManager.showNotification("UPPER ESCAPE CANYON REACHED! PROCEED TOWARDS HATCH B-4!");
+            window.eventManager.showNotification("★ UPPER ESCAPE CANYON REACHED! PROCEED TOWARDS HATCH B-4!");
         }
         if (window.gameState) {
             window.gameState.triggerTremorClimax();
@@ -574,10 +592,40 @@ class PlayerController {
             return;
         }
 
-        // 3. Manual Rope Climbing
+        // 3. Manual Rope Climbing (Camera POV locked looking UP the rescue rope)
         if (this.isClimbingRope) {
+            this.yaw = THREE.MathUtils.lerp(this.yaw, 0, delta * 8.0);
+            this.pitch = THREE.MathUtils.lerp(this.pitch, 0.82, delta * 6.0); // Firmly locked looking UP
             this.roll = THREE.MathUtils.lerp(this.roll, 0, delta * 3.0);
             this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
+
+            const currentY = -12.0 + this.ropeClimbMeters;
+            this.position.set(0, currentY, -625.0);
+            this.camera.position.set(0, currentY + 1.2, -625.0);
+
+            // Update real-time climbing depth HUD
+            const progress = Math.min(1.0, Math.max(0, -this.position.z / 865));
+            this.depth = Math.max(0, Math.round(780 * (1 - progress) - this.ropeClimbMeters));
+            const depthEl = document.getElementById('hud-depth-value');
+            if (depthEl) depthEl.textContent = `${this.depth}m`;
+
+            const stanceEl = document.getElementById('hud-stance-value');
+            if (stanceEl) {
+                stanceEl.textContent = "CLIMBING ROPE";
+                stanceEl.style.color = "#00e676";
+            }
+
+            // Steady breathing and O2 consumption during climb
+            this.oxygen -= 0.6 * delta;
+            if (this.oxygen <= 0) {
+                this.oxygen = 0;
+                this.die("Exhaustion! Lost consciousness while ascending the vertical rescue rope.");
+            }
+            const o2ValEl = document.getElementById('hud-o2-value');
+            const o2FillEl = document.getElementById('hud-o2-fill');
+            if (o2ValEl) o2ValEl.textContent = `${Math.round(this.oxygen)}%`;
+            if (o2FillEl) o2FillEl.style.width = `${this.oxygen}%`;
+
             return;
         }
 
@@ -604,17 +652,42 @@ class PlayerController {
         const inWater = world && world.isWaterZone(this.position.z);
         if (inWater && !this.isSwimming) {
             this.enterWaterGrotto();
+            // Checkpoint at start of swimming lake
+            if (window.saveSystem && !this.waterStartCheckpointSaved) {
+                this.waterStartCheckpointSaved = true;
+                window.saveSystem.unlockSector(2);
+                window.saveSystem.saveCheckpoint(2, new THREE.Vector3(0, -12.2, -396.0), Math.max(75, this.oxygen), 419);
+            }
         } else if (!inWater && this.isSwimming && this.position.z < -615) {
             this.isSwimming = false;
             if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0';
             // Emerged onto solid lake shore! Take desperate gasping breath & restore emergency O2
-            if (this.oxygen < 35) {
-                this.oxygen = Math.max(this.oxygen, 35);
+            if (this.oxygen < 50) {
+                this.oxygen = Math.max(this.oxygen, 50);
                 this.stress = Math.max(15, this.stress - 20);
                 if (window.soundEngine && window.soundEngine.playBreathGasp) window.soundEngine.playBreathGasp();
+            }
+
+            // Save official checkpoint: Shoreline at base of rope (Sector 3 unlocked!)
+            if (window.saveSystem && !this.shoreCheckpointSaved) {
+                this.shoreCheckpointSaved = true;
+                window.saveSystem.unlockSector(2);
+                window.saveSystem.unlockSector(3);
+                window.saveSystem.saveCheckpoint(3, new THREE.Vector3(0, -12.0, -622.0), Math.max(65, this.oxygen), 222);
                 if (window.eventManager) {
-                    window.eventManager.showNotification("EMERGED ONTO SHORE! GASPING DESPERATELY FOR AIR! FIND O2 SUPPLY!");
+                    window.eventManager.showNotification("★ CHECKPOINT REACHED: SUBTERRANEAN SHORE (DEPTH 222m) - SECTOR 2 CLEARED!");
                 }
+            }
+        }
+
+        // Ensure Sector 3 checkpoint triggers as soon as player reaches shore landing (z <= -618)
+        if (this.position.z <= -618 && this.position.z >= -625 && this.position.y < 0 && window.saveSystem && !this.shoreCheckpointSaved) {
+            this.shoreCheckpointSaved = true;
+            window.saveSystem.unlockSector(2);
+            window.saveSystem.unlockSector(3);
+            window.saveSystem.saveCheckpoint(3, new THREE.Vector3(0, -12.0, -622.0), Math.max(65, this.oxygen), 222);
+            if (window.eventManager) {
+                window.eventManager.showNotification("★ CHECKPOINT REACHED: SUBTERRANEAN SHORE (DEPTH 222m) - SECTOR 2 CLEARED!");
             }
         }
 

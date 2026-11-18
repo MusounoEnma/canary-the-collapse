@@ -237,7 +237,8 @@
         <p id="gameover-reason" style="font-size: 16px; color: #e57373; margin-bottom: 16px;">Oxygen depleted in the subterranean abyss.</p>
         <p id="gameover-stats" style="color: #9e9e9e; font-size: 14px; margin-bottom: 28px;"></p>
         <p style="font-style: italic; color: #ffca28; margin-bottom: 30px;">"Lily still sits on the front porch waiting for your return... which never comes."</p>
-        <button id="btn-restart-game" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">TRY AGAIN FROM THE BOTTOM</button>
+        <button id="btn-gameover-resume" class="btn-primary" style="background:#00e676; color:#000; font-weight:bold; margin-bottom:12px; display:none;" onclick="if(window.gameState){window.gameState.resumeCheckpoint();}">▶ RESUME FROM LAST CHECKPOINT</button>
+        <button id="btn-restart-game" class="btn-primary" style="background:#37474f;" onclick="if(window.gameState){window.gameState.restartGame();}">TRY AGAIN FROM THE BOTTOM (780m)</button>
     </div>
 
     <!-- Victory Screen (Surface Reached) -->

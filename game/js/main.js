@@ -237,17 +237,32 @@ class GameState {
         } catch (e) {}
 
         const titleScreen = document.getElementById('title-screen');
+        const gameOverScreen = document.getElementById('gameover-screen');
         const hud = document.getElementById('hud-layer');
         if (titleScreen) titleScreen.style.display = 'none';
+        if (gameOverScreen) gameOverScreen.style.display = 'none';
         if (hud) hud.style.display = 'block';
 
         this.state = 'PLAYING';
         if (this.player) {
             this.player.isDead = false;
+            this.player.isClimbingRope = false;
+            this.player.hasClimbedRope = (cp.sector >= 3 && cp.y > 0);
+            this.player.isSliding = false;
+            this.player.isSwimming = (cp.z <= -395 && cp.z >= -615);
             this.player.position.set(cp.x, cp.y, cp.z);
-            this.player.oxygen = cp.oxygen || 75;
+            this.player.oxygen = Math.max(70, cp.oxygen || 70);
+            this.player.stress = 20;
+            this.player.yaw = 0;
+            this.player.pitch = 0;
+            this.player.roll = 0;
+
             if (this.player.domElement) {
                 this.player.domElement.requestPointerLock();
+            }
+
+            if (window.eventManager) {
+                window.eventManager.showNotification(`★ RESUMED AT CHECKPOINT (SECTOR ${cp.sector} - ${cp.depth}m)`);
             }
         }
     }
@@ -266,11 +281,24 @@ class GameState {
         const screen = document.getElementById('gameover-screen');
         const reasonEl = document.getElementById('gameover-reason');
         const statsEl = document.getElementById('gameover-stats');
+        const resumeBtn = document.getElementById('btn-gameover-resume');
 
         if (reasonEl) reasonEl.textContent = reason || "Consciousness faded in the subterranean dark.";
         if (statsEl && this.player) {
             statsEl.textContent = `Depth: ${this.player.depth}m // Distance covered: ${Math.round(865 - (this.player.depth * 865 / 780))}m`;
         }
+
+        // Show resume button if checkpoint exists
+        if (resumeBtn) {
+            if (window.saveSystem && window.saveSystem.hasCheckpoint()) {
+                const cp = window.saveSystem.data.lastCheckpoint;
+                resumeBtn.textContent = `▶ RESUME CHECKPOINT (SECTOR ${cp.sector} - ${cp.depth}m)`;
+                resumeBtn.style.display = 'inline-block';
+            } else {
+                resumeBtn.style.display = 'none';
+            }
+        }
+
         if (screen) screen.style.display = 'flex';
     }
 

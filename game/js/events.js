@@ -87,6 +87,21 @@ class EventManager {
             }
         }
 
+        // If player is actively climbing the rescue rope, show climbing HUD and block other interactions
+        if (player.isClimbingRope) {
+            this.isNearRope = false;
+            this.isNearO2Cache = false;
+            this.isNearHatch = false;
+            this.currentRubble = null;
+            const remaining = Math.max(0, Math.round(player.ropeTotalMeters - player.ropeClimbMeters));
+            promptText = `CLIMBING RESCUE ROPE: TAP [W] / [SPACE] / [E] / [CLICK] (${remaining}m LEFT)`;
+            if (promptEl) {
+                promptEl.textContent = promptText;
+                promptEl.style.display = 'block';
+            }
+            return;
+        }
+
         // 4. Check Rescue Rope vs Emergency O2 Station at Shore Landing (z = -625)
         if (!foundRubble && !this.isNearCart && !foundCorpse) {
             const distToRope = (world.rescueRope && !player.hasClimbedRope) 
@@ -96,16 +111,16 @@ class EventManager {
                 ? Math.hypot(pPos.x - world.emergencyO2Cache.position.x, pPos.z - world.emergencyO2Cache.position.z)
                 : 999;
 
-            // Prioritize the Rescue Rope whenever player is in the central climbing area (near the rope)
-            if (distToRope < 3.2 && (distToRope <= distToO2 || Math.abs(pPos.x) < 1.6)) {
+            // Prioritize the Rescue Rope whenever player is in the landing zone and not standing directly next to the O2 tanks
+            if (distToRope < 4.5 && (pPos.x < 1.6 || distToRope <= distToO2)) {
                 this.isNearRope = true;
                 this.isNearO2Cache = false;
                 promptText = "[E] CLIMB RESCUE ROPE (24 METERS VERTICAL ASCENT)";
-            } else if (distToO2 < 2.2 && player.oxygen < 98) {
+            } else if (distToO2 < 2.5 && player.oxygen < 98) {
                 this.isNearO2Cache = true;
                 this.isNearRope = false;
                 promptText = "[E] INHALE EMERGENCY OXYGEN (+65% O2 RESERVES)";
-            } else if (distToO2 < 2.2) {
+            } else if (distToO2 < 2.5) {
                 this.isNearO2Cache = true;
                 this.isNearRope = false;
                 promptText = "[E] EMERGENCY O2 RECHARGED (100% FULL)";
@@ -148,10 +163,10 @@ class EventManager {
             this.pushCart();
         } else if (this.currentCorpse) {
             this.lootCorpse(this.currentCorpse);
-        } else if (this.isNearO2Cache && window.gameWorld && window.gameWorld.stage3 && window.gameWorld.stage3.useEmergencyO2) {
-            window.gameWorld.stage3.useEmergencyO2();
         } else if (this.isNearRope && window.gamePlayer && window.gameWorld && window.gameWorld.rescueRope) {
             window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
+        } else if (this.isNearO2Cache && window.gameWorld && window.gameWorld.stage3 && window.gameWorld.stage3.useEmergencyO2) {
+            window.gameWorld.stage3.useEmergencyO2();
         } else if (this.isNearHatch && window.gameWorld && window.gameWorld.escapeHatch) {
             this.triggerEscapeSequence();
         }
