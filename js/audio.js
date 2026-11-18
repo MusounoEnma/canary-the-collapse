@@ -313,11 +313,13 @@ class SoundEngine {
     startHeartbeatLoop() {
         const pulse = () => {
             if (!this.ctx) return;
-            const o2 = window.gameState ? window.gameState.oxygen : 100;
-            const targetBpm = Math.floor(65 + (100 - o2) * 0.95);
-            this.heartbeatBpm = targetBpm;
+            const player = window.gamePlayer;
+            const o2 = player ? player.oxygen : 100;
+            const stress = player ? player.stress : 0;
+            const targetBpm = player ? player.heartbeatBpm : Math.floor(65 + (100 - o2) * 0.95);
+            this.heartbeatBpm = Math.min(180, Math.max(60, targetBpm));
 
-            const intensity = o2 < 35 ? 0.48 : (o2 < 60 ? 0.28 : 0.12);
+            const intensity = (stress > 65 || o2 < 35) ? 0.55 : ((stress > 35 || o2 < 60) ? 0.35 : 0.15);
             this.triggerHeartbeat(intensity);
 
             const intervalMs = (60 / this.heartbeatBpm) * 1000;

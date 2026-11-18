@@ -217,6 +217,13 @@ class MineWorld {
         return z <= -395 && z >= -615;
     }
 
+    getWaterHeightAt(x, z) {
+        if (this.stage2 && this.stage2.getWaterHeightAt) {
+            return this.stage2.getWaterHeightAt(x, z);
+        }
+        return -12.2;
+    }
+
     isSlideZone(z) {
         return z <= -285 && z > -395;
     }

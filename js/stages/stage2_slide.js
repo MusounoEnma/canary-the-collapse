@@ -14,6 +14,7 @@ class Stage2SlideAndGrotto {
 
         this.airVents = [];
         this.fallingStalactites = [];
+        this.fallingRockTimer = 0;
         this.crystalLights = [];
         this.waterVolume = null;
         this.raftCorpse = null;
@@ -185,18 +186,18 @@ class Stage2SlideAndGrotto {
     }
 
     buildWaterVolume() {
-        // Crystalline turquoise water plane covering z = -395 to -615
-        const waterGeo = new THREE.PlaneGeometry(28, 225, 32, 32);
+        // Turbulent subterranean water plane covering z = -395 to -615
+        const waterGeo = new THREE.PlaneGeometry(28, 225, 48, 64);
         waterGeo.rotateX(-Math.PI / 2);
 
-        // Procedural animated normal map/water surface
+        // Procedural animated normal map/water surface with dynamic surge waves
         const waterMat = new THREE.MeshStandardMaterial({
             color: 0x004d40,
             emissive: 0x002420,
-            roughness: 0.05,
-            metalness: 0.85,
+            roughness: 0.08,
+            metalness: 0.82,
             transparent: true,
-            opacity: 0.82
+            opacity: 0.85
         });
 
         const waterMesh = new THREE.Mesh(waterGeo, waterMat);
@@ -206,6 +207,15 @@ class Stage2SlideAndGrotto {
 
         // Floating miner Chen's raft at z = -495
         this.buildFloatingRaft(2.2, -12.1, -495);
+    }
+
+    getWaterHeightAt(x, z) {
+        const time = performance.now() * 0.0025;
+        const localZ = -(z - (-505)); // local coordinate along plane length
+        const wave = Math.sin(x * 0.45 + time * 2.8) * 0.24 
+                   + Math.cos(localZ * 0.08 + time * 2.0) * 0.28 
+                   + Math.sin((x + localZ) * 0.15 + time * 3.6) * 0.15;
+        return -12.2 + wave;
     }
 
     buildOxygenGeysers() {
@@ -345,32 +355,121 @@ class Stage2SlideAndGrotto {
     }
 
     triggerFallingStalactite(playerPos) {
-        if (!playerPos || playerPos.z > -395 || playerPos.z < -610) return;
+        if (!playerPos || playerPos.z > -395 || playerPos.z < -615) return;
 
-        // Spawn a sharp rock cone falling from ceiling (y = -5.0) down to water (y = -12.2)
-        const x = playerPos.x + (Math.random() - 0.5) * 4.0;
-        const z = playerPos.z - 4.0 - Math.random() * 6.0;
+        // Spawn a sharp rock shard or jagged stalactite falling from ceiling (y = -4.5) down to water
+        const isTargeted = Math.random() < 0.65;
+        const x = isTargeted 
+            ? playerPos.x + (Math.random() - 0.5) * 3.4 
+            : (Math.random() - 0.5) * 8.0;
+        const z = isTargeted 
+            ? playerPos.z + (Math.random() - 0.5) * 3.8 
+            : playerPos.z - 4.0 - Math.random() * 8.0;
 
-        const stalGeo = new THREE.ConeGeometry(0.28, 1.6, 6);
-        const stalMat = new THREE.MeshStandardMaterial({ color: 0x37474f, roughness: 0.9 });
-        const stal = new THREE.Mesh(stalGeo, stalMat);
-        stal.position.set(x, -5.0, z);
-        stal.rotation.x = Math.PI; // Pointed downward
-        this.group.add(stal);
+        // Varied rock meshes: sharp stalactite cone or jagged dodecahedron boulder
+        const isStalactite = Math.random() < 0.55;
+        let rockMesh;
+        if (isStalactite) {
+            const stalGeo = new THREE.ConeGeometry(0.24 + Math.random() * 0.12, 1.4 + Math.random() * 0.8, 6);
+            stalGeo.rotateX(Math.PI);
+            const stalMat = new THREE.MeshStandardMaterial({ color: 0x273138, roughness: 0.9 });
+            rockMesh = new THREE.Mesh(stalGeo, stalMat);
+        } else {
+            const dGeo = new THREE.DodecahedronGeometry(0.35 + Math.random() * 0.35, 0);
+            const dMat = new THREE.MeshStandardMaterial({ color: 0x1e272e, roughness: 0.95 });
+            rockMesh = new THREE.Mesh(dGeo, dMat);
+        }
+
+        rockMesh.position.set(x, -4.5, z);
+        rockMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+        this.group.add(rockMesh);
 
         this.fallingStalactites.push({
-            mesh: stal,
-            velY: -2.0,
-            targetY: -12.2
+            mesh: rockMesh,
+            velY: -1.5,
+            rotSpeedX: (Math.random() - 0.5) * 6.0,
+            rotSpeedZ: (Math.random() - 0.5) * 6.0,
+            nearMissChecked: false
         });
 
-        if (window.soundEngine && window.soundEngine.playTremorRumble) {
-            window.soundEngine.playTremorRumble();
+        // Sharp crack from the ceiling
+        if (window.soundEngine && Math.random() < 0.4) {
+            if (window.soundEngine.playHeavyCaveInThud) window.soundEngine.playHeavyCaveInThud();
         }
     }
 
     update(delta, playerPos) {
-        // Animate oxygen geyser bubbles
+        // 1. Animate turbulent water waves ("air bergejolak")
+        if (this.waterVolume) {
+            const time = performance.now() * 0.0025;
+            const posAttr = this.waterVolume.geometry.attributes.position;
+            for (let i = 0; i < posAttr.count; i++) {
+                const vx = posAttr.getX(i);
+                const vz = posAttr.getZ(i);
+                const wave = Math.sin(vx * 0.45 + time * 2.8) * 0.24 
+                           + Math.cos(vz * 0.08 + time * 2.0) * 0.28 
+                           + Math.sin((vx + vz) * 0.15 + time * 3.6) * 0.15;
+                posAttr.setY(i, wave);
+            }
+            posAttr.needsUpdate = true;
+            this.waterVolume.geometry.computeVertexNormals();
+        }
+
+        // 2. Active falling ceiling rock debris & stalactites hazard
+        if (playerPos && playerPos.z <= -395 && playerPos.z >= -615) {
+            this.fallingRockTimer += delta;
+            // Spawn falling rocks every 1.4 - 2.4 seconds
+            if (this.fallingRockTimer > (1.4 + Math.random() * 1.0)) {
+                this.fallingRockTimer = 0;
+                this.triggerFallingStalactite(playerPos);
+            }
+        }
+
+        // Update active falling rocks
+        for (let i = this.fallingStalactites.length - 1; i >= 0; i--) {
+            const s = this.fallingStalactites[i];
+            s.velY -= 18.0 * delta; // Heavy gravity acceleration
+            s.mesh.position.y += s.velY * delta;
+            s.mesh.rotation.x += s.rotSpeedX * delta;
+            s.mesh.rotation.z += s.rotSpeedZ * delta;
+
+            // Hit collision detection with player
+            if (window.gamePlayer && !window.gamePlayer.isDead) {
+                const pPos = window.gamePlayer.position;
+                const distToPlayer = s.mesh.position.distanceTo(pPos);
+
+                if (distToPlayer < 1.45 && Math.abs(s.mesh.position.y - pPos.y) < 1.5) {
+                    // Direct hit on player!
+                    window.gamePlayer.takeRockHit(10, 30);
+                    if (window.pickaxeSystem) {
+                        window.pickaxeSystem.spawnRockShatterDebris(s.mesh.position, 0x273138);
+                    }
+                    this.group.remove(s.mesh);
+                    this.fallingStalactites.splice(i, 1);
+                    continue;
+                } else if (distToPlayer < 3.2 && !s.nearMissChecked) {
+                    // Near-miss jolt: panic spike
+                    s.nearMissChecked = true;
+                    window.gamePlayer.triggerNearMissPanic(12);
+                }
+            }
+
+            // Check impact with dynamic water surface
+            const waterSurfaceY = this.getWaterHeightAt(s.mesh.position.x, s.mesh.position.z);
+            if (s.mesh.position.y <= waterSurfaceY) {
+                // Splash hit water
+                if (window.soundEngine && window.soundEngine.playWaterSplash) {
+                    window.soundEngine.playWaterSplash();
+                }
+                if (window.pickaxeSystem) {
+                    window.pickaxeSystem.spawnStrikeSparks(s.mesh.position);
+                }
+                this.group.remove(s.mesh);
+                this.fallingStalactites.splice(i, 1);
+            }
+        }
+
+        // 3. Animate oxygen geyser bubbles
         this.airVents.forEach(vent => {
             if (vent.cooldown > 0) vent.cooldown -= delta;
             const posAttr = vent.bubbles.geometry.attributes.position;
@@ -383,34 +482,19 @@ class Stage2SlideAndGrotto {
             posAttr.needsUpdate = true;
         });
 
-        // Animate falling stalactites
-        for (let i = this.fallingStalactites.length - 1; i >= 0; i--) {
-            const s = this.fallingStalactites[i];
-            s.velY -= 14.0 * delta; // Gravity
-            s.mesh.position.y += s.velY * delta;
-
-            if (s.mesh.position.y <= s.targetY) {
-                // Splash hit water
-                if (window.soundEngine && window.soundEngine.playWaterSplash) {
-                    window.soundEngine.playWaterSplash();
-                }
-                this.group.remove(s.mesh);
-                this.fallingStalactites.splice(i, 1);
-            }
-        }
-
-        // Animate Lily guiding beacon gentle floating
+        // 4. Animate Lily guiding beacon gentle floating
         if (this.lilyBeacon && this.lilyBeacon.active) {
             const t = performance.now() * 0.003;
             this.lilyBeacon.group.position.y = -11.6 + Math.sin(t) * 0.12;
             this.lilyBeacon.light.intensity = 2.0 + Math.sin(t * 2) * 0.5;
         }
 
-        // Floating raft bobbing
+        // 5. Floating raft bobbing on waves
         if (this.raftCorpse) {
+            const raftWaterY = this.getWaterHeightAt(this.raftCorpse.position.x, this.raftCorpse.position.z);
             const t = performance.now() * 0.002;
-            this.raftCorpse.group.position.y = -12.1 + Math.sin(t) * 0.06;
-            this.raftCorpse.group.rotation.z = Math.cos(t * 0.8) * 0.03;
+            this.raftCorpse.group.position.y = raftWaterY + 0.12 + Math.sin(t) * 0.06;
+            this.raftCorpse.group.rotation.z = Math.cos(t * 0.8) * 0.05;
         }
     }
 }

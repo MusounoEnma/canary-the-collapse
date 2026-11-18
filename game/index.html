@@ -127,6 +127,22 @@
             <div class="hud-bar-bg">
                 <div id="hud-o2-fill"></div>
             </div>
+
+            <!-- Heart Rate & Panic Monitor -->
+            <div class="hud-vitals-row">
+                <div class="hud-vital-col">
+                    <span class="hud-vital-label">PULSE:</span>
+                    <span id="hud-bpm-value" class="hud-vital-val bpm-val">68 BPM</span>
+                </div>
+                <div class="hud-vital-col" style="text-align: right;">
+                    <span class="hud-vital-label">PANIC:</span>
+                    <span id="hud-panic-value" class="hud-vital-val panic-val">CALM</span>
+                </div>
+            </div>
+            <div class="hud-bar-bg panic-bar-bg">
+                <div id="hud-panic-fill"></div>
+            </div>
+
             <div class="hud-sub-info">
                 <span id="hud-pressure-status">PRESSURE: NOMINAL</span>
                 <span id="hud-sprint-status">SPRINT [SHIFT] (O2 x3)</span>

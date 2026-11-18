@@ -30,6 +30,8 @@ class PlayerController {
 
         // Oxygen & Vitals
         this.oxygen = 100.0;
+        this.stress = 15.0; // 0 to 100% Panic level
+        this.heartbeatBpm = 68; // 60 to 180 BPM
         this.isDead = false;
         this.isRespiratorLeaking = false;
         this.depth = 780;
@@ -44,8 +46,10 @@ class PlayerController {
         this.slideLateralOffset = 0;
         this.fallVelocity = 0.22; // Natural gravity plunge acceleration (~3.2 seconds total fall)
 
-        // Stage 2: Extended Swimming Grotto
+        // Stage 2: Extended Swimming Grotto & Dynamic Surge Bobbing
         this.isSwimming = false;
+        this.isHeadSubmerged = false;
+        this.swimCycle = 0;
         this.swimStrokeTimer = 0;
         this.underwaterOverlay = document.getElementById('underwater-overlay');
         this.splashVignette = document.getElementById('water-splash-vignette');
@@ -408,6 +412,33 @@ class PlayerController {
         }
     }
 
+    takeRockHit(damage = 10, stressAmount = 28) {
+        if (this.isDead) return;
+        this.oxygen = Math.max(0, this.oxygen - damage);
+        this.stress = Math.min(100, this.stress + stressAmount);
+        this.concussiveSway = 0.38;
+        this.pitch += (Math.random() - 0.5) * 0.16;
+        this.roll += (Math.random() - 0.5) * 0.18;
+
+        if (window.soundEngine) {
+            if (window.soundEngine.playHeavyCaveInThud) window.soundEngine.playHeavyCaveInThud();
+            if (window.soundEngine.playRaggedBreath) window.soundEngine.playRaggedBreath();
+        }
+        if (window.eventManager) {
+            window.eventManager.showNotification("CRUSHING IMPACT! STRUCK BY FALLING CEILING ROCK DEBRIS!");
+        }
+
+        if (this.oxygen <= 0) {
+            this.die("Crushed by collapsing rock strata in the flooded cavern!");
+        }
+    }
+
+    triggerNearMissPanic(stressAmount = 12) {
+        if (this.isDead) return;
+        this.stress = Math.min(100, this.stress + stressAmount);
+        this.concussiveSway = 0.14;
+    }
+
     startRopeClimb(rescueRope) {
         if (this.isClimbingRope || this.hasClimbedRope) return;
         this.isClimbingRope = true;
@@ -629,39 +660,95 @@ class PlayerController {
             this.isSprinting = false;
         }
 
-        // Terrain Ground Height & Clamping
-        if (world) {
-            const groundY = world.getGroundHeight(this.position.x, this.position.z);
-            if (this.isSwimming) {
-                // Bobbing at water surface y = -12.2
-                this.position.y = -12.2 + Math.sin(performance.now() * 0.003) * 0.08;
+        // Terrain Ground Height & Dynamic Swimming Water Bobbing
+        if (this.isSwimming) {
+            const waterY = world && world.getWaterHeightAt ? world.getWaterHeightAt(this.position.x, this.position.z) : -12.2;
+            this.position.y = waterY;
+
+            // Swimming stroke bobbing cycle (simulates head dipping and rising while treading/swimming)
+            this.swimCycle = (this.swimCycle || 0) + delta * (this.isMoving ? 3.4 : 1.6);
+            const strokeBob = Math.sin(this.swimCycle) * 0.28;
+            const headY = waterY + 0.05 + strokeBob;
+
+            // Check if head is submerged under wave
+            const isSubmerged = headY < waterY;
+            if (isSubmerged) {
+                if (!this.isHeadSubmerged) {
+                    this.isHeadSubmerged = true;
+                    if (window.soundEngine && window.soundEngine.setUnderwater) window.soundEngine.setUnderwater(true);
+                }
+                if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0.68';
+                // Underwater breath holding stresses the player!
+                this.stress = Math.min(100, this.stress + delta * 5.5);
             } else {
-                this.position.y = groundY;
+                if (this.isHeadSubmerged) {
+                    this.isHeadSubmerged = false;
+                    if (window.soundEngine) {
+                        if (window.soundEngine.setUnderwater) window.soundEngine.setUnderwater(false);
+                        if (window.soundEngine.playBreathGasp) window.soundEngine.playBreathGasp();
+                    }
+                }
+                if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0.08';
+                // Head above water: slowly steady nerves
+                this.stress = Math.max(15, this.stress - delta * 3.2);
             }
+
+            this.camera.position.set(this.position.x, headY, this.position.z);
+            this.roll = Math.sin(this.swimCycle * 0.5) * 0.07;
+        } else {
+            // Normal walking / crawling on solid ground
+            if (this.isHeadSubmerged) {
+                this.isHeadSubmerged = false;
+                if (window.soundEngine && window.soundEngine.setUnderwater) window.soundEngine.setUnderwater(false);
+                if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0';
+            }
+            if (world) {
+                this.position.y = world.getGroundHeight(this.position.x, this.position.z);
+            }
+            const targetEyeH = this.isCrouching ? this.crouchEyeHeight : this.standEyeHeight;
+            this.currentEyeHeight = THREE.MathUtils.lerp(this.currentEyeHeight, targetEyeH, delta * 8.0);
+            const bob = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.06 : 0.035) : 0;
+            this.camera.position.set(this.position.x, this.position.y + this.currentEyeHeight + bob, this.position.z);
+            this.stress = Math.max(10, this.stress - delta * 2.2);
+            this.roll = 0;
         }
 
-        // Eye Height
-        const targetEyeH = this.isCrouching ? this.crouchEyeHeight : this.standEyeHeight;
-        this.currentEyeHeight = THREE.MathUtils.lerp(this.currentEyeHeight, targetEyeH, delta * 8.0);
-        const bob = this.isMoving ? Math.sin(this.bobCycle) * (this.isSprinting ? 0.06 : 0.035) : 0;
-        this.camera.position.set(this.position.x, this.position.y + this.currentEyeHeight + bob, this.position.z);
-
-        // Concussive Tremor Sway
+        // Concussive Tremor / Hit Sway
         if (this.concussiveSway > 0) {
-            this.roll = Math.sin(performance.now() * 0.008) * this.concussiveSway;
+            this.roll += Math.sin(performance.now() * 0.008) * this.concussiveSway;
             this.concussiveSway = Math.max(0, this.concussiveSway - delta * 0.15);
-        } else {
-            this.roll = 0;
         }
 
         this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
 
-        // Note: Headlamp lights are children of this.camera, naturally tracking player view with zero overhead
+        // Dynamic BPM calculation based on Stress level and Oxygen Depletion
+        const o2Deficit = Math.max(0, 100 - this.oxygen);
+        this.heartbeatBpm = Math.round(65 + (this.stress / 100) * 88 + (o2Deficit / 100) * 25);
+
+        // Update Stance HUD text
+        const stanceEl = document.getElementById('hud-stance-value');
+        if (stanceEl) {
+            if (this.isSwimming) {
+                stanceEl.textContent = this.isHeadSubmerged ? "SWIMMING [SUBMERGED]" : "SWIMMING [SURFACED]";
+                stanceEl.style.color = this.isHeadSubmerged ? "#00e5ff" : "#69f0ae";
+            } else if (this.isForcedCrawl) {
+                stanceEl.textContent = "CRAWLING [EXHAUSTED]";
+                stanceEl.style.color = "#ff9100";
+            } else {
+                stanceEl.textContent = this.isCrouching ? "CROUCHING [C]" : "STANDING [C]";
+                stanceEl.style.color = this.isCrouching ? "#ffd54f" : "#69f0ae";
+            }
+        }
 
         // 6. Oxygen Consumption
         let o2DrainRate = 0.55; // Base drain rate per second
         if (this.isSprinting) o2DrainRate *= 2.8;
         if (this.isSwimming) o2DrainRate *= 1.8;
+
+        // Hyperventilation multiplier from panic / high BPM:
+        // High stress and panic drastically increase O2 consumption (up to 3.2x)!
+        const panicO2Multiplier = 1.0 + (this.stress / 100) * 2.2;
+        o2DrainRate *= panicO2Multiplier;
 
         this.oxygen -= o2DrainRate * delta;
         if (this.oxygen <= 0) {
@@ -675,8 +762,9 @@ class PlayerController {
                 if (this.position.distanceTo(vent.position) < 2.5 && vent.cooldown <= 0) {
                     vent.cooldown = 4.0;
                     this.oxygen = Math.min(100, this.oxygen + 25);
+                    this.stress = Math.max(10, this.stress - 20); // Fresh air relieves panic!
                     if (window.soundEngine && window.soundEngine.playDeepInhale) window.soundEngine.playDeepInhale();
-                    if (window.eventManager) window.eventManager.showNotification("FRESH AIR INHALED! +25% OXYGEN!");
+                    if (window.eventManager) window.eventManager.showNotification("FRESH AIR INHALED! +25% OXYGEN! PANIC SUBSIDING!");
                 }
             });
         }
@@ -709,6 +797,43 @@ class PlayerController {
                 o2FillEl.style.background = '#ffb300';
             } else {
                 o2FillEl.style.background = '#00e676';
+            }
+        }
+
+        // Update Pulse (BPM) and Stress / Panic Monitor
+        const bpmEl = document.getElementById('hud-bpm-value');
+        const panicValEl = document.getElementById('hud-panic-value');
+        const panicFillEl = document.getElementById('hud-panic-fill');
+        if (bpmEl) {
+            bpmEl.textContent = `${this.heartbeatBpm} BPM`;
+            bpmEl.style.color = this.heartbeatBpm > 130 ? '#ff1744' : (this.heartbeatBpm > 95 ? '#ffb300' : '#69f0ae');
+        }
+        if (panicValEl) {
+            let label = 'CALM';
+            let color = '#69f0ae';
+            if (this.stress >= 80) {
+                label = 'PANIC!';
+                color = '#ff1744';
+            } else if (this.stress >= 55) {
+                label = 'HIGH';
+                color = '#ff9100';
+            } else if (this.stress >= 30) {
+                label = 'ELEVATED';
+                color = '#ffd54f';
+            }
+            panicValEl.textContent = label;
+            panicValEl.style.color = color;
+        }
+        if (panicFillEl) {
+            panicFillEl.style.width = `${Math.min(100, Math.round(this.stress))}%`;
+            if (this.stress >= 80) {
+                panicFillEl.style.background = '#ff1744';
+            } else if (this.stress >= 55) {
+                panicFillEl.style.background = '#ff9100';
+            } else if (this.stress >= 30) {
+                panicFillEl.style.background = '#ffd54f';
+            } else {
+                panicFillEl.style.background = '#69f0ae';
             }
         }
 
