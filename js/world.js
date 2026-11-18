@@ -201,6 +201,14 @@ class MineWorld {
     }
 
     getGroundHeight(x, z) {
+        if (window.gamePlayer && window.gamePlayer.hasClimbedRope) {
+            // Once the vertical climb is completed, floor is strictly locked to upper canyon levels (y >= 12.0)
+            if (z >= -633.5) {
+                return 12.0;
+            }
+            return this.stage3.getPathY(z);
+        }
+
         if (z > -285) {
             return this.stage1.getPathY(z);
         } else if (z > -395) {

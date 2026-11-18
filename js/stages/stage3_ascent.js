@@ -18,30 +18,33 @@ class Stage3AscentAndBreach {
         this.alarmBeacons = [];
         this.escapeHatch = null;
         this.sunlightRays = [];
+        this.ledgeBlockade = null;
 
         this.buildCliffAscentZone();
         this.buildSeismicTunnel();
         this.buildRescueRope();
+        this.buildLedgeBlockade();
         this.buildAlarmBeacons();
         this.buildEscapeHatch();
     }
 
     buildCliffAscentZone() {
-        // Natural sheer rock cliff wall behind the rope (z = -626 to -629)
+        // Natural sheer rock cliff wall behind the rope (z = -629.5)
         // Spanning vertically from the subterranean lake (y = -14.0m) to upper canyon (y = +15.0m)
+        // Providing 7-10 meters of pure open air space between the rescue rope and rock face!
         const cliffGroup = new THREE.Group();
 
-        // 1. Natural rugged vertical rock cliff face (with recessed climbing gorge behind the rope)
-        const cliffGeo = new THREE.PlaneGeometry(16.0, 30.0, 16, 24);
+        // 1. Natural rugged vertical rock cliff face (with deeply recessed central climbing gorge)
+        const cliffGeo = new THREE.PlaneGeometry(24.0, 32.0, 24, 32);
         const posAttr = cliffGeo.attributes.position;
         for (let i = 0; i < posAttr.count; i++) {
             const vx = posAttr.getX(i);
             const vy = posAttr.getY(i);
             // Deep organic vertical rock chasm/groove recessed in the center where the rope hangs
             const centerDist = Math.abs(vx);
-            const recess = centerDist < 3.2 ? (1.0 - centerDist / 3.2) * 1.6 : 0;
+            const recess = centerDist < 4.5 ? (1.0 - centerDist / 4.5) * 3.5 : 0;
             // Rock crag displacement strictly kept recessed backwards behind the rope
-            const crag = (Math.sin(vx * 0.8 + vy * 0.5) * 0.45 + Math.cos(vx * 1.5 - vy * 0.6) * 0.35) - recess;
+            const crag = (Math.sin(vx * 0.7 + vy * 0.4) * 0.4 + Math.cos(vx * 1.3 - vy * 0.5) * 0.3) - recess;
             posAttr.setZ(i, crag);
         }
         cliffGeo.computeVertexNormals();
@@ -50,28 +53,34 @@ class Stage3AscentAndBreach {
         cliffMat.roughness = 0.95;
         cliffMat.side = THREE.DoubleSide;
         const cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
-        // Positioned safely back at z = -627.5 so the rock never bulges into or clips the rope
-        cliffMesh.position.set(0, 0.0, -627.5);
+        // Positioned safely back at z = -629.5 so the rock never bulges into or clips the rope
+        cliffMesh.position.set(0, 0.0, -629.5);
         cliffGroup.add(cliffMesh);
 
-        // Flanking rock strata side walls framing the vertical chasm
+        // Flanking rock strata side walls framing the vertical chasm (wide 13m opening)
         for (let side of [-1, 1]) {
-            const sideWallGeo = new THREE.PlaneGeometry(8.0, 30.0, 8, 16);
+            const sideWallGeo = new THREE.PlaneGeometry(12.0, 32.0, 10, 16);
             sideWallGeo.rotateY(side * Math.PI / 2);
             const sideWall = new THREE.Mesh(sideWallGeo, cliffMat);
-            sideWall.position.set(side * 5.8, 0.0, -624.5);
+            sideWall.position.set(side * 6.5, 0.0, -624.5);
             cliffGroup.add(sideWall);
         }
 
+        // Shore Landing Bedrock Foundation Slab (under the dock, prevents visual voids)
+        const foundationGeo = new THREE.BoxGeometry(13.0, 1.2, 12.0);
+        const foundation = new THREE.Mesh(foundationGeo, cliffMat);
+        foundation.position.set(0, -12.9, -623.0);
+        cliffGroup.add(foundation);
+
         // 2. Shore Landing Timber Dock & Staging Platform (where player steps out of lake at z = -615 to -625)
-        const dockGeo = new THREE.BoxGeometry(7.0, 0.45, 5.0);
+        const dockGeo = new THREE.BoxGeometry(7.0, 0.45, 5.5);
         const dock = new THREE.Mesh(dockGeo, this.materials.wood);
-        dock.position.set(0, -12.1, -623.0);
+        dock.position.set(0, -12.1, -622.8);
         cliffGroup.add(dock);
 
         // Timber dock support stilts rooted in bedrock
         for (let x of [-2.8, 0, 2.8]) {
-            for (let z of [-621.0, -624.8]) {
+            for (let z of [-620.5, -625.0]) {
                 const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 2.5, 8), this.materials.wood);
                 post.position.set(x, -13.2, z);
                 cliffGroup.add(post);
@@ -80,7 +89,7 @@ class Stage3AscentAndBreach {
 
         // 3. Emergency Oxygen Supply Station & Canister Cache (positioned to the right on the dock)
         const o2StationGroup = new THREE.Group();
-        o2StationGroup.position.set(2.8, -11.6, -622.8);
+        o2StationGroup.position.set(2.8, -11.6, -622.5);
 
         // Industrial steel mounting rack
         const rack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.4), this.materials.metal);
@@ -116,7 +125,7 @@ class Stage3AscentAndBreach {
 
         this.emergencyO2Cache = {
             group: o2StationGroup,
-            position: new THREE.Vector3(2.8, -11.6, -622.8),
+            position: new THREE.Vector3(2.8, -11.6, -622.5),
             used: false,
             refillCount: 0,
             led: o2Led
@@ -124,15 +133,15 @@ class Stage3AscentAndBreach {
 
         // 4. Dramatic Halogen Upward Floodlight at Base of Cliff
         // Illuminates the sheer vertical ascent rope and rock face above!
-        const upwardFloodlight = new THREE.SpotLight(0xffeedd, 3.8, 38, Math.PI / 3.5, 0.4, 1.2);
-        upwardFloodlight.position.set(-2.2, -11.8, -622.8);
-        upwardFloodlight.target.position.set(0, 6.0, -625.0);
+        const upwardFloodlight = new THREE.SpotLight(0xffeedd, 4.0, 42, Math.PI / 3.5, 0.4, 1.2);
+        upwardFloodlight.position.set(-2.4, -11.8, -622.5);
+        upwardFloodlight.target.position.set(0, 6.0, -622.8);
         cliffGroup.add(upwardFloodlight);
         cliffGroup.add(upwardFloodlight.target);
 
         // Floodlight fixture housing
         const lampFixture = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.35, 10), this.materials.metal);
-        lampFixture.position.set(-2.2, -11.8, -622.8);
+        lampFixture.position.set(-2.4, -11.8, -622.5);
         lampFixture.rotation.x = -Math.PI / 4;
         cliffGroup.add(lampFixture);
 
@@ -157,7 +166,8 @@ class Stage3AscentAndBreach {
     buildRescueRope() {
         const climbH = 24.0; // 24 meters vertical climb
         const ropeGroup = new THREE.Group();
-        ropeGroup.position.set(0, -12.0, -624.8);
+        // Positioned at z = -622.8 (center of timber dock), 7+ meters clear of the cliff rock face at z = -629.5
+        ropeGroup.position.set(0, -12.0, -622.8);
 
         // Thick braided steel-core rope
         const ropeMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.95 });
@@ -174,28 +184,32 @@ class Stage3AscentAndBreach {
             ropeGroup.add(knot);
         }
 
-        // Top Gimbal Anchor Beam & Pulley Frame at upper canyon entrance
-        const anchorGeo = new THREE.BoxGeometry(4.5, 0.4, 0.4);
+        // Top Gimbal Cantilever Anchor Gantry at upper canyon entrance
+        // Steel crane girders extending from canyon bedrock (z = -631) forward to z = -621.8
+        for (let gx of [-1.2, 1.2]) {
+            const girder = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.45, 9.5), this.materials.metal);
+            // In local coordinates, -4.5 local Z corresponds to world z = -627.3, bridging rock to rope
+            girder.position.set(gx, climbH + 0.25, -4.2);
+            ropeGroup.add(girder);
+        }
+
+        // Transverse hoist beam
+        const anchorGeo = new THREE.BoxGeometry(3.6, 0.4, 0.4);
         const anchor = new THREE.Mesh(anchorGeo, this.materials.metal);
-        anchor.position.set(0, climbH + 0.2, 0);
+        anchor.position.set(0, climbH + 0.25, 0);
         ropeGroup.add(anchor);
 
         // Pulley wheel
-        const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.12, 14);
+        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.14, 16);
         wheelGeo.rotateZ(Math.PI / 2);
         const wheel = new THREE.Mesh(wheelGeo, this.materials.metal);
-        wheel.position.set(0, climbH + 0.1, 0);
+        wheel.position.set(0, climbH + 0.15, 0);
         ropeGroup.add(wheel);
 
-        // Anchor support struts into the upper canyon rock
-        const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), this.materials.metal);
-        strut1.position.set(-1.8, climbH + 1.1, -1.1);
-        strut1.rotation.x = -Math.PI / 4;
-        ropeGroup.add(strut1);
-        const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), this.materials.metal);
-        strut2.position.set(1.8, climbH + 1.1, -1.1);
-        strut2.rotation.x = -Math.PI / 4;
-        ropeGroup.add(strut2);
+        // Top amber rescue beacon
+        const topBeacon = new THREE.PointLight(0xffab00, 2.5, 12.0);
+        topBeacon.position.set(0, climbH + 0.8, 0);
+        ropeGroup.add(topBeacon);
 
         // Bottom heavy anchor carabiner & guide weight resting on timber landing
         const weightGeo = new THREE.CylinderGeometry(0.14, 0.16, 0.45, 10);
@@ -204,7 +218,7 @@ class Stage3AscentAndBreach {
         ropeGroup.add(weight);
 
         // Luminous beacon light at rope base
-        const baseLight = new THREE.PointLight(0x69f0ae, 2.2, 9.0);
+        const baseLight = new THREE.PointLight(0x69f0ae, 2.4, 9.0);
         baseLight.position.set(0, 1.2, 0.4);
         ropeGroup.add(baseLight);
 
@@ -212,12 +226,74 @@ class Stage3AscentAndBreach {
 
         this.rescueRope = {
             group: ropeGroup,
-            position: new THREE.Vector3(0, -12.0, -624.8),
+            position: new THREE.Vector3(0, -12.0, -622.8),
             topY: 12.0,
             baseY: -12.0,
             climbHeight: climbH,
             isClimbed: false
         };
+    }
+
+    buildLedgeBlockade() {
+        // Massive physical cave-in barricade & emergency security bulkhead at z = -632.0, y = 12.0
+        // Permanently locks the upper canyon ledge from the dangerous 24m chasm drop behind the player!
+        const blockGroup = new THREE.Group();
+        blockGroup.position.set(0, 12.0, -632.0);
+
+        // Heavy steel emergency security blast door frame
+        const frameGeo = new THREE.BoxGeometry(4.8, 4.2, 0.6);
+        const frame = new THREE.Mesh(frameGeo, this.materials.metal);
+        frame.position.set(0, 2.1, 0);
+        blockGroup.add(frame);
+
+        // Steel blast door panels with hazard finish
+        const doorGeo = new THREE.BoxGeometry(4.2, 3.8, 0.4);
+        const doorMat = new THREE.MeshStandardMaterial({
+            color: 0x37474f,
+            metalness: 0.85,
+            roughness: 0.35
+        });
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, 2.0, 0.1);
+        blockGroup.add(door);
+
+        // Red emergency warning siren & flashing beacon on top of the blast door
+        const redBeacon = new THREE.PointLight(0xff1744, 2.2, 8.0);
+        redBeacon.position.set(0, 4.2, 0.4);
+        blockGroup.add(redBeacon);
+
+        // Warning indicator lens
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), new THREE.MeshBasicMaterial({ color: 0xff1744 }));
+        bulb.position.set(0, 4.2, 0.4);
+        blockGroup.add(bulb);
+
+        // Massive collapsed granite boulders tumbled in front of the door (sealing the passage)
+        const boulderMat = this.materials.rock.clone();
+        boulderMat.roughness = 0.95;
+        const boulderOffsets = [
+            { x: -1.2, y: 0.8, z: -0.4, r: 0.85 },
+            { x: 0.6, y: 1.1, z: -0.3, r: 0.95 },
+            { x: -0.2, y: 0.5, z: -0.6, r: 0.75 },
+            { x: 1.4, y: 0.7, z: -0.4, r: 0.8 },
+            { x: 0.1, y: 2.2, z: -0.2, r: 0.7 }
+        ];
+
+        boulderOffsets.forEach(b => {
+            const bMesh = new THREE.Mesh(new THREE.DodecahedronGeometry(b.r, 1), boulderMat);
+            bMesh.position.set(b.x, b.y, b.z);
+            bMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            blockGroup.add(bMesh);
+        });
+
+        // Warning Hazard Sign: CHASM COLLAPSED - HAZARD LEVEL 5 - FORWARD ESCAPE ONLY
+        const signGeo = new THREE.BoxGeometry(2.4, 0.6, 0.08);
+        const signMat = new THREE.MeshStandardMaterial({ color: 0xffd600, roughness: 0.4 });
+        const sign = new THREE.Mesh(signGeo, signMat);
+        sign.position.set(0, 2.8, -0.7);
+        blockGroup.add(sign);
+
+        this.group.add(blockGroup);
+        this.ledgeBlockade = blockGroup;
     }
 
     buildSeismicTunnel() {

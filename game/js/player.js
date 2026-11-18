@@ -450,8 +450,8 @@ class PlayerController {
         this.ropeSlipsDone = 0;
         // Two random fatigue slip altitudes during the 24m ascent (around ~9.5m and ~17.5m)
         this.ropeSlipTargets = [8.8 + Math.random() * 2.2, 16.5 + Math.random() * 2.2];
-        this.position.set(0, -12.0, -624.8);
-        this.camera.position.set(0, -10.8, -624.8);
+        this.position.set(0, -12.0, -622.8);
+        this.camera.position.set(0, -10.8, -622.8);
         this.yaw = 0;
         this.pitch = 0.85; // Locked looking up the vertical rescue rope!
         this.roll = 0;
@@ -493,8 +493,8 @@ class PlayerController {
             }
 
             const currentY = -12.0 + this.ropeClimbMeters;
-            this.position.set(0, currentY, -624.8);
-            this.camera.position.set(0, currentY + 1.2, -624.8);
+            this.position.set(0, currentY, -622.8);
+            this.camera.position.set(0, currentY + 1.2, -622.8);
 
             const remaining = Math.max(0, Math.round(this.ropeTotalMeters - this.ropeClimbMeters));
             if (window.eventManager) {
@@ -518,8 +518,8 @@ class PlayerController {
         }
 
         const currentY = -12.0 + this.ropeClimbMeters;
-        this.position.set(0, currentY, -624.8);
-        this.camera.position.set(0, currentY + 1.2, -624.8);
+        this.position.set(0, currentY, -622.8);
+        this.camera.position.set(0, currentY + 1.2, -622.8);
 
         const remaining = Math.max(0, Math.round(this.ropeTotalMeters - this.ropeClimbMeters));
         if (window.eventManager) {
@@ -547,8 +547,14 @@ class PlayerController {
             window.saveSystem.saveCheckpoint(3, this.position, Math.max(55, this.oxygen), this.depth);
         }
 
+        // Catastrophic tremor collapse permanently seals the chasm ledge behind the player!
+        if (window.soundEngine && window.soundEngine.playTremorRumble) {
+            window.soundEngine.playTremorRumble();
+        }
+        this.concussiveSway = 0.55;
+
         if (window.eventManager) {
-            window.eventManager.showNotification("★ UPPER ESCAPE CANYON REACHED! PROCEED TOWARDS HATCH B-4!");
+            window.eventManager.showNotification("★ SEISMIC COLLAPSE SEALS CHASM BEHIND YOU! NO TURNING BACK! PUSH FORWARD TO HATCH B-4!");
         }
         if (window.gameState) {
             window.gameState.triggerTremorClimax();
@@ -600,8 +606,8 @@ class PlayerController {
             this.camera.rotation.set(this.pitch, this.yaw, this.roll, 'YXZ');
 
             const currentY = -12.0 + this.ropeClimbMeters;
-            this.position.set(0, currentY, -624.8);
-            this.camera.position.set(0, currentY + 1.2, -624.8);
+            this.position.set(0, currentY, -622.8);
+            this.camera.position.set(0, currentY + 1.2, -622.8);
 
             // Update real-time climbing depth HUD
             const progress = Math.min(1.0, Math.max(0, -this.position.z / 865));
@@ -766,9 +772,16 @@ class PlayerController {
                     }
                 }
 
-                // 5. Solid Vertical Cliff at Rope Base (Cannot walk past or clip behind rope without climbing)
-                if (!this.hasClimbedRope && this.position.z <= -625.5) {
-                    this.position.z = -625.5;
+                // 5. Solid Ledge Lock after Climbing (Player CANNOT return or fall back down to the bottom lake)
+                if (this.hasClimbedRope) {
+                    if (this.position.z >= -633.0) {
+                        this.position.z = -633.0;
+                    }
+                } else {
+                    // Solid Vertical Cliff at Rope Base (Cannot walk past or clip behind cliff at dock level)
+                    if (this.position.z <= -626.0) {
+                        this.position.z = -626.0;
+                    }
                 }
 
                 // 6. Lateral Cavern Wall Clamping (Clamps player safely inside the 3D tube)

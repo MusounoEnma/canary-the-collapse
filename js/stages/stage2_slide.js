@@ -111,9 +111,10 @@ class Stage2SlideAndGrotto {
     }
 
     buildGrottoCavern() {
-        // Continuous, huge vaulted subterranean cavern arch from z = -395 down to z = -625
+        // Continuous, huge vaulted subterranean cavern arch from z = -395 down to z = -616 (lake shore)
+        // Stops cleanly at the shore so it never overlaps or clips into the Stage 3 vertical rope shaft!
         const points = [];
-        for (let z = -394; z >= -626; z -= 4.0) {
+        for (let z = -394; z >= -616; z -= 4.0) {
             points.push(new THREE.Vector3(Math.sin(z * 0.02) * 3.5, -7.5, z));
         }
 
