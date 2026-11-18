@@ -27,6 +27,7 @@ class MineWorld {
         this.corpses = [...this.stage1.corpses, this.stage2.raftCorpse];
         this.airVents = this.stage2.airVents;
         this.rescueRope = this.stage3.rescueRope;
+        this.emergencyO2Cache = this.stage3.emergencyO2Cache;
         this.escapeHatch = this.stage3.escapeHatch;
         this.mineCart = this.stage1.mineCart;
         this.chuteHatch = this.stage1.chuteHatch;
@@ -206,6 +207,10 @@ class MineWorld {
             const p = (-z - 285) / 110;
             return THREE.MathUtils.lerp(4.5, -14.0, Math.pow(p, 1.2));
         } else if (z > -625) {
+            // Lake shore landing platform where player exits water at z <= -615
+            if (z <= -615) {
+                return -12.0;
+            }
             // Under water grotto: water surface is at y = -12.2, floor is at y = -14.0
             return -14.0;
         } else {

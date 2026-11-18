@@ -443,6 +443,9 @@ class PlayerController {
         if (this.isClimbingRope || this.hasClimbedRope) return;
         this.isClimbingRope = true;
         this.ropeClimbMeters = 0;
+        this.ropeSlipsDone = 0;
+        // Two random fatigue slip altitudes during the 24m ascent (around ~9.5m and ~17.5m)
+        this.ropeSlipTargets = [8.8 + Math.random() * 2.2, 16.5 + Math.random() * 2.2];
         this.position.set(0, -12.0, -625);
 
         if (window.eventManager) {
@@ -451,15 +454,58 @@ class PlayerController {
     }
 
     pullRopeHand() {
+        // Check for random fatigue slipping event due to burning exhaustion
+        if (this.ropeSlipsDone < this.ropeSlipTargets.length && this.ropeClimbMeters >= this.ropeSlipTargets[this.ropeSlipsDone]) {
+            this.ropeSlipsDone++;
+            const slipDist = 1.3 + Math.random() * 0.7; // Slips down 1.3m to 2.0m
+            this.ropeClimbMeters = Math.max(0.5, this.ropeClimbMeters - slipDist);
+
+            // Violent downward camera drop and loss of grip
+            this.pitch = -0.42;
+            this.roll = (Math.random() - 0.5) * 0.35;
+            this.concussiveSway = 0.45;
+
+            // Audio: harsh rope burn friction screech & ragged breath
+            if (window.soundEngine) {
+                if (window.soundEngine.playRopeSlip) window.soundEngine.playRopeSlip();
+                if (window.soundEngine.playRaggedBreath) window.soundEngine.playRaggedBreath();
+            }
+
+            // Exertion: spike stress & heartbeat, small O2 burn
+            this.stress = Math.min(100, this.stress + 24);
+            this.heartbeatBpm += 22;
+            this.oxygen = Math.max(10, this.oxygen - 2.5);
+
+            // Screen glitch/vignette flash
+            const glitchEl = document.getElementById('glitch-overlay');
+            if (glitchEl) {
+                glitchEl.style.opacity = '0.7';
+                setTimeout(() => { if (glitchEl) glitchEl.style.opacity = '0'; }, 320);
+            }
+
+            const currentY = -12.0 + this.ropeClimbMeters;
+            this.position.y = currentY;
+            this.camera.position.set(0, currentY + 1.2, -625);
+
+            const remaining = Math.max(0, Math.round(this.ropeTotalMeters - this.ropeClimbMeters));
+            if (window.eventManager) {
+                window.eventManager.showNotification(`⚠️ LOSS OF GRIP! SLIPPED -${slipDist.toFixed(1)}m! EXHAUSTION SETTING IN! HOLD ON AND KEEP CLIMBING [W]! (${remaining}m LEFT)`);
+            }
+            return;
+        }
+
         this.ropeClimbMeters += 0.85; // 0.85 meters per hand pull (~28 taps)
         this.ropePullAlternate = !this.ropePullAlternate;
 
         // Camera hand-pull sway
         this.roll = (this.ropePullAlternate ? 1 : -1) * 0.12;
-        this.pitch = 0.55; // looking up the rope
+        this.pitch = 0.55; // looking up the rope towards safety
 
-        if (window.soundEngine && window.soundEngine.playRopeCreak) {
-            window.soundEngine.playRopeCreak();
+        if (window.soundEngine) {
+            if (window.soundEngine.playRopeCreak) window.soundEngine.playRopeCreak();
+            if (Math.random() < 0.28 && window.soundEngine.playRaggedBreath) {
+                window.soundEngine.playRaggedBreath();
+            }
         }
 
         const currentY = -12.0 + this.ropeClimbMeters;
@@ -468,7 +514,7 @@ class PlayerController {
 
         const remaining = Math.max(0, Math.round(this.ropeTotalMeters - this.ropeClimbMeters));
         if (window.eventManager) {
-            window.eventManager.showNotification(`CLIMBING... ${remaining} METERS REMAINING!`);
+            window.eventManager.showNotification(`CLIMBING... ${remaining} METERS REMAINING! [W] / [SPACE]`);
         }
 
         if (this.ropeClimbMeters >= this.ropeTotalMeters) {
@@ -561,6 +607,15 @@ class PlayerController {
         } else if (!inWater && this.isSwimming && this.position.z < -615) {
             this.isSwimming = false;
             if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0';
+            // Emerged onto solid lake shore! Take desperate gasping breath & restore emergency O2
+            if (this.oxygen < 35) {
+                this.oxygen = Math.max(this.oxygen, 35);
+                this.stress = Math.max(15, this.stress - 20);
+                if (window.soundEngine && window.soundEngine.playBreathGasp) window.soundEngine.playBreathGasp();
+                if (window.eventManager) {
+                    window.eventManager.showNotification("EMERGED ONTO SHORE! GASPING DESPERATELY FOR AIR! FIND O2 SUPPLY!");
+                }
+            }
         }
 
         // Check if player reached desperate crawl zone (z <= -820)

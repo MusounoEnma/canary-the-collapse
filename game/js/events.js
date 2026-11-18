@@ -87,8 +87,21 @@ class EventManager {
             }
         }
 
-        // 4. Check Rescue Rope at z = -625
-        if (!foundRubble && !this.isNearCart && !foundCorpse && world.rescueRope && !player.hasClimbedRope) {
+        // 4. Check Emergency O2 Supply Cache at shore landing (z = -624.2)
+        if (!foundRubble && !this.isNearCart && !foundCorpse && world.emergencyO2Cache) {
+            const dist = pPos.distanceTo(world.emergencyO2Cache.position);
+            if (dist < 3.8 && pPos.y < 0) {
+                this.isNearO2Cache = true;
+                promptText = "[E] INHALE EMERGENCY OXYGEN (+65% O2 RESERVES)";
+            } else {
+                this.isNearO2Cache = false;
+            }
+        } else {
+            this.isNearO2Cache = false;
+        }
+
+        // 5. Check Rescue Rope at z = -625
+        if (!foundRubble && !this.isNearCart && !foundCorpse && !this.isNearO2Cache && world.rescueRope && !player.hasClimbedRope) {
             const dist = Math.hypot(pPos.x - world.rescueRope.position.x, pPos.z - world.rescueRope.position.z);
             if (dist < 4.5 && pPos.y < 0) {
                 this.isNearRope = true;
@@ -100,8 +113,8 @@ class EventManager {
             this.isNearRope = false;
         }
 
-        // 5. Check Escape Hatch B-4 at z = -865
-        if (!foundRubble && !this.isNearCart && !foundCorpse && !this.isNearRope && world.escapeHatch) {
+        // 6. Check Escape Hatch B-4 at z = -865
+        if (!foundRubble && !this.isNearCart && !foundCorpse && !this.isNearO2Cache && !this.isNearRope && world.escapeHatch) {
             const dist = pPos.distanceTo(world.escapeHatch.position);
             if (dist < 5.0) {
                 this.isNearHatch = true;
@@ -130,6 +143,8 @@ class EventManager {
             this.pushCart();
         } else if (this.currentCorpse) {
             this.lootCorpse(this.currentCorpse);
+        } else if (this.isNearO2Cache && window.gameWorld && window.gameWorld.stage3 && window.gameWorld.stage3.useEmergencyO2) {
+            window.gameWorld.stage3.useEmergencyO2();
         } else if (this.isNearRope && window.gamePlayer && window.gameWorld && window.gameWorld.rescueRope) {
             window.gamePlayer.startRopeClimb(window.gameWorld.rescueRope);
         } else if (this.isNearHatch && window.gameWorld && window.gameWorld.escapeHatch) {

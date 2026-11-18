@@ -258,6 +258,54 @@ class SoundEngine {
         osc.stop(now + 0.26);
     }
 
+    // Dramatic Rope Slip / Loss of Grip screech, abrasive burn, and sudden tension snap
+    playRopeSlip() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // 1. Harsh abrasive sliding friction noise (hemp burning through gloves)
+        const bufSize = Math.floor(this.ctx.sampleRate * 0.48);
+        const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.8));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buf;
+
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(1400, now);
+        f.frequency.exponentialRampToValueAtTime(320, now + 0.44);
+        f.Q.setValueAtTime(3.5, now);
+
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.48, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.46);
+
+        noise.connect(f);
+        f.connect(g);
+        g.connect(this.masterGain);
+        noise.start(now);
+
+        // 2. Heavy tension rope snap / arrest twang
+        const osc = this.ctx.createOscillator();
+        const og = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now + 0.22);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.32);
+        osc.frequency.exponentialRampToValueAtTime(65, now + 0.52);
+
+        og.gain.setValueAtTime(0.001, now);
+        og.gain.setValueAtTime(0.38, now + 0.25);
+        og.gain.exponentialRampToValueAtTime(0.001, now + 0.52);
+
+        osc.connect(og);
+        og.connect(this.masterGain);
+        osc.start(now + 0.22);
+        osc.stop(now + 0.55);
+    }
+
     startBreathingLoop() {
         const breathe = () => {
             if (!this.ctx) return;
