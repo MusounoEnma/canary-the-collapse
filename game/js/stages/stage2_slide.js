@@ -190,14 +190,15 @@ class Stage2SlideAndGrotto {
         const waterGeo = new THREE.PlaneGeometry(28, 225, 48, 64);
         waterGeo.rotateX(-Math.PI / 2);
 
-        // Procedural animated normal map/water surface with dynamic surge waves
+        // Procedural animated normal map/water surface with dynamic surge waves (visible above & underwater)
         const waterMat = new THREE.MeshStandardMaterial({
-            color: 0x004d40,
-            emissive: 0x002420,
-            roughness: 0.08,
-            metalness: 0.82,
+            color: 0x005b6b,
+            emissive: 0x002c36,
+            roughness: 0.10,
+            metalness: 0.75,
             transparent: true,
-            opacity: 0.85
+            opacity: 0.88,
+            side: THREE.DoubleSide
         });
 
         const waterMesh = new THREE.Mesh(waterGeo, waterMat);
@@ -357,43 +358,90 @@ class Stage2SlideAndGrotto {
     triggerFallingStalactite(playerPos) {
         if (!playerPos || playerPos.z > -395 || playerPos.z < -615) return;
 
-        // Spawn a sharp rock shard or jagged stalactite falling from ceiling (y = -4.5) down to water
-        const isTargeted = Math.random() < 0.65;
-        const x = isTargeted 
+        // Choose target impact location on water
+        const isTargeted = Math.random() < 0.70;
+        const targetX = isTargeted 
             ? playerPos.x + (Math.random() - 0.5) * 3.4 
             : (Math.random() - 0.5) * 8.0;
-        const z = isTargeted 
-            ? playerPos.z + (Math.random() - 0.5) * 3.8 
+        const targetZ = isTargeted 
+            ? playerPos.z - 1.5 - Math.random() * 4.2 
             : playerPos.z - 4.0 - Math.random() * 8.0;
 
-        // Varied rock meshes: sharp stalactite cone or jagged dodecahedron boulder
+        const targetWaterY = this.getWaterHeightAt(targetX, targetZ);
+
+        // 1. Red Danger Warning Decal Group on the water surface (telegraphs falling hazard!)
+        const warningGroup = new THREE.Group();
+        warningGroup.position.set(targetX, targetWaterY + 0.06, targetZ);
+
+        // Outer pulsing red danger ring
+        const ringGeo = new THREE.RingGeometry(0.85, 1.45, 24);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0xff1744,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        warningGroup.add(ringMesh);
+
+        // Inner glowing translucent danger target zone
+        const discGeo = new THREE.CircleGeometry(0.85, 24);
+        discGeo.rotateX(-Math.PI / 2);
+        const discMat = new THREE.MeshBasicMaterial({
+            color: 0xd50000,
+            transparent: true,
+            opacity: 0.38,
+            side: THREE.DoubleSide
+        });
+        const discMesh = new THREE.Mesh(discGeo, discMat);
+        warningGroup.add(discMesh);
+
+        // Crosshair hazard lines inside warning ring
+        const crossMat = new THREE.MeshBasicMaterial({ color: 0xff5252, side: THREE.DoubleSide });
+        const crossBar1 = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.08), crossMat);
+        crossBar1.rotateX(-Math.PI / 2);
+        warningGroup.add(crossBar1);
+        const crossBar2 = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 1.6), crossMat);
+        crossBar2.rotateX(-Math.PI / 2);
+        warningGroup.add(crossBar2);
+
+        this.group.add(warningGroup);
+
+        // 2. Ceiling rock shard or stalactite poised above ceiling (y = -4.2)
         const isStalactite = Math.random() < 0.55;
         let rockMesh;
         if (isStalactite) {
-            const stalGeo = new THREE.ConeGeometry(0.24 + Math.random() * 0.12, 1.4 + Math.random() * 0.8, 6);
+            const stalGeo = new THREE.ConeGeometry(0.26 + Math.random() * 0.12, 1.5 + Math.random() * 0.8, 6);
             stalGeo.rotateX(Math.PI);
             const stalMat = new THREE.MeshStandardMaterial({ color: 0x273138, roughness: 0.9 });
             rockMesh = new THREE.Mesh(stalGeo, stalMat);
         } else {
-            const dGeo = new THREE.DodecahedronGeometry(0.35 + Math.random() * 0.35, 0);
+            const dGeo = new THREE.DodecahedronGeometry(0.40 + Math.random() * 0.35, 0);
             const dMat = new THREE.MeshStandardMaterial({ color: 0x1e272e, roughness: 0.95 });
             rockMesh = new THREE.Mesh(dGeo, dMat);
         }
 
-        rockMesh.position.set(x, -4.5, z);
+        rockMesh.position.set(targetX, -4.2, targetZ);
         rockMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
         this.group.add(rockMesh);
 
         this.fallingStalactites.push({
             mesh: rockMesh,
-            velY: -1.5,
+            warning: warningGroup,
+            ringMat: ringMat,
+            discMat: discMat,
+            targetX: targetX,
+            targetZ: targetZ,
+            delay: 1.35, // 1.35 seconds telegraph warning delay!
+            velY: 0,
             rotSpeedX: (Math.random() - 0.5) * 6.0,
             rotSpeedZ: (Math.random() - 0.5) * 6.0,
             nearMissChecked: false
         });
 
-        // Sharp crack from the ceiling
-        if (window.soundEngine && Math.random() < 0.4) {
+        // Sharp crack & rumbling from the ceiling
+        if (window.soundEngine && Math.random() < 0.5) {
             if (window.soundEngine.playHeavyCaveInThud) window.soundEngine.playHeavyCaveInThud();
         }
     }
@@ -418,54 +466,77 @@ class Stage2SlideAndGrotto {
         // 2. Active falling ceiling rock debris & stalactites hazard
         if (playerPos && playerPos.z <= -395 && playerPos.z >= -615) {
             this.fallingRockTimer += delta;
-            // Spawn falling rocks every 1.4 - 2.4 seconds
-            if (this.fallingRockTimer > (1.4 + Math.random() * 1.0)) {
+            // Spawn falling rocks every 1.5 - 2.5 seconds
+            if (this.fallingRockTimer > (1.5 + Math.random() * 1.0)) {
                 this.fallingRockTimer = 0;
                 this.triggerFallingStalactite(playerPos);
             }
         }
 
-        // Update active falling rocks
+        // Update active falling rocks & red danger warning circles
         for (let i = this.fallingStalactites.length - 1; i >= 0; i--) {
             const s = this.fallingStalactites[i];
-            s.velY -= 18.0 * delta; // Heavy gravity acceleration
-            s.mesh.position.y += s.velY * delta;
-            s.mesh.rotation.x += s.rotSpeedX * delta;
-            s.mesh.rotation.z += s.rotSpeedZ * delta;
 
-            // Hit collision detection with player
-            if (window.gamePlayer && !window.gamePlayer.isDead) {
-                const pPos = window.gamePlayer.position;
-                const distToPlayer = s.mesh.position.distanceTo(pPos);
+            if (s.delay > 0) {
+                s.delay -= delta;
 
-                if (distToPlayer < 1.45 && Math.abs(s.mesh.position.y - pPos.y) < 1.5) {
-                    // Direct hit on player!
-                    window.gamePlayer.takeRockHit(10, 30);
-                    if (window.pickaxeSystem) {
-                        window.pickaxeSystem.spawnRockShatterDebris(s.mesh.position, 0x273138);
+                // Telegraph warning phase: pulsing red area riding the dynamic water wave height
+                const waterSurfaceY = this.getWaterHeightAt(s.targetX, s.targetZ);
+                s.warning.position.y = waterSurfaceY + 0.05;
+                s.warning.rotation.y += delta * 2.2;
+
+                const pulse = 0.5 + Math.sin(performance.now() * 0.016) * 0.45;
+                s.ringMat.opacity = pulse;
+                s.discMat.opacity = pulse * 0.45;
+
+                // Ceiling rock trembles with warning dust
+                s.mesh.position.x = s.targetX + (Math.random() - 0.5) * 0.05;
+                s.mesh.position.z = s.targetZ + (Math.random() - 0.5) * 0.05;
+            } else {
+                // Falling gravity phase
+                s.velY -= 19.0 * delta;
+                s.mesh.position.y += s.velY * delta;
+                s.mesh.rotation.x += s.rotSpeedX * delta;
+                s.mesh.rotation.z += s.rotSpeedZ * delta;
+
+                s.ringMat.opacity = 0.95;
+
+                // Hit collision detection with player
+                if (window.gamePlayer && !window.gamePlayer.isDead) {
+                    const pPos = window.gamePlayer.position;
+                    const distToPlayer = s.mesh.position.distanceTo(pPos);
+
+                    if (distToPlayer < 1.45 && Math.abs(s.mesh.position.y - pPos.y) < 1.5) {
+                        // Direct hit! Player failed to dodge out of red zone
+                        window.gamePlayer.takeRockHit(10, 30);
+                        if (window.pickaxeSystem) {
+                            window.pickaxeSystem.spawnRockShatterDebris(s.mesh.position, 0x273138);
+                        }
+                        this.group.remove(s.warning);
+                        this.group.remove(s.mesh);
+                        this.fallingStalactites.splice(i, 1);
+                        continue;
+                    } else if (distToPlayer < 3.2 && !s.nearMissChecked) {
+                        // Near-miss jolt: panic spike
+                        s.nearMissChecked = true;
+                        window.gamePlayer.triggerNearMissPanic(8);
                     }
+                }
+
+                // Check impact with dynamic water surface
+                const waterSurfaceY = this.getWaterHeightAt(s.mesh.position.x, s.mesh.position.z);
+                if (s.mesh.position.y <= waterSurfaceY) {
+                    // Splash hit water
+                    if (window.soundEngine && window.soundEngine.playWaterSplash) {
+                        window.soundEngine.playWaterSplash();
+                    }
+                    if (window.pickaxeSystem) {
+                        window.pickaxeSystem.spawnStrikeSparks(s.mesh.position);
+                    }
+                    this.group.remove(s.warning);
                     this.group.remove(s.mesh);
                     this.fallingStalactites.splice(i, 1);
-                    continue;
-                } else if (distToPlayer < 3.2 && !s.nearMissChecked) {
-                    // Near-miss jolt: panic spike
-                    s.nearMissChecked = true;
-                    window.gamePlayer.triggerNearMissPanic(12);
                 }
-            }
-
-            // Check impact with dynamic water surface
-            const waterSurfaceY = this.getWaterHeightAt(s.mesh.position.x, s.mesh.position.z);
-            if (s.mesh.position.y <= waterSurfaceY) {
-                // Splash hit water
-                if (window.soundEngine && window.soundEngine.playWaterSplash) {
-                    window.soundEngine.playWaterSplash();
-                }
-                if (window.pickaxeSystem) {
-                    window.pickaxeSystem.spawnStrikeSparks(s.mesh.position);
-                }
-                this.group.remove(s.mesh);
-                this.fallingStalactites.splice(i, 1);
             }
         }
 

@@ -676,8 +676,13 @@ class PlayerController {
                 if (!this.isHeadSubmerged) {
                     this.isHeadSubmerged = true;
                     if (window.soundEngine && window.soundEngine.setUnderwater) window.soundEngine.setUnderwater(true);
+                    if (world && world.scene && world.scene.fog) {
+                        world.scene.fog.color.setHex(0x003348); // Deep murky aquatic blue fog
+                        world.scene.fog.near = 1.0;
+                        world.scene.fog.far = 30.0;
+                    }
                 }
-                if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0.68';
+                if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0.92';
                 // Underwater breath holding stresses the player!
                 this.stress = Math.min(100, this.stress + delta * 5.5);
             } else {
@@ -687,8 +692,13 @@ class PlayerController {
                         if (window.soundEngine.setUnderwater) window.soundEngine.setUnderwater(false);
                         if (window.soundEngine.playBreathGasp) window.soundEngine.playBreathGasp();
                     }
+                    if (world && world.scene && world.scene.fog) {
+                        world.scene.fog.color.setHex(0x060e1a); // Restore cavern atmosphere fog
+                        world.scene.fog.near = 35.0;
+                        world.scene.fog.far = 140.0;
+                    }
                 }
-                if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0.08';
+                if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0.04';
                 // Head above water: slowly steady nerves
                 this.stress = Math.max(15, this.stress - delta * 3.2);
             }
@@ -701,6 +711,11 @@ class PlayerController {
                 this.isHeadSubmerged = false;
                 if (window.soundEngine && window.soundEngine.setUnderwater) window.soundEngine.setUnderwater(false);
                 if (this.underwaterOverlay) this.underwaterOverlay.style.opacity = '0';
+                if (world && world.scene && world.scene.fog) {
+                    world.scene.fog.color.setHex(0x060e1a);
+                    world.scene.fog.near = 35.0;
+                    world.scene.fog.far = 140.0;
+                }
             }
             if (world) {
                 this.position.y = world.getGroundHeight(this.position.x, this.position.z);
