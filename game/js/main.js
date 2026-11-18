@@ -306,6 +306,49 @@ class GameState {
         location.reload();
     }
 
+    pauseGame() {
+        if (this.state !== 'PLAYING') return;
+        this.state = 'PAUSED';
+        document.exitPointerLock();
+
+        const pauseScreen = document.getElementById('pause-screen');
+        const statusEl = document.getElementById('pause-status-text');
+        const lockPrompt = document.getElementById('lock-prompt');
+        if (lockPrompt) lockPrompt.style.display = 'none';
+
+        if (statusEl && this.player) {
+            const depth = this.player.depth || 780;
+            const o2 = Math.round(this.player.oxygen || 100);
+            const mins = Math.floor(this.elapsedTime / 60);
+            const secs = Math.floor(this.elapsedTime % 60);
+            const sector = depth > 531 ? "SECTOR 1 (VEIN)" : (depth > 222 ? "SECTOR 2 (RIVER)" : "SECTOR 3 (ASCENT)");
+            statusEl.textContent = `${sector} // DEPTH: ${depth}m // O2: ${o2}% // TIME: ${mins}m ${secs}s`;
+        }
+
+        if (pauseScreen) pauseScreen.style.display = 'flex';
+    }
+
+    resumeGame() {
+        if (this.state !== 'PAUSED') return;
+        const pauseScreen = document.getElementById('pause-screen');
+        if (pauseScreen) pauseScreen.style.display = 'none';
+
+        this.state = 'PLAYING';
+        this.lastTime = performance.now();
+
+        if (this.player && this.player.domElement) {
+            this.player.domElement.requestPointerLock();
+        }
+    }
+
+    togglePause() {
+        if (this.state === 'PLAYING') {
+            this.pauseGame();
+        } else if (this.state === 'PAUSED') {
+            this.resumeGame();
+        }
+    }
+
     selectStage(stageNum) {
         try {
             if (window.soundEngine) {
@@ -317,13 +360,16 @@ class GameState {
         const titleScreen = document.getElementById('title-screen');
         const gameOverScreen = document.getElementById('gameover-screen');
         const victoryScreen = document.getElementById('victory-screen');
+        const pauseScreen = document.getElementById('pause-screen');
         const hud = document.getElementById('hud-layer');
         if (titleScreen) titleScreen.style.display = 'none';
         if (gameOverScreen) gameOverScreen.style.display = 'none';
         if (victoryScreen) victoryScreen.style.display = 'none';
+        if (pauseScreen) pauseScreen.style.display = 'none';
         if (hud) hud.style.display = 'block';
 
         this.state = 'PLAYING';
+        this.lastTime = performance.now();
         if (!this.player) return;
 
         this.player.isDead = false;

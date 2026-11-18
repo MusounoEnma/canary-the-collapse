@@ -168,13 +168,19 @@ class PlayerController {
         document.addEventListener('pointerlockchange', () => {
             this.isLocked = (document.pointerLockElement === this.domElement);
             const lockPrompt = document.getElementById('lock-prompt');
+            const inMenu = window.gameState && (window.gameState.state === 'PAUSED' || window.gameState.state === 'GAMEOVER' || window.gameState.state === 'VICTORY' || window.gameState.state === 'TITLE');
             if (lockPrompt) {
-                lockPrompt.style.display = this.isLocked ? 'none' : 'flex';
+                lockPrompt.style.display = (!this.isLocked && !inMenu) ? 'flex' : 'none';
+            }
+            // If user pressed Escape to exit pointer lock during gameplay, trigger pause menu
+            if (!this.isLocked && window.gameState && window.gameState.state === 'PLAYING') {
+                window.gameState.pauseGame();
             }
         });
 
         document.addEventListener('mousemove', (e) => {
             if (this.isDead || this.isSliding || this.isClimbingRope) return;
+            if (window.gameState && window.gameState.state !== 'PLAYING') return;
             if (!this.isLocked && !isMouseDown) return;
             this.yaw -= e.movementX * this.sensitivity;
             this.pitch -= e.movementY * this.sensitivity;
@@ -182,7 +188,16 @@ class PlayerController {
         });
 
         window.addEventListener('keydown', (e) => {
+            // Pause / Unpause toggle
+            if (e.code === 'Escape' || e.code === 'KeyP') {
+                if (window.gameState) {
+                    window.gameState.togglePause();
+                    return;
+                }
+            }
+
             if (this.isDead) return;
+            if (window.gameState && window.gameState.state !== 'PLAYING') return;
 
             // Handle recovery when player has stumbled / collapsed to knees
             if (this.isStumbled) {

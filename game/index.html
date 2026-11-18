@@ -231,6 +231,62 @@
         <button id="btn-start-game" class="btn-primary" onclick="if(window.gameState){window.gameState.startGame();}">BEGIN ASCENT TO SURFACE</button>
     </div>
 
+    <!-- Pause Menu Screen -->
+    <div id="pause-screen" class="screen-overlay" style="display: none; background: rgba(8, 12, 18, 0.88); backdrop-filter: blur(10px); z-index: 100;">
+        <div class="pause-card">
+            <div class="pause-header">
+                <span class="pause-badge">EXPEDITION SUSPENDED</span>
+                <h1 class="pause-title">GAME PAUSED</h1>
+                <p id="pause-status-text" class="pause-status">LOCATION: SHAFT 07 // DEPTH: 780m // O2: 100%</p>
+            </div>
+
+            <div class="pause-actions-list">
+                <button id="btn-pause-resume" class="btn-primary pause-btn-main" onclick="if(window.gameState){window.gameState.resumeGame();}">
+                    ▶ RESUME EXPEDITION [ESC / P]
+                </button>
+
+                <div class="pause-section-divider"><span>OR JUMP DIRECTLY TO STAGE</span></div>
+
+                <div class="pause-stages-grid">
+                    <button class="pause-stage-pill" onclick="if(window.gameState){window.gameState.selectStage(1);}">
+                        <span class="psp-badge">STAGE 1</span>
+                        <span class="psp-title">SHAFT 07 VEIN</span>
+                        <span class="psp-depth">Depth 780m</span>
+                    </button>
+                    <button class="pause-stage-pill" onclick="if(window.gameState){window.gameState.selectStage(2);}">
+                        <span class="psp-badge">STAGE 2</span>
+                        <span class="psp-title">SUNKEN RIVER</span>
+                        <span class="psp-depth">Depth 531m</span>
+                    </button>
+                    <button class="pause-stage-pill" onclick="if(window.gameState){window.gameState.selectStage(3);}">
+                        <span class="psp-badge">STAGE 3</span>
+                        <span class="psp-title">VERTICAL ASCENT</span>
+                        <span class="psp-depth">Depth 222m</span>
+                    </button>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 14px;">
+                    <button id="btn-pause-audio" class="pause-btn-secondary" onclick="if(window.soundEngine){const m = window.soundEngine.toggleMute(); this.textContent = m ? '🔇 AUDIO: MUTED' : '🔊 AUDIO: ON';}">
+                        🔊 AUDIO: ON
+                    </button>
+                    <button class="pause-btn-secondary" onclick="if(window.gameState){window.gameState.restartGame();}">
+                        🔄 RESTART RUN (780m)
+                    </button>
+                </div>
+            </div>
+
+            <div class="pause-controls-guide">
+                <strong>CONTROLS:</strong>
+                <span>[W][A][S][D] Move</span> &bull; 
+                <span>[Shift] Sprint / Swim</span> &bull; 
+                <span>[C] Crouch / Crawl</span> &bull; 
+                <span>[E] Interact / Strike</span> &bull; 
+                <span>[T] Inspect Photo</span> &bull; 
+                <span>[ESC / P] Pause</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Over Screen (Hypoxia Death) -->
     <div id="gameover-screen" class="screen-overlay">
         <h1 class="gameover-title">YOUR CONSCIOUSNESS FADES INTO DARKNESS</h1>

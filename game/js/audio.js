@@ -19,6 +19,15 @@ class SoundEngine {
         this.isUnderwater = false;
         this.underwaterFilter = null;
         this.isInitialized = false;
+        this.isMuted = false;
+    }
+
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        if (this.masterGain && this.ctx) {
+            this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.85, this.ctx.currentTime);
+        }
+        return this.isMuted;
     }
 
     init() {

@@ -162,14 +162,15 @@ class Stage2SlideAndGrotto {
                 clusterGroup.add(baseMesh);
 
                 // Cluster of 6-8 sharp hexagonal crystal spikes pointing UPWARDS into the water
+                // High emissive intensity provides brilliant bioluminescence with zero per-cluster PointLight GPU overhead
                 const cMat = new THREE.MeshStandardMaterial({
                     color: 0x00e5ff,
-                    emissive: 0x0097a7,
-                    emissiveIntensity: 0.65,
+                    emissive: 0x00e5ff,
+                    emissiveIntensity: 0.95,
                     roughness: 0.2,
                     metalness: 0.7,
                     transparent: true,
-                    opacity: 0.88
+                    opacity: 0.90
                 });
 
                 for (let k = 0; k < 7; k++) {
@@ -190,25 +191,20 @@ class Stage2SlideAndGrotto {
                     clusterGroup.add(crystal);
                 }
 
-                // Submerged glowing cyan light source radiating upwards through the clear aquatic water
-                const light = new THREE.PointLight(0x00e5ff, 1.8, 7.0);
-                light.position.set(0, 0.8, 0);
-                clusterGroup.add(light);
-
                 clusterGroup.matrixAutoUpdate = false;
                 clusterGroup.updateMatrix();
                 this.group.add(clusterGroup);
             }
         }
 
-        // Two global vivid cyan-blue illumination lights for the entire grotto (crystal clear visibility)
-        const grottoLight1 = new THREE.PointLight(0x00e5ff, 3.5, 70, 1.2);
-        grottoLight1.position.set(0, -6.0, -450);
-        this.group.add(grottoLight1);
-
-        const grottoLight2 = new THREE.PointLight(0x00e5ff, 3.5, 70, 1.2);
-        grottoLight2.position.set(0, -6.0, -560);
-        this.group.add(grottoLight2);
+        // 4 dedicated, highly optimized grotto illumination lights along the river channel
+        // Gives radiant, buttery smooth 60 FPS lighting without spawning dozens of dynamic hardware lights
+        const grottoCoords = [-430, -485, -540, -595];
+        grottoCoords.forEach((gz, idx) => {
+            const gLight = new THREE.PointLight(0x00e5ff, 2.6, 55, 1.2);
+            gLight.position.set(idx % 2 === 0 ? -1.8 : 1.8, -10.5, gz);
+            this.group.add(gLight);
+        });
     }
 
     buildWaterVolume() {
@@ -474,7 +470,9 @@ class Stage2SlideAndGrotto {
 
     update(delta, playerPos) {
         // 1. Animate turbulent water waves ("air bergejolak")
-        if (this.waterVolume) {
+        // Highly optimized: only runs when player is within or approaching the subterranean lake (z between -360 and -640)
+        // Avoids costly computeVertexNormals() every frame for buttery smooth 60 FPS
+        if (this.waterVolume && (!playerPos || (playerPos.z <= -350 && playerPos.z >= -640))) {
             const time = performance.now() * 0.0025;
             const posAttr = this.waterVolume.geometry.attributes.position;
             for (let i = 0; i < posAttr.count; i++) {
@@ -486,7 +484,6 @@ class Stage2SlideAndGrotto {
                 posAttr.setY(i, wave);
             }
             posAttr.needsUpdate = true;
-            this.waterVolume.geometry.computeVertexNormals();
         }
 
         // 2. Active falling ceiling rock debris & stalactites hazard
