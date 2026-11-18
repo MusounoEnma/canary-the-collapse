@@ -241,25 +241,82 @@
         <button id="btn-restart-game" class="btn-primary" style="background:#37474f;" onclick="if(window.gameState){window.gameState.restartGame();}">TRY AGAIN FROM THE BOTTOM (780m)</button>
     </div>
 
-    <!-- Victory Screen (Surface Reached) -->
+    <!-- Victory Screen (Surface Reached & Stage Selection) -->
     <div id="victory-screen" class="screen-overlay">
-        <h1 class="victory-title">SURFACE REACHED</h1>
-        <h2 style="font-size: 20px; color: #f57f17; letter-spacing: 2px;">DEPTH: 0 METERS // MORNING SUNLIGHT</h2>
+        <div class="victory-card">
+            <div class="victory-header">
+                <span class="victory-badge">★ EXPEDITION SURVIVED ★</span>
+                <h1 class="victory-title">SURFACE BREACHED</h1>
+                <h2 class="victory-subtitle">DEPTH: 0 METERS // HATCH B-4 // MORNING SUNLIGHT</h2>
+            </div>
 
-        <div class="victory-story">
-            <p>
-                With the very last ounce of strength in your trembling hands, you heave the heavy steel emergency valve open. The blast hatch groans, showering stone dust downward as you climb the final iron rungs into the open air.
-            </p>
-            <p style="margin-top: 14px;">
-                Blinding dawn sunlight washes over your eyes. Crisp morning mountain air rushes into your burning lungs. In the distance, wild canary birds sing in the lush green valley.
-            </p>
-            <p style="margin-top: 14px; font-weight: bold; color: #bf360c;">
-                You survived. You kept your promise to Lily.
-            </p>
+            <!-- Polaroid Photo & Lily's Promise -->
+            <div class="victory-polaroid-row">
+                <div class="victory-polaroid-frame">
+                    <img src="assets/polaroid_lily.png" alt="Lily" class="victory-photo-img" />
+                    <div class="victory-photo-stamp">SURVIVED</div>
+                    <p class="victory-photo-caption">"Promise kept. Daddy came home."</p>
+                </div>
+                <div class="victory-story-box">
+                    <p>
+                        With the very last ounce of strength in your trembling hands, you heave the heavy steel emergency valve open. The blast hatch groans, showering stone dust downward as you climb the final iron rungs into the open air.
+                    </p>
+                    <p style="margin-top: 10px;">
+                        Blinding dawn sunlight washes over your eyes. Crisp morning mountain air rushes into your burning lungs. In the distance, wild canary birds sing in the lush green valley.
+                    </p>
+                    <p style="margin-top: 10px; font-weight: bold; color: #ffb300;">
+                        Against all odds, through collapsing mine shafts, subterranean river depths, and sheer 24m abyssal cliffs... you survived!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Expedition Statistics Summary -->
+            <div class="victory-stats-panel">
+                <div class="stat-pill">
+                    <span class="stat-label">ESCAPE TIME</span>
+                    <span class="stat-val" id="victory-time-val">04m 12s</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-label">MINE DEPTH CLIMBED</span>
+                    <span class="stat-val">780 METERS</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-label">SECTORS CLEARED</span>
+                    <span class="stat-val" style="color: #ffd54f;">3 / 3 (100%)</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-label">EXPEDITION RECORD</span>
+                    <span class="stat-val" id="victory-record-val" style="color: #00e676;">PERSONAL BEST</span>
+                </div>
+            </div>
+
+            <!-- Actions: Restart & Stage Select Grid -->
+            <div class="victory-actions">
+                <div class="stage-select-header">🗺️ SELECT STAGE TO REPLAY & EXPLORE</div>
+                <div class="stage-buttons-grid">
+                    <button class="stage-btn stage-btn-1" onclick="if(window.gameState){window.gameState.selectStage(1);}">
+                        <span class="stage-num">STAGE 1</span>
+                        <span class="stage-name">COLLAPSED SHAFT 07</span>
+                        <span class="stage-desc">Depth 780m &bull; Minecart track & pickaxe rhythm breach</span>
+                    </button>
+                    <button class="stage-btn stage-btn-2" onclick="if(window.gameState){window.gameState.selectStage(2);}">
+                        <span class="stage-num">STAGE 2</span>
+                        <span class="stage-name">SUNKEN RIVER & GROTTO</span>
+                        <span class="stage-desc">Depth 531m &bull; Natural chute slide & swimming grotto</span>
+                    </button>
+                    <button class="stage-btn stage-btn-3" onclick="if(window.gameState){window.gameState.selectStage(3);}">
+                        <span class="stage-num">STAGE 3</span>
+                        <span class="stage-name">VERTICAL ROPE ASCENT</span>
+                        <span class="stage-desc">Depth 222m &bull; 24m cliff climb & escape to Hatch B-4</span>
+                    </button>
+                </div>
+                <div style="margin-top: 14px; text-align: center;">
+                    <button id="btn-win-restart" class="btn-primary btn-win-full" onclick="if(window.gameState){window.gameState.restartGame();}">
+                        🔄 RESTART EXPEDITION FROM THE VERY BEGINNING (DEPTH 780m)
+                    </button>
+                </div>
+            </div>
         </div>
-
-        <p id="victory-time" style="font-size: 15px; color: #555; margin-bottom: 25px;"></p>
-        <button id="btn-win-restart" class="btn-primary" onclick="if(window.gameState){window.gameState.restartGame();}">PLAY AGAIN</button>
     </div>
 
     <!-- Game Scripts in strict dependency order -->

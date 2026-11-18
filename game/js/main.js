@@ -306,12 +306,79 @@ class GameState {
         location.reload();
     }
 
+    selectStage(stageNum) {
+        try {
+            if (window.soundEngine) {
+                window.soundEngine.init();
+                window.soundEngine.resume();
+            }
+        } catch (e) {}
+
+        const titleScreen = document.getElementById('title-screen');
+        const gameOverScreen = document.getElementById('gameover-screen');
+        const victoryScreen = document.getElementById('victory-screen');
+        const hud = document.getElementById('hud-layer');
+        if (titleScreen) titleScreen.style.display = 'none';
+        if (gameOverScreen) gameOverScreen.style.display = 'none';
+        if (victoryScreen) victoryScreen.style.display = 'none';
+        if (hud) hud.style.display = 'block';
+
+        this.state = 'PLAYING';
+        if (!this.player) return;
+
+        this.player.isDead = false;
+        this.player.isClimbingRope = false;
+        this.player.isSliding = false;
+        this.player.stress = 15;
+        this.player.yaw = 0;
+        this.player.pitch = 0;
+        this.player.roll = 0;
+        this.player.oxygen = 100;
+
+        if (stageNum === 1) {
+            // Stage 1: Collapsed Shaft 07 (780m)
+            this.player.hasClimbedRope = false;
+            this.player.isSwimming = false;
+            this.player.position.set(0, 0, 0);
+            this.player.depth = 780;
+            this.isTremorActive = false;
+            if (window.eventManager) {
+                window.eventManager.showNotification("★ STAGE 1: COLLAPSED SHAFT 07 (DEPTH 780m) - CLEAR RUBBLE & MINE TRACKS");
+            }
+        } else if (stageNum === 2) {
+            // Stage 2: Natural Slide & Subterranean River (531m)
+            this.player.hasClimbedRope = false;
+            this.player.isSwimming = false;
+            this.player.position.set(0, 4.5, -280.0);
+            this.player.depth = 531;
+            this.isTremorActive = false;
+            if (window.eventManager) {
+                window.eventManager.showNotification("★ STAGE 2: SUNKEN RIVER & GROTTO (DEPTH 531m) - NATURAL CHUTE & SWIMMING");
+            }
+        } else if (stageNum === 3) {
+            // Stage 3: Vertical Rope Ascent & Hatch B-4 (222m)
+            this.player.hasClimbedRope = false;
+            this.player.isSwimming = false;
+            this.player.position.set(0, -12.0, -621.5);
+            this.player.depth = 222;
+            this.isTremorActive = true;
+            if (window.eventManager) {
+                window.eventManager.showNotification("★ STAGE 3: VERTICAL ASCENT (DEPTH 222m) - 24m ROPE CLIMB & ESCAPE HATCH B-4");
+            }
+        }
+
+        if (this.player.domElement) {
+            this.player.domElement.requestPointerLock();
+        }
+    }
+
     triggerVictory() {
         this.state = 'VICTORY';
         document.exitPointerLock();
 
         if (window.saveSystem) {
             window.saveSystem.recordVictory(this.elapsedTime);
+            window.saveSystem.unlockSector(3);
         }
 
         if (window.soundEngine && window.soundEngine.playVictorySequence) {
@@ -319,13 +386,26 @@ class GameState {
         }
 
         const winScreen = document.getElementById('victory-screen');
-        const winTimeEl = document.getElementById('victory-time');
+        const winTimeEl = document.getElementById('victory-time-val');
+        const winRecordEl = document.getElementById('victory-record-val');
+
+        const mins = Math.floor(this.elapsedTime / 60);
+        const secs = Math.floor(this.elapsedTime % 60);
+        const timeFormatted = `${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
 
         if (winTimeEl) {
-            const mins = Math.floor(this.elapsedTime / 60);
-            const secs = Math.floor(this.elapsedTime % 60);
-            const best = window.saveSystem ? window.saveSystem.data.bestEscapeTime : null;
-            winTimeEl.innerHTML = `<strong>ESCAPE TIME:</strong> ${mins}m ${secs}s &nbsp;|&nbsp; <strong>RECORD:</strong> ${best ? best + 's' : 'NEW!'}`;
+            winTimeEl.textContent = timeFormatted;
+        }
+
+        if (winRecordEl && window.saveSystem) {
+            const best = window.saveSystem.data.bestEscapeTime;
+            if (best) {
+                const bMins = Math.floor(best / 60);
+                const bSecs = Math.floor(best % 60);
+                winRecordEl.textContent = `${bMins}m ${bSecs}s BEST`;
+            } else {
+                winRecordEl.textContent = `NEW RECORD!`;
+            }
         }
 
         if (winScreen) winScreen.style.display = 'flex';

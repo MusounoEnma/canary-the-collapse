@@ -144,31 +144,56 @@ class Stage2SlideAndGrotto {
     }
 
     buildBioluminescentCrystals() {
-        // Clusters of glowing cyan/turquoise crystals on cavern walls
-        for (let z = -405; z >= -610; z -= 18) {
+        // Clusters of glowing cyan/turquoise crystals submerged under the water on the lakebed floor
+        // Fully rooted underwater (y = -14.1m), shining up through the aquatic water with zero floating air glitches!
+        for (let z = -405; z >= -610; z -= 14) {
             for (let side of [-1, 1]) {
                 const clusterGroup = new THREE.Group();
-                const x = side * (5.5 + Math.random() * 1.5);
-                const y = -12.0 + Math.random() * 5.0;
+                // Anchored firmly underwater on the lake bed floor (floor is at y = -14.0 to -14.2)
+                const x = side * (2.2 + Math.random() * 2.8);
+                const y = -14.1; // Deep underwater, submerged 1.9m beneath the water surface at y = -12.2!
                 clusterGroup.position.set(x, y, z);
 
-                // Cluster of 6-8 sharp hexagonal crystal spikes
+                // Submerged rock mounting base
+                const baseGeo = new THREE.CylinderGeometry(0.7, 0.95, 0.25, 8);
+                const baseMat = new THREE.MeshStandardMaterial({ color: 0x1a262c, roughness: 0.9 });
+                const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+                baseMesh.position.set(0, 0.1, 0);
+                clusterGroup.add(baseMesh);
+
+                // Cluster of 6-8 sharp hexagonal crystal spikes pointing UPWARDS into the water
+                const cMat = new THREE.MeshStandardMaterial({
+                    color: 0x00e5ff,
+                    emissive: 0x0097a7,
+                    emissiveIntensity: 0.65,
+                    roughness: 0.2,
+                    metalness: 0.7,
+                    transparent: true,
+                    opacity: 0.88
+                });
+
                 for (let k = 0; k < 7; k++) {
-                    const h = 0.6 + Math.random() * 1.2;
-                    const r = 0.08 + Math.random() * 0.12;
+                    const h = 0.55 + Math.random() * 0.75; // 0.55m to 1.3m tall, tips stay under water (water is at -12.2)
+                    const r = 0.08 + Math.random() * 0.10;
                     const cGeo = new THREE.ConeGeometry(r, h, 6);
-                    cGeo.rotateZ(side * (0.3 + Math.random() * 0.4));
+                    // Pointing upwards towards the surface with subtle organic tilt
+                    cGeo.rotateZ((Math.random() - 0.5) * 0.35);
+                    cGeo.rotateX((Math.random() - 0.5) * 0.35);
                     cGeo.rotateY(Math.random() * Math.PI);
 
-                    const cMat = new THREE.MeshBasicMaterial({
-                        color: 0x00e5ff,
-                        transparent: true,
-                        opacity: 0.95
-                    });
                     const crystal = new THREE.Mesh(cGeo, cMat);
-                    crystal.position.set((Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6);
+                    crystal.position.set(
+                        (Math.random() - 0.5) * 0.7,
+                        h / 2 + 0.2,
+                        (Math.random() - 0.5) * 0.7
+                    );
                     clusterGroup.add(crystal);
                 }
+
+                // Submerged glowing cyan light source radiating upwards through the clear aquatic water
+                const light = new THREE.PointLight(0x00e5ff, 1.8, 7.0);
+                light.position.set(0, 0.8, 0);
+                clusterGroup.add(light);
 
                 clusterGroup.matrixAutoUpdate = false;
                 clusterGroup.updateMatrix();
