@@ -87,33 +87,38 @@ class EventManager {
             }
         }
 
-        // 4. Check Emergency O2 Supply Cache at shore landing (z = -624.2)
-        if (!foundRubble && !this.isNearCart && !foundCorpse && world.emergencyO2Cache) {
-            const dist = pPos.distanceTo(world.emergencyO2Cache.position);
-            if (dist < 3.8 && pPos.y < 0) {
+        // 4. Check Rescue Rope vs Emergency O2 Station at Shore Landing (z = -625)
+        if (!foundRubble && !this.isNearCart && !foundCorpse) {
+            const distToRope = (world.rescueRope && !player.hasClimbedRope) 
+                ? Math.hypot(pPos.x - world.rescueRope.position.x, pPos.z - world.rescueRope.position.z)
+                : 999;
+            const distToO2 = world.emergencyO2Cache 
+                ? Math.hypot(pPos.x - world.emergencyO2Cache.position.x, pPos.z - world.emergencyO2Cache.position.z)
+                : 999;
+
+            // Prioritize the Rescue Rope whenever player is in the central climbing area (near the rope)
+            if (distToRope < 3.2 && (distToRope <= distToO2 || Math.abs(pPos.x) < 1.6)) {
+                this.isNearRope = true;
+                this.isNearO2Cache = false;
+                promptText = "[E] CLIMB RESCUE ROPE (24 METERS VERTICAL ASCENT)";
+            } else if (distToO2 < 2.2 && player.oxygen < 98) {
                 this.isNearO2Cache = true;
+                this.isNearRope = false;
                 promptText = "[E] INHALE EMERGENCY OXYGEN (+65% O2 RESERVES)";
+            } else if (distToO2 < 2.2) {
+                this.isNearO2Cache = true;
+                this.isNearRope = false;
+                promptText = "[E] EMERGENCY O2 RECHARGED (100% FULL)";
             } else {
+                this.isNearRope = false;
                 this.isNearO2Cache = false;
             }
         } else {
+            this.isNearRope = false;
             this.isNearO2Cache = false;
         }
 
-        // 5. Check Rescue Rope at z = -625
-        if (!foundRubble && !this.isNearCart && !foundCorpse && !this.isNearO2Cache && world.rescueRope && !player.hasClimbedRope) {
-            const dist = Math.hypot(pPos.x - world.rescueRope.position.x, pPos.z - world.rescueRope.position.z);
-            if (dist < 4.5 && pPos.y < 0) {
-                this.isNearRope = true;
-                promptText = "[E] CLIMB RESCUE ROPE (24 METERS VERTICAL ASCENT)";
-            } else {
-                this.isNearRope = false;
-            }
-        } else {
-            this.isNearRope = false;
-        }
-
-        // 6. Check Escape Hatch B-4 at z = -865
+        // 5. Check Escape Hatch B-4 at z = -865
         if (!foundRubble && !this.isNearCart && !foundCorpse && !this.isNearO2Cache && !this.isNearRope && world.escapeHatch) {
             const dist = pPos.distanceTo(world.escapeHatch.position);
             if (dist < 5.0) {

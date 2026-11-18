@@ -47,7 +47,7 @@ class Stage3AscentAndBreach {
         cliffMat.roughness = 0.95;
         cliffMat.side = THREE.DoubleSide;
         const cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
-        cliffMesh.position.set(0, 0.0, -627.5);
+        cliffMesh.position.set(0, 0.0, -625.6);
         cliffGroup.add(cliffMesh);
 
         // Flanking rock strata side walls framing the vertical chasm
@@ -55,28 +55,28 @@ class Stage3AscentAndBreach {
             const sideWallGeo = new THREE.PlaneGeometry(8.0, 30.0, 8, 16);
             sideWallGeo.rotateY(side * Math.PI / 2);
             const sideWall = new THREE.Mesh(sideWallGeo, cliffMat);
-            sideWall.position.set(side * 7.5, 0.0, -624.0);
+            sideWall.position.set(side * 5.8, 0.0, -623.5);
             cliffGroup.add(sideWall);
         }
 
         // 2. Shore Landing Timber Dock & Staging Platform (where player steps out of lake at z = -615 to -625)
         const dockGeo = new THREE.BoxGeometry(7.0, 0.45, 5.0);
         const dock = new THREE.Mesh(dockGeo, this.materials.wood);
-        dock.position.set(0, -12.1, -623.5);
+        dock.position.set(0, -12.1, -623.0);
         cliffGroup.add(dock);
 
         // Timber dock support stilts rooted in bedrock
         for (let x of [-2.8, 0, 2.8]) {
-            for (let z of [-621.5, -625.0]) {
+            for (let z of [-621.0, -624.8]) {
                 const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 2.5, 8), this.materials.wood);
                 post.position.set(x, -13.2, z);
                 cliffGroup.add(post);
             }
         }
 
-        // 3. Emergency Oxygen Supply Station & Canister Cache
+        // 3. Emergency Oxygen Supply Station & Canister Cache (positioned to the right on the dock)
         const o2StationGroup = new THREE.Group();
-        o2StationGroup.position.set(1.8, -11.6, -624.2);
+        o2StationGroup.position.set(2.8, -11.6, -622.8);
 
         // Industrial steel mounting rack
         const rack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.4), this.materials.metal);
@@ -112,7 +112,7 @@ class Stage3AscentAndBreach {
 
         this.emergencyO2Cache = {
             group: o2StationGroup,
-            position: new THREE.Vector3(1.8, -11.6, -624.2),
+            position: new THREE.Vector3(2.8, -11.6, -622.8),
             used: false,
             refillCount: 0,
             led: o2Led
@@ -121,14 +121,14 @@ class Stage3AscentAndBreach {
         // 4. Dramatic Halogen Upward Floodlight at Base of Cliff
         // Illuminates the sheer vertical ascent rope and rock face above!
         const upwardFloodlight = new THREE.SpotLight(0xffeedd, 3.8, 38, Math.PI / 3.5, 0.4, 1.2);
-        upwardFloodlight.position.set(-1.8, -11.8, -623.5);
-        upwardFloodlight.target.position.set(0, 6.0, -625.5);
+        upwardFloodlight.position.set(-2.2, -11.8, -622.8);
+        upwardFloodlight.target.position.set(0, 6.0, -625.0);
         cliffGroup.add(upwardFloodlight);
         cliffGroup.add(upwardFloodlight.target);
 
         // Floodlight fixture housing
         const lampFixture = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.35, 10), this.materials.metal);
-        lampFixture.position.set(-1.8, -11.8, -623.5);
+        lampFixture.position.set(-2.2, -11.8, -622.8);
         lampFixture.rotation.x = -Math.PI / 4;
         cliffGroup.add(lampFixture);
 

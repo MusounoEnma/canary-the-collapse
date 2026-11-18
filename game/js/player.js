@@ -693,9 +693,9 @@ class PlayerController {
                     }
                 }
 
-                // 5. Vertical Cliff at Rope Base (Cannot walk past without climbing rope)
-                if (!this.hasClimbedRope && this.position.z <= -626.0 && this.position.y < 0) {
-                    this.position.z = -626.0;
+                // 5. Solid Vertical Cliff at Rope Base (Cannot walk past or clip behind rope without climbing)
+                if (!this.hasClimbedRope && this.position.z <= -625.2) {
+                    this.position.z = -625.2;
                 }
 
                 // 6. Lateral Cavern Wall Clamping (Clamps player safely inside the 3D tube)

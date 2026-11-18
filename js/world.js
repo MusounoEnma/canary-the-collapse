@@ -206,7 +206,7 @@ class MineWorld {
         } else if (z > -395) {
             const p = (-z - 285) / 110;
             return THREE.MathUtils.lerp(4.5, -14.0, Math.pow(p, 1.2));
-        } else if (z > -625) {
+        } else if (z > -627) {
             // Lake shore landing platform where player exits water at z <= -615
             if (z <= -615) {
                 return -12.0;
@@ -214,6 +214,10 @@ class MineWorld {
             // Under water grotto: water surface is at y = -12.2, floor is at y = -14.0
             return -14.0;
         } else {
+            // Upper escape canyon is only accessible after completing the vertical rope climb
+            if (window.gamePlayer && !window.gamePlayer.hasClimbedRope) {
+                return -12.0;
+            }
             return this.stage3.getPathY(z);
         }
     }
