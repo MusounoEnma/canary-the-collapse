@@ -31,14 +31,17 @@ class Stage3AscentAndBreach {
         // Spanning vertically from the subterranean lake (y = -14.0m) to upper canyon (y = +15.0m)
         const cliffGroup = new THREE.Group();
 
-        // 1. Natural rugged vertical rock cliff face (no artificial tube or closed chimney cylinder!)
+        // 1. Natural rugged vertical rock cliff face (with recessed climbing gorge behind the rope)
         const cliffGeo = new THREE.PlaneGeometry(16.0, 30.0, 16, 24);
         const posAttr = cliffGeo.attributes.position;
         for (let i = 0; i < posAttr.count; i++) {
             const vx = posAttr.getX(i);
             const vy = posAttr.getY(i);
-            // Organic rock displacement: crags, rock crevices, and ridges
-            const crag = Math.sin(vx * 0.8 + vy * 0.5) * 0.65 + Math.cos(vx * 1.6 - vy * 0.7) * 0.35;
+            // Deep organic vertical rock chasm/groove recessed in the center where the rope hangs
+            const centerDist = Math.abs(vx);
+            const recess = centerDist < 3.2 ? (1.0 - centerDist / 3.2) * 1.6 : 0;
+            // Rock crag displacement strictly kept recessed backwards behind the rope
+            const crag = (Math.sin(vx * 0.8 + vy * 0.5) * 0.45 + Math.cos(vx * 1.5 - vy * 0.6) * 0.35) - recess;
             posAttr.setZ(i, crag);
         }
         cliffGeo.computeVertexNormals();
@@ -47,7 +50,8 @@ class Stage3AscentAndBreach {
         cliffMat.roughness = 0.95;
         cliffMat.side = THREE.DoubleSide;
         const cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
-        cliffMesh.position.set(0, 0.0, -625.6);
+        // Positioned safely back at z = -627.5 so the rock never bulges into or clips the rope
+        cliffMesh.position.set(0, 0.0, -627.5);
         cliffGroup.add(cliffMesh);
 
         // Flanking rock strata side walls framing the vertical chasm
@@ -55,7 +59,7 @@ class Stage3AscentAndBreach {
             const sideWallGeo = new THREE.PlaneGeometry(8.0, 30.0, 8, 16);
             sideWallGeo.rotateY(side * Math.PI / 2);
             const sideWall = new THREE.Mesh(sideWallGeo, cliffMat);
-            sideWall.position.set(side * 5.8, 0.0, -623.5);
+            sideWall.position.set(side * 5.8, 0.0, -624.5);
             cliffGroup.add(sideWall);
         }
 
@@ -153,7 +157,7 @@ class Stage3AscentAndBreach {
     buildRescueRope() {
         const climbH = 24.0; // 24 meters vertical climb
         const ropeGroup = new THREE.Group();
-        ropeGroup.position.set(0, -12.0, -625);
+        ropeGroup.position.set(0, -12.0, -624.8);
 
         // Thick braided steel-core rope
         const ropeMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.95 });
@@ -183,14 +187,14 @@ class Stage3AscentAndBreach {
         wheel.position.set(0, climbH + 0.1, 0);
         ropeGroup.add(wheel);
 
-        // Anchor support struts into the rock ceiling
-        const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.2, 8), this.materials.metal);
-        strut1.position.set(-1.8, climbH + 1.1, -0.4);
-        strut1.rotation.x = -Math.PI / 6;
+        // Anchor support struts into the upper canyon rock
+        const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), this.materials.metal);
+        strut1.position.set(-1.8, climbH + 1.1, -1.1);
+        strut1.rotation.x = -Math.PI / 4;
         ropeGroup.add(strut1);
-        const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.2, 8), this.materials.metal);
-        strut2.position.set(1.8, climbH + 1.1, -0.4);
-        strut2.rotation.x = -Math.PI / 6;
+        const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), this.materials.metal);
+        strut2.position.set(1.8, climbH + 1.1, -1.1);
+        strut2.rotation.x = -Math.PI / 4;
         ropeGroup.add(strut2);
 
         // Bottom heavy anchor carabiner & guide weight resting on timber landing
@@ -208,7 +212,7 @@ class Stage3AscentAndBreach {
 
         this.rescueRope = {
             group: ropeGroup,
-            position: new THREE.Vector3(0, -12.0, -625),
+            position: new THREE.Vector3(0, -12.0, -624.8),
             topY: 12.0,
             baseY: -12.0,
             climbHeight: climbH,
